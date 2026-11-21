@@ -1,58 +1,48 @@
-# Verification is not a boolean
+# B verification: what is checked and what is assumed
 
-The ambition is to make large classes of errors impossible **without lying about what has been checked**. "Compiles" is not equivalent to "does what the user intended".
+B aims to make important error classes impossible to accept while accurately reporting everything it has not established. **Passing `b check` is not proof that the program achieves its intended result.**
 
-## Implemented checks
+## Enforced checks in v0.2
 
-1. B grammar and known keyword structures.
-2. Name resolution, duplicate top-level names and reserved names.
-3. Primitive, list and function parameter/result types, with Int-to-Float widening.
-4. Known foreign call arity and parameter types for the small registry.
-5. Constant division by zero.
-6. Statically false constant assertions.
-7. Runtime guards for explicit annotations and known foreign return types.
-8. Runtime assertions not erased by Python optimization flags.
-9. `--strict` rejection of unresolved static warnings.
+1. B syntax, names, reserved names and duplicate bindings.
+2. Static types for primitive values, lists, expression functions and both branches of conditional expressions.
+3. Correct function arity for known signatures and B functions.
+4. Constant division by zero and statically disproved assertions.
+5. Runtime guards for explicit typed values, including heterogeneous values narrowed from `List[Any]` to `List[T]`.
+6. Argument and return type checks across *declared* foreign function boundaries.
+7. `--strict` rejects unresolved warnings such as dynamic foreign calls or assertions that still need execution.
+8. `b check --json` provides accepted/rejected status, diagnostics and explicit trusted foreign assumptions.
 
-## Not implemented
+## What is not proved
 
-- Whole-program formal verification.
-- Side-effect analysis and effect-based import policy.
-- Ownership, concurrency, data-race freedom or bounds on resources.
-- Proofs of Python/.NET library implementations.
-- Semantic equivalence of backends.
-- Guaranteed runtime termination, deterministic execution or sandboxing.
+- Correctness of the user's specification, or even the existence of a full behavior specification.
+- Correctness of imported Python/.NET functions or user-authored `foreign` declarations.
+- Effects, termination, absence of memory errors inside foreign code, concurrency properties, or resource bounds.
+- Functional equivalence of future backends or absence of bugs in B's compiler.
+- Safe execution of untrusted programs. Python code and libraries execute with the current account's privileges.
 
-## The three-way outcome
+## The three outcomes we eventually need
 
-For any *specific* property, B should eventually distinguish `proved`, `disproved` and `unknown`. The current CLI instead reports errors and warnings. A recognized foreign signature is **an assumption**, not proof of the library behavior.
+For *each explicit property*, future B should distinguish `proved`, `disproved` and `unknown`. v0.2 currently uses a simpler distinction: static errors, warnings and trusted assumptions. A built-in foreign signature or a successful type guard is **not** a machine-checked behavioral proof.
 
 ## Example
 
-```b
-let n = 3
-assert n > 2  # the limited constant evaluator can establish this
+```text
+let n: Int = if true then 3 else 8
+assert n == 3
 ```
 
-But:
+The constant checker accepts both statements without running the program. But:
 
-```b
+```text
 use py:statistics as stats
-let value: Float = stats.mean([1.0, 2.0, 3.0])
+foreign stats.median(List[Float]) -> Float
+let value: Float = stats.median([1.0, 2.0, 3.0])
 assert value > 1.0
 ```
 
-The compiler recognizes the function signature and checks its returned type at runtime. It cannot prove the assertion using the current constant evaluator, and `b check --strict` rejects the unresolved obligation. Normal mode emits a runtime assertion.
+The foreign method's return type is guarded at runtime; its mathematical behavior is not proved. The final assertion remains a runtime obligation and `--strict` rejects that obligation.
 
-## Source of truth and threat model
+## Threat model
 
-The project intentionally exposes foreign-library capability. Imported Python modules can perform arbitrary I/O. Input `.b` files are therefore **trusted programs**, not safe user scripts. The .NET adapter narrows exposed APIs but the Python execution backend is not isolated. An actual sandbox would require OS/container isolation, capability-based interfaces and separate threat-model validation.
-
-## Research hypotheses
-
-- Fewer generated decisions and narrower library calls reduce real failures and model-token cost.
-- A typed canonical IR can make incremental verification practical.
-- Automatically generated foreign metadata can improve access to libraries without a loss of auditability.
-- A new source representation may outperform standard languages for selected models **after conditioning/training**, not automatically.
-
-These are hypotheses to test, not claims of results.
+The codebase is an experimental **trusted-code toolchain**. The .NET host narrows its API surface, but B's Python backend can invoke arbitrary installed Python code. There is no isolation from the user's filesystem, processes, devices or network. Do not run programs from untrusted parties without external isolation.

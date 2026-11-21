@@ -20,6 +20,7 @@ class ToModel(Transformer):
     def path(self, xs): return ".".join(map(str, xs))
     def type_expr(self, xs): return (str(xs[0]), tuple(x for x in xs[1:] if x is not None))
     def params(self, xs): return list(xs)
+    def type_list(self, xs): return list(xs)
     def param(self, xs): return (str(xs[0]), xs[1])
     def args(self, xs): return list(xs)
     def number(self, xs):
@@ -39,6 +40,7 @@ class ToModel(Transformer):
         base = xs[0]
         for kind, val in xs[1:]: base = Expr(kind, (base, val))
         return base
+    def conditional(self, xs): return Expr("conditional", tuple(xs))
     def not_op(self, xs): return Expr("not", (xs[0],))
     def neg(self, xs): return Expr("neg", (xs[0],))
     def add(self, xs): return Expr("add", tuple(xs))
@@ -49,6 +51,7 @@ class ToModel(Transformer):
     def and_op(self, xs): return Expr("and", tuple(xs))
     def or_op(self, xs): return Expr("or", tuple(xs))
     def comparison(self, xs): return Expr("cmp", (xs[0], str(xs[1]), xs[2]))
+    def foreign_stmt(self, xs): return Stmt("foreign", (xs[0], xs[1] or [], xs[2]))
     def use_stmt(self, xs): return Stmt("use", (str(xs[0]), xs[1], str(xs[2])))
     def let_stmt(self, xs): return Stmt("let", (str(xs[0]), xs[1], xs[2]))
     def fn_stmt(self, xs):

@@ -21,3 +21,20 @@ print hyp
         namespace = {"__name__": "__b_test__"}
         exec(program.code, namespace, namespace)
     assert abs(float(output.getvalue().strip()) - 5.0) < 0.000001
+
+
+@pytest.mark.skipif(shutil.which("dotnet") is None, reason=".NET 10 SDK not installed")
+def test_cross_runtime_text_regex_and_python_statistics():
+    source = '''use py:statistics as stats
+use net:System.Text.RegularExpressions.Regex as Rx
+use net:System.Math as Math
+let average: Float = stats.mean([5, 6, 7])
+let verified: Bool = Rx.IsMatch("item-42", "^item-[0-9]+$")
+let output: Float = if verified then Math.Sqrt(average * average) else 0.0
+print output
+'''
+    program = compile_b(source, strict=True)
+    out = io.StringIO()
+    with redirect_stdout(out):
+        exec(program.code, {"__name__": "__b_test__"})
+    assert out.getvalue().strip() == "6.0"

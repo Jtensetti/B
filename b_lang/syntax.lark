@@ -6,13 +6,16 @@ _NL: NEWLINE
      | "fn" NAME "(" [params] ")" "->" type_expr "=" expr -> fn_stmt
      | "print" expr                                       -> print_stmt
      | "assert" expr                                      -> assert_stmt
+     | "foreign" path "(" [type_list] ")" "->" type_expr -> foreign_stmt
 
 path: NAME ("." NAME)*
+type_list: type_expr ("," type_expr)*
 params: param ("," param)*
 param: NAME ":" type_expr
 type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 
-?expr: or_expr
+?expr: "if" expr "then" expr "else" expr -> conditional
+     | or_expr
 ?or_expr: or_expr "or" and_expr     -> or_op
         | and_expr
 ?and_expr: and_expr "and" cmp_expr -> and_op

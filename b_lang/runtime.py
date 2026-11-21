@@ -16,24 +16,42 @@ class BBoundaryError(RuntimeError):
     pass
 
 def guard(value: Any, btype: str) -> Any:
-    """Validate the published types of a value crossing a B boundary."""
-    if btype == "Any": return value
-    if btype == "Int": valid = type(value) is int
-    elif btype == "Float": valid = type(value) in (int, float) and math.isfinite(value)
-    elif btype == "Bool": valid = type(value) is bool
-    elif btype == "Text": valid = type(value) is str
-    elif btype.startswith("List[") and btype.endswith("]"):
-        valid = isinstance(value, list)
-        if valid:
-            inner = btype[5:-1]
-            valid = all(_valid(x, inner) for x in value)
-    else: raise BBoundaryError(f"Unsupported B boundary type: {btype}")
-    if not valid: raise BBoundaryError(f"Expected {btype} at boundary, got {type(value).__name__}: {value!r}")
-    return value
+    """Validate and normalize a value at a declared B boundary.
 
-def _valid(value: Any, typ: str) -> bool:
-    try: guard(value, typ); return True
-    except BBoundaryError: return False
+    Integer inputs to Float are explicitly converted to Python float. A JSON
+    number emitted as `6` from the .NET host therefore becomes a B Float 6.0.
+    Lists are copied when crossing typed boundaries to normalize elements.
+    """
+    if btype == "Any":
+        return value
+    if btype == "Float":
+        if type(value) not in (int, float):
+            raise BBoundaryError(f"Expected Float at boundary, got {type(value).__name__}: {value!r}")
+        try:
+            result = float(value)
+        except (OverflowError, ValueError) as exc:
+            raise BBoundaryError("Int is out of representable Float range") from exc
+        if not math.isfinite(result):
+            raise BBoundaryError("Non-finite Float is forbidden at B boundary")
+        return result
+    if btype.startswith("List[") and btype.endswith("]"):
+        if not isinstance(value, list):
+            raise BBoundaryError(f"Expected {btype} at boundary, got {type(value).__name__}: {value!r}")
+        inner = btype[5:-1]
+        # A guarded list is a snapshot. This avoids partially converting source
+        # data and protects the B binding from changes to the external list.
+        return [guard(x, inner) for x in value]
+    if btype == "Int":
+        valid = type(value) is int
+    elif btype == "Bool":
+        valid = type(value) is bool
+    elif btype == "Text":
+        valid = type(value) is str
+    else:
+        raise BBoundaryError(f"Unsupported B boundary type: {btype}")
+    if not valid:
+        raise BBoundaryError(f"Expected {btype} at boundary, got {type(value).__name__}: {value!r}")
+    return value
 
 def py_module(path: str):
     return importlib.import_module(path)
@@ -87,6 +105,6 @@ class _DotNetType:
         return invoke
 
 def net_module(fullname: str):
-    if fullname != "System.Math":
-        raise BBoundaryError(f"The v0.1 .NET adapter only exposes System.Math, not {fullname}")
+    if fullname not in ("System.Math", "System.Text.RegularExpressions.Regex"):
+        raise BBoundaryError(f"Unregistered .NET type: {fullname}")
     return _DotNetType(fullname)

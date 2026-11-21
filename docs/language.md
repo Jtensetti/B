@@ -1,107 +1,107 @@
-# B language specification — experimental v0.1
+# B language reference — implemented experimental v0.2
 
-This document is **normative for the small implemented subset** and explicitly non-normative for any future feature. Parser details are defined in [`b_lang/syntax.lark`](../b_lang/syntax.lark). When this prose and parser diverge, treat the implementation as a bug, not as permission to silently change the language.
+**Status:** This is the specification for the supported v0.2 subset. It is not a specification for a future universal B. Actual parser rules are in [`b_lang/syntax.lark`](../b_lang/syntax.lark); divergence between specification and compiler is a bug to be tested.
 
-## 1. Lexical conventions
+## 1. Source and lexical rules
 
-1. Source files are UTF-8 and conventionally end in `.b`.
-2. Source uses ASCII identifiers `[A-Za-z_][A-Za-z0-9_]*` in v0.1; Unicode identifiers are not yet supported.
-3. `#` begins a comment ending at the next newline.
-4. Whitespace around expressions is ignored except **newlines terminate statements**. There are no semicolons or indentation-sensitive blocks in v0.1.
-5. Integer literals are decimal, nonnegative, without leading zeros except `0`. Decimal real literals require digits before and after `.`. Scientific notation is not available yet.
-6. Text literals use JSON-compatible double-quoted strings, including valid JSON escapes.
-7. The reserved word literals are `true`, `false`, `none`.
-8. An error in these rules is a syntax error; the compiler does not guess a replacement.
+- Source is UTF-8 text. File suffix `.bsrc` is preferred; `.b` is supported for v0.1 compatibility.
+- Comments begin with `#` and last until the end of the line.
+- A newline terminates a statement. A semicolon is not a statement separator. Whitespace between tokens is ignored; there are no indentation-based blocks.
+- Identifiers match `[A-Za-z_][A-Za-z0-9_]*`. Names beginning `_b_` are reserved for runtime internals.
+- Integers are base-10 digits with no leading zeros except the digit `0`; negative values use a unary `-` operator. Decimal floats require digits on both sides of `.`. No exponent literals yet.
+- Strings use JSON-compatible double-quoted escaped text. Literal keywords are `true`, `false`, `none`.
+- The parser reports errors rather than silently guessing symbol replacements.
 
-## 2. Concrete syntax
+## 2. Grammar
 
-Simplified EBNF (the source grammar is definitive):
+Informative EBNF simplified from the implemented parser. B v0.2 source includes top-level statements and expressions:
 
 ```ebnf
-program      = { newline | statement newline }, [statement] ;
-statement    = import | binding | function | output | assertion ;
-import       = "use", ("py"|"net"), ":", dotted_name, "as", identifier ;
-binding      = "let", identifier, [":", type], "=", expression ;
-function     = "fn", identifier, "(", [parameters], ")", "->", type, "=", expression ;
-output       = "print", expression ;
-assertion    = "assert", expression ;
-parameters   = parameter, {",", parameter} ;
-parameter    = identifier, ":", type ;
-type         = identifier, ["[", type, {",", type}, "]"] ;
-dotted_name  = identifier, {".", identifier} ;
-expression   = literal | identifier | list | group | attribute | call
-               | unary | arithmetic | comparison | boolean ;
+program       = { newline | statement, newline }, [statement] ;
+statement     = use | foreign | let | fn | print | assert ;
+use           = "use", ("py" | "net"), ":", path, "as", identifier ;
+foreign       = "foreign", path, "(", [type_list], ")", "->", type ;
+let           = "let", identifier, [":", type], "=", expression ;
+fn            = "fn", identifier, "(", [parameter_list], ")", "->", type, "=", expression ;
+print         = "print", expression ;
+assert        = "assert", expression ;
+parameter     = identifier, ":", type ;
+type_list     = type, {",", type} ;
+path          = identifier, {".", identifier} ;
+type          = identifier, ["[", type, {",", type}, "]"] ;
+expression    = "if", expression, "then", expression, "else", expression
+              | logical_expression ;
 ```
 
-The `type` shorthand above is descriptive; the actual grammar uses comma-separated type arguments. The current implementation only admits one argument for `List`, and no arguments for primitive types.
+The remaining expression precedence, highest first: attribute access/call, unary `not`/`-`, `*`/`/`/`%`, `+`/`-`, comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`), `and`, `or`. Parentheses group expressions; list literals use `[...]`. The conditional `if ... then ... else ...` is an expression with lower precedence than `or`; parentheses allow embedding it within arithmetic. Nested `if` expressions associate with the closest `else` following the parser rules.
 
-**Operator precedence, highest to lowest:** attribute/call; unary `not`/`-`; `*` `/` `%`; `+` `-`; comparisons; `and`; `or`. Binary arithmetic and boolean operators associate left; comparisons permit chaining in the grammar, but chaining currently has ordinary pairwise syntax-tree behavior and should not be relied on as a mathematical chain.
+`use` binds a module alias. The source path may contain dots. `foreign` must follow a corresponding imported `py:` alias and declare a member's positional parameter types and return type; aliases and names cannot be redefined. Declarations for arbitrary .NET methods are not supported: the host must explicitly allowlist those methods first.
 
 ## 3. Types
 
-| Type | Meaning |
+| Type | Runtime representation in current Python backend |
 | --- | --- |
-| `Int` | Python arbitrary-precision integer, excluding `Bool`. This is a v0.1 runtime detail; a future platform-neutral representation needs an explicit size policy. |
-| `Float` | Python binary floating-point; `Int` may be accepted where `Float` is expected. Non-finite values are rejected at typed runtime boundaries. |
-| `Bool` | `true` or `false`; never interchangeable with `Int`. |
-| `Text` | Unicode string. |
-| `List[T]` | List of values assignable to `T`. |
-| `Any` | Dynamic boundary or explicitly untyped value; does **not** imply verification. |
-| `None` | Inferred type of the `none` literal only; not allowed as a variable annotation in v0.1. |
+| `Int` | Python integer (unbounded), excluding booleans |
+| `Float` | Finite Python float. Integer arguments and JSON number representations are normalized to Python `float` at typed boundaries; native arithmetic follows Python numeric rules |
+| `Bool` | Python `True`/`False`, not assignable to `Int` |
+| `Text` | Python Unicode string |
+| `List[T]` | Python list with members checked against `T` at annotated boundaries |
+| `Any` | An explicitly dynamic type; not a proof of correctness |
+| `None` | Internal inferred type for `none`; not a permitted declared type |
 
-B bindings are single-assignment at top level, with no mutation statement in v0.1. A function has typed parameters and an explicit result type. Functions have a single expression body. Recursive function calls are permitted; termination is **not** proven.
+Type assignability is identity plus `Int` → `Float`, dynamic `Any` (with runtime checks when narrowed), and element-wise `List[T]` compatibility. Inferred heterogeneous lists may have `List[Any]`; narrowing them to `List[Int]` triggers a runtime element check, even when `Any` is nested. Typed lists are copied and their elements normalized at runtime boundaries. Converting an out-of-range `Int` to `Float` raises a boundary error; in-range conversion may round. In strict mode such unresolved dynamic checks are rejected.
 
-Assignments are type-checked. For example:
+Expressions in an `if` must have compatible branch types; when the branches are `Int` and `Float`, the inferred type is `Float`. A known condition selects the known branch for constant propagation. Both branches are type-checked, whether or not the condition is statically known. When no common non-dynamic type can be established, a known-type mismatch is an error.
 
-```b
-let width: Float = 5
-let values: List[Int] = [1, 2, 3]
-fn hypotenuse(a: Float, b: Float) -> Float = (a * a + b * b) / 2.0
+## 4. Evaluation
+
+- Top-level `let` values are assigned once in order. B v0.2 has no reassignment statement.
+- `fn f(x: T) -> R = expression` declares an expression-bodied function with positional typed arguments. The return value is guarded against `R`. Calls must match known arity and types. Termination of recursive functions is not established.
+- Arithmetic, comparison and logic follow the current Python backend's semantics. `and` and `or` short-circuit. `if condition then yes else no` evaluates only the selected branch at runtime.
+- `print value` prints the value and a newline.
+- Division by an expression known to be zero is rejected by `E_DIV_ZERO`. Unproven denominators are not generally checked statically; at runtime ordinary Python divide-by-zero behavior applies.
+- `assert expression`: a statically false constant assertion causes `E_ASSERT`; a statically true one is accepted. Other assertions remain runtime obligations and generate `W_RUNTIME_ASSERT`; `--strict` rejects the warning. Runtime assertions are explicit exception-raising code, not Python `assert`, so Python optimization does not disable them.
+- Floating-point behavior currently inherits Python semantics, and some numerical overflow/underflow cases are not exhaustively specified. Arbitrary integer size and cross-runtime conversion policies require future revision.
+
+## 5. Imports, signatures and foreign assumptions
+
+```text
+use py:json as json
+foreign json.dumps(List[Int]) -> Text
+let encoded: Text = json.dumps([1, 2, 3])
+print encoded
 ```
 
-`Int` to `Float` is allowed at a typed boundary; other implicit numeric conversions are not defined. List literals containing mixed types can infer `List[Any]`; explicit annotations on literals are checked element-by-element. B's type system is intentionally incomplete and currently lacks `Option`, records, algebraic data types, user classes and generics beyond lists.
+B calls the *real* installed `json.dumps` function. The declaration supplies a **trusted boundary contract**: B checks the argument list type before calling, and checks that the returned value is `Text`. It does not prove that `json.dumps` implements the expected JSON semantics. If the declaration lies, the runtime guard may catch a type mismatch but cannot generally detect an incorrect value of the correct type.
 
-## 4. Expressions and evaluation
+Unknown Python symbols are dynamic and produce `W_UNCHECKED_FOREIGN`. Built-in typed signatures exist for a few `statistics` and `math` functions. B v0.2 uses a .NET 10 JSON-lines host with allowlisted `System.Math` methods and `System.Text.RegularExpressions.Regex.IsMatch(Text,Text)->Bool` (with a 250 ms regex matching timeout). The host rejects arbitrary method names, type mismatches and non-finite numeric results.
 
-- Literals evaluate to their values; lists are evaluated from left to right.
-- Names resolve to a preceding binding or a function definition; unknown names fail static checking.
-- Arithmetic uses Python numeric operations in v0.1. `/` always has static result type `Float`. Constant division by zero is rejected before execution.
-- Comparisons produce `Bool`; incompatible known types are rejected. `and` and `or` short-circuit as Python boolean expressions. `not` requires a Boolean.
-- A function call evaluates its arguments left to right and evaluates the function body with parameters bound to these values.
-- `assert e`: when `e` can be computed by the current static constant evaluator and is false, compilation fails. Otherwise the condition is emitted as a runtime obligation; `--strict` rejects an unresolved obligation. Python `-O` does not remove B assertions.
-- `print e` writes a textual representation of the value, followed by a newline.
+A foreign declaration is listed under `assumed_foreign_contracts` in `b check --json`. Strict checking means no unresolved static warnings; it is **not** a guarantee that foreign behavior was proved.
 
-Constant evaluation currently covers literal arithmetic/boolean expressions and references to constant B `let` bindings. It is intentionally **not** a theorem prover and does not evaluate imported libraries during the check.
+## 6. Error codes
 
-## 5. Imports
-
-`use py:module as name` binds a Python module imported by the installed Python interpreter. Checking existence does not validate all module behavior.
-
-`use net:System.Math as name` binds the .NET `System.Math` adapter. The five currently supported methods are `Sqrt`, `Pow`, `Abs`, `Min`, `Max`, with the signatures listed in [`b_lang/types.py`](../b_lang/types.py).
-
-Other Python symbols can be used dynamically with warning `W_UNCHECKED_FOREIGN`; .NET members are fail-closed unless explicitly registered. `b check --strict` rejects all unresolved warnings, but **does not** prove the imported implementation obeys its declared contract.
-
-## 6. Diagnostics
-
-| Code | Description |
+| Code | Meaning |
 | --- | --- |
-| `E_SYNTAX` | Invalid B source syntax |
-| `E_NAME` | Unknown or redefined binding, or reserved runtime name |
-| `E_TYPE` | Incompatible type or invalid type declaration |
-| `E_ARITY` | Known function called with wrong number of arguments |
-| `E_DIV_ZERO` | Constant division by zero detected |
-| `E_ASSERT` | Assertion statically disproved |
-| `E_IMPORT` | Python module unavailable or invalid backend |
-| `E_FOREIGN` | .NET member not in the allowlisted registry |
-| `E_STRICT` | An unresolved diagnostic exists in strict mode |
-| `W_UNCHECKED_FOREIGN` | Python call without a registered static signature |
-| `W_DYNAMIC_TYPE` | A dynamic value is used where a known type is required; runtime guard inserted |
-| `W_RUNTIME_ASSERT` | Static checker cannot establish the assertion; runtime check emitted |
+| `E_SYNTAX` | A source file does not follow B grammar |
+| `E_NAME` | Unknown, repeated or reserved identifier |
+| `E_TYPE` | Invalid type or incompatible typed values |
+| `E_ARITY` | Wrong number of arguments to a known function |
+| `E_DIV_ZERO` | A divisor is statically known to be zero |
+| `E_ASSERT` | A statically known assertion is false |
+| `E_IMPORT` | An import cannot be resolved |
+| `E_FOREIGN` | Foreign binding invalid, duplicated or not allowlisted |
+| `E_STRICT` | An unresolved warning remains in strict mode |
+| `E_EXTENSION` | File extension is not `.bsrc` or legacy `.b` |
+| `W_UNCHECKED_FOREIGN` | Unknown dynamic Python symbol/call |
+| `W_DYNAMIC_TYPE` | A runtime type check is needed when narrowing dynamic data |
+| `W_RUNTIME_ASSERT` | An assertion has not been proven statically |
 
-## 7. Intentionally absent
+`b check --json` returns `status`, version, diagnostics and trusted foreign assumptions. It never reports full behavioral correctness as proven. Errors cause a nonzero exit status. There is no full machine-checked proof system in the current version.
 
-No loops, mutable objects, modules authored in B, asynchronous tasks, records, closures, generics other than `List[T]`, exception handling, concurrency, effects, macros, external process isolation, user-defined foreign signatures or native binary output in v0.1. Adding any of these requires a separate revision of the grammar, typing rules and executable tests.
+## 7. Not implemented
 
-## 8. Compatibility and versioning
+General native machine code generation; B-authored modules; loops; mutable bindings; user records; generic B functions; richer algebraic types (`Option`, `Result`); Python type-stub ingestion; broad CLR reflection; Java, Rust and WebAssembly interoperability; effect inference; asynchronous programs; multi-agent operations; isolation of untrusted programs; formal behavioral proofs.
 
-Source behavior is only defined for the implemented `v0.1` subset. Semantic changes require a versioned spec and conformance tests. Foreign-library behavior depends on environment versions and is not covered by B's current static guarantees.
+## 8. Versioning
+
+This specification describes the implemented v0.2 **subset**. Compiler changes must carry tests and docs. Nothing here gives a guarantee about a foreign library's internals, an untrusted user's Python code or indefinite future runtime environments.
