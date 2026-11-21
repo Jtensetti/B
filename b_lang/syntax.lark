@@ -1,0 +1,53 @@
+start: (_NL | stmt _NL)* stmt?
+_NL: NEWLINE
+
+?stmt: "use" BACKEND ":" path "as" NAME                   -> use_stmt
+     | "let" NAME [":" type_expr] "=" expr               -> let_stmt
+     | "fn" NAME "(" [params] ")" "->" type_expr "=" expr -> fn_stmt
+     | "print" expr                                       -> print_stmt
+     | "assert" expr                                      -> assert_stmt
+
+path: NAME ("." NAME)*
+params: param ("," param)*
+param: NAME ":" type_expr
+type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
+
+?expr: or_expr
+?or_expr: or_expr "or" and_expr     -> or_op
+        | and_expr
+?and_expr: and_expr "and" cmp_expr -> and_op
+         | cmp_expr
+?cmp_expr: cmp_expr COMP sum_expr  -> comparison
+         | sum_expr
+?sum_expr: sum_expr "+" mul_expr  -> add
+         | sum_expr "-" mul_expr   -> subtract
+         | mul_expr
+?mul_expr: mul_expr "*" unary_expr -> multiply
+         | mul_expr "/" unary_expr -> divide
+         | mul_expr "%" unary_expr -> modulo
+         | unary_expr
+?unary_expr: "not" unary_expr     -> not_op
+           | "-" unary_expr       -> neg
+           | postfix
+?postfix: atom tail*                -> postfix
+?tail: "." NAME                    -> attribute
+     | "(" [args] ")"              -> invoke
+args: expr ("," expr)*
+?atom: NUMBER                        -> number
+     | ESCAPED_STRING                -> string
+     | "true"                        -> true
+     | "false"                       -> false
+     | "none"                        -> none
+     | NAME                          -> identifier
+     | "[" [args] "]"                -> list_literal
+     | "(" expr ")"                  -> grouped
+
+BACKEND: "py" | "net"
+COMP: "==" | "!=" | "<=" | ">=" | "<" | ">"
+NAME: /[A-Za-z_][A-Za-z0-9_]*/
+NUMBER: /(?:0|[1-9][0-9]*)(?:\.[0-9]+)?/
+%import common.ESCAPED_STRING
+%import common.NEWLINE
+%import common.WS_INLINE
+%ignore WS_INLINE
+%ignore /\#[^\n]*/
