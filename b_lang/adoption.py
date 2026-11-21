@@ -13,6 +13,7 @@ import math
 import sys
 from dataclasses import dataclass
 from importlib.machinery import PathFinder
+from importlib.util import find_spec as meta_find_spec
 from pathlib import Path
 
 from .model import Expr, Stmt
@@ -39,6 +40,12 @@ def _source_file(module: str) -> Path:
     for piece in pieces:
         qualified = f"{qualified}.{piece}" if qualified else piece
         spec = PathFinder.find_spec(qualified, search)
+        # PEP 660 editable installations may be exposed by a MetaPathFinder
+        # instead of a sys.path entry. Resolve ONLY the top-level package via
+        # find_spec: never invoke find_spec on a dotted name (which could import
+        # parent __init__.py). Ordinary compiler import hooks remain trusted.
+        if spec is None and "." not in qualified:
+            spec = meta_find_spec(qualified)
         if spec is None:
             raise BError("E_ADOPT", f"Python source module {qualified} was not found")
         search = spec.submodule_search_locations

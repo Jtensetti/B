@@ -182,3 +182,27 @@ def choose(x: int) -> int:
         _reject(f"permit []\nadopt py:untrusted.{fn} as f")
     _, ns = _run("permit []\nadopt py:untrusted.choose as f")
     assert ns["f"](-7) == 0
+
+
+def test_editable_install_meta_path_finder_without_importing_package(tmp_path, monkeypatch):
+    """An editable finder may locate a package that PathFinder cannot see."""
+    import sys
+    from importlib.machinery import ModuleSpec
+
+    package = tmp_path / "virtual_editable_package"
+    package.mkdir()
+    (package / "__init__.py").write_text('raise RuntimeError("should not be imported")\n')
+    (package / "leaf.py").write_text('def safe(x: int) -> int:\n    return x + 5\n')
+
+    class EditableFinder:
+        def find_spec(self, fullname, path=None, target=None):
+            if fullname != "virtual_editable_package":
+                return None
+            spec = ModuleSpec(fullname, loader=None, is_package=True)
+            spec.submodule_search_locations = [str(package)]
+            return spec
+
+    monkeypatch.setattr(sys, "meta_path", [EditableFinder(), *sys.meta_path])
+    _, ns = _run("permit []\nadopt py:virtual_editable_package.leaf.safe as f")
+    assert ns["f"](7) == 12
+    assert "virtual_editable_package" not in sys.modules
