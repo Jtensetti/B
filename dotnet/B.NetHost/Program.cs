@@ -5,9 +5,9 @@ using System.Reflection;
 
 static class Program
 {
-    static int Main(string[] args)
+    static int Main(string[] cliArgs)
     {
-        if (args.Length == 1 && args[0] == "--describe")
+        if (cliArgs.Length == 1 && cliArgs[0] == "--describe")
         {
             // Reflect the exact overloads the transport can invoke. This is
             // metadata discovery, not permission to call arbitrary .NET APIs.
@@ -40,7 +40,7 @@ static class Program
             Console.WriteLine(JsonSerializer.Serialize(new { schema = 1, runtime = "B.NetHost/.NET10", types }));
             return 0;
         }
-        if (args.Length != 0) { Console.Error.WriteLine("Unknown option"); return 2; }
+        if (cliArgs.Length != 0) { Console.Error.WriteLine("Unknown option"); return 2; }
 
         string? line;
         while ((line = Console.ReadLine()) is not null)
