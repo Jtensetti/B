@@ -25,3 +25,9 @@ jobs:
       - run: b check examples/polyglot.bsrc --strict
       - run: b run examples/polyglot.bsrc
       - run: b check examples/typed_foreign.bsrc --strict --json
+      - run: b check examples/polyglot.bee --strict
+      - run: b run examples/polyglot.bee
+      - run: b check examples/auto_discovery.bee --strict
+      - run: b run examples/auto_discovery.bee
+      - run: b inspect py:b_examples.demo_lib --json
+      - run: b inspect net:System.Math --verify --json

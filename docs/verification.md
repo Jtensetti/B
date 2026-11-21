@@ -2,14 +2,14 @@
 
 B aims to make important error classes impossible to accept while accurately reporting everything it has not established. **Passing `b check` is not proof that the program achieves its intended result.**
 
-## Enforced checks in v0.2
+## Enforced checks in v0.3
 
 1. B syntax, names, reserved names and duplicate bindings.
 2. Static types for primitive values, lists, expression functions and both branches of conditional expressions.
 3. Correct function arity for known signatures and B functions.
 4. Constant division by zero and statically disproved assertions.
 5. Runtime guards for explicit typed values, including heterogeneous values narrowed from `List[Any]` to `List[T]`.
-6. Argument and return type checks across *declared* foreign function boundaries.
+6. Argument and return type checks across *declared or auto-discovered* foreign function boundaries.
 7. `--strict` rejects unresolved warnings such as dynamic foreign calls or assertions that still need execution.
 8. `b check --json` provides accepted/rejected status, diagnostics and explicit trusted foreign assumptions.
 
@@ -23,7 +23,7 @@ B aims to make important error classes impossible to accept while accurately rep
 
 ## The three outcomes we eventually need
 
-For *each explicit property*, future B should distinguish `proved`, `disproved` and `unknown`. v0.2 currently uses a simpler distinction: static errors, warnings and trusted assumptions. A built-in foreign signature or a successful type guard is **not** a machine-checked behavioral proof.
+For *each explicit property*, future B should distinguish `proved`, `disproved` and `unknown`. v0.3 currently uses a simpler distinction: static errors, warnings and trusted assumptions. A built-in foreign signature or a successful type guard is **not** a machine-checked behavioral proof.
 
 ## Example
 

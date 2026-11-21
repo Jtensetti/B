@@ -4,10 +4,10 @@
 
 A new programming language with defined semantics and a compiler/runtime that reuses foreign ecosystems through typed adapters. The future machine-facing representation should optimize **total cost per independently correct result**, not merely source length.
 
-## Implemented pipeline (v0.2)
+## Implemented pipeline (v0.3)
 
 ```text
-.bsrc source (legacy .b accepted)
+.bee source (.bsrc / .b compatible)
         |
         v
 B Lark grammar -> B Expr/Stmt syntax tree
@@ -27,14 +27,14 @@ Python bytecode -> CPython libraries
 ```
 
 - Native B `if` expressions and single-assignment bindings are part of the language, not agent-workflow instructions.
-- Foreign `py:` calls can use built-in recognized signatures or explicit B `foreign` declarations. Unknown signatures become dynamic and are rejected in strict mode.
-- The .NET bridge exposes only explicit registered methods. B source declarations cannot change the adapter's executable allowlist.
+- Foreign `py:` calls can use discovered `.pyi` / `.py` signatures, built-in recognized signatures or explicit B `foreign` declarations. Unknown signatures become dynamic and are rejected in strict mode.
+- The .NET bridge reflects permitted methods to a checked-in signature manifest verified in CI, and exposes only registered methods. B source declarations cannot change the adapter's executable allowlist.
 - `b check --json` makes diagnostics and foreign assumptions machine-readable for future language-model tooling.
-- `.bsrc` is recommended over `.b` due to historical filename collisions.
+- `.bee` is the preferred extension; `.bsrc` and `.b` are compatible legacy forms.
 
 This is **not yet** a native ahead-of-time compiler. B lowers to Python AST. Its type checker is incomplete, and its runtime is not isolated from malicious foreign code.
 
-## Proposed design beyond v0.2
+## Proposed design beyond v0.3
 
 1. **Canonical typed B IR:** operation graph with versioned serialization and semantics independent of Python AST.
 2. **Verified B core:** independent, small proof checker and explicit behavior contracts; track exactly which statements are proved, disproved and unknown.

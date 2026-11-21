@@ -1,11 +1,47 @@
-// B .NET v0.2: explicit signatures, guarded JSON-lines values, no arbitrary reflection.
+// B .NET v0.3: explicit signatures, guarded JSON-lines values, no arbitrary reflection.
 using System.Text.Json;
 using System.Text.RegularExpressions;
+using System.Reflection;
 
 static class Program
 {
-    static int Main()
+    static int Main(string[] cliArgs)
     {
+        if (cliArgs.Length == 1 && cliArgs[0] == "--describe")
+        {
+            // Reflect the exact overloads the transport can invoke. This is
+            // metadata discovery, not permission to call arbitrary .NET APIs.
+            var permitted = new Dictionary<string, string[]>
+            {
+                ["System.Math"] = new[] { "Abs", "Max", "Min", "Pow", "Sqrt" },
+                ["System.Text.RegularExpressions.Regex"] = new[] { "IsMatch" }
+            };
+            var types = new SortedDictionary<string, object>();
+            foreach (var (typeName, names) in permitted)
+            {
+                Type type = typeName == "System.Math" ? typeof(Math) : typeof(Regex);
+                var methods = type.GetMethods(BindingFlags.Static | BindingFlags.Public)
+                    .Where(m => names.Contains(m.Name))
+                    .Where(m => m.ReturnType == typeof(double) || m.ReturnType == typeof(bool))
+                    .Where(m => m.GetParameters().All(p => p.ParameterType == typeof(double) || p.ParameterType == typeof(string)))
+                    .Where(m => typeName == "System.Math"
+                        ? m.GetParameters().All(p => p.ParameterType == typeof(double)) && m.ReturnType == typeof(double)
+                        : m.Name == "IsMatch" && m.GetParameters().Length == 2 && m.ReturnType == typeof(bool))
+                    .OrderBy(m => m.Name, StringComparer.Ordinal)
+                    .Select(m => new
+                    {
+                        name = m.Name,
+                        @params = m.GetParameters().Select(p => p.ParameterType == typeof(double) ? "Float" : "Text").ToArray(),
+                        result = m.ReturnType == typeof(double) ? "Float" : "Bool"
+                    })
+                    .ToArray();
+                types[typeName] = methods;
+            }
+            Console.WriteLine(JsonSerializer.Serialize(new { schema = 1, runtime = "B.NetHost/.NET10", types }));
+            return 0;
+        }
+        if (cliArgs.Length != 0) { Console.Error.WriteLine("Unknown option"); return 2; }
+
         string? line;
         while ((line = Console.ReadLine()) is not null)
         {

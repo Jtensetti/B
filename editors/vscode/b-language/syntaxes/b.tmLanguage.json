@@ -1,16 +1,16 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "B",
-  "scopeName": "source.bsrc",
+  "scopeName": "source.bee",
   "patterns": [
-    {"name": "comment.line.number-sign.bsrc", "match": "#.*$"},
-    {"name": "string.quoted.double.bsrc", "begin": "\"", "end": "\"", "patterns": [{"name": "constant.character.escape.bsrc", "match": "\\\\(?:[\\\"\\\\/bfnrt]|u[0-9a-fA-F]{4})"}]},
-    {"name": "keyword.control.bsrc", "match": "\\b(?:if|then|else|and|or|not|assert)\\b"},
-    {"name": "keyword.declaration.bsrc", "match": "\\b(?:use|foreign|let|fn|as|print)\\b"},
-    {"name": "support.type.bsrc", "match": "\\b(?:Int|Float|Bool|Text|Any|List)\\b"},
-    {"name": "constant.language.bsrc", "match": "\\b(?:true|false|none)\\b"},
-    {"name": "constant.numeric.bsrc", "match": "\\b\\d+(?:\\.\\d+)?\\b"},
-    {"name": "support.constant.bsrc", "match": "\\b(?:py|net)(?=:)"},
-    {"name": "keyword.operator.bsrc", "match": "(?:->|==|!=|<=|>=|[+\\-*/%<>:=])"}
+    {"name": "comment.line.number-sign.bee", "match": "#.*$"},
+    {"name": "string.quoted.double.bee", "begin": "\"", "end": "\"", "patterns": [{"name": "constant.character.escape.bee", "match": "\\\\(?:[\\\"\\\\/bfnrt]|u[0-9a-fA-F]{4})"}]},
+    {"name": "keyword.control.bee", "match": "\\b(?:if|then|else|and|or|not|assert)\\b"},
+    {"name": "keyword.declaration.bee", "match": "\\b(?:use|foreign|let|fn|as|print)\\b"},
+    {"name": "support.type.bee", "match": "\\b(?:Int|Float|Bool|Text|Any|List)\\b"},
+    {"name": "constant.language.bee", "match": "\\b(?:true|false|none)\\b"},
+    {"name": "constant.numeric.bee", "match": "\\b\\d+(?:\\.\\d+)?\\b"},
+    {"name": "support.constant.bee", "match": "\\b(?:py|net)(?=:)"},
+    {"name": "keyword.operator.bee", "match": "(?:->|==|!=|<=|>=|[+\\-*/%<>:=])"}
   ]
 }
