@@ -63,3 +63,11 @@ b run examples/polytypes.bee
 19. **Typed fallback with no duplicated effects:** `optional ?? fallback` requires `Option[T]`, rejects incompatible defaults, evaluates the optional-producing expression once and never evaluates the default unless needed. A stateful foreign function is used as the regression test.
 
 As in earlier versions, these are language and interoperability tests, **not** measurements of independent AI-generated code quality, total cost per correct task, or general proof of imported library behavior.
+
+## B 0.5 experimental results (2026-11-21)
+
+- Checked BIR is now used as the Python backend's input. The language's earlier Python AST lowering path was replaced, while the existing test suite remains a regression oracle.
+- Tests cover typed BIR export, distinct Python/.NET symbols, explicit null literal serialization, refusal of malformed IR operations, constant folding, foreign side-effect preservation, CLI reporting and conservative library coverage audit.
+- Large-package audit on locally installed NumPy, pandas, SciPy, SymPy and Pydantic finds **very low static coverage**. This is expected for B's small type language; it is an exposed blocker, not evidence of universal support. Details and precise denominators in [library audit](library-audit.md).
+- A dynamic NumPy call works in non-strict mode; the checker does **not** understand NumPy's API signature in strict mode.
+- None of these tests measures AI code-generation performance or proves the compiler semantically correct on all B programs.

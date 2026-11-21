@@ -37,3 +37,18 @@ jobs:
       - run: b inspect py:b_examples.poly_lib --json
       - run: b check examples/coalesce.bee --strict
       - run: b run examples/coalesce.bee
+
+      - run: b ir examples/polyglot.bee --strict > /tmp/bir.json
+      - run: python -c "import json; d=json.load(open('/tmp/bir.json')); assert d['schema']=='bir' and d['version']==1"
+      - run: b audit py:b_examples.demo_lib --json
+  large-library-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: python -m pip install -e '.[dev]' 'numpy>=2,<3'
+      - run: b audit py:numpy --json
+      - run: b run examples/numpy_unchecked.bee
+      - run: pytest -q tests/test_audit.py

@@ -4,39 +4,29 @@
 
 A new programming language with defined semantics and a compiler/runtime that reuses foreign ecosystems through typed adapters. The future machine-facing representation should optimize **total cost per independently correct result**, not merely source length.
 
-## Implemented pipeline (v0.3)
+## Implemented pipeline (v0.5)
 
 ```text
-.bee source (.bsrc / .b compatible)
-        |
-        v
-B Lark grammar -> B Expr/Stmt syntax tree
-        |
-        v
-B checker: names, types, known constants, conditions
-        |                              \
-        |                              +-- diagnostics, assumed foreign contracts
-        v
-Python AST lowering (backend implementation, NOT B syntax)
-        |
-        v
-Python bytecode -> CPython libraries
-        |
-        +-------------> typed JSON-lines .NET host
-                          System.Math and Regex.IsMatch
+.bee -> B grammar -> B syntax AST -> B checker and foreign catalog
+                                    | warnings / trusted assumptions
+                                    v
+                        BIR v1 (backend-neutral, typed)
+                                    |
+                         pure BIR simplification
+                                    |
+                           Python AST backend
+                             /             \
+                          CPython        JSON-lines .NET host
+                         packages       Math/Regex allowlist
 ```
 
-- Native B `if` expressions and single-assignment bindings are part of the language, not agent-workflow instructions.
-- Foreign `py:` calls can use discovered `.pyi` / `.py` signatures, built-in recognized signatures or explicit B `foreign` declarations. Unknown signatures become dynamic and are rejected in strict mode.
-- The .NET bridge reflects permitted methods to a checked-in signature manifest verified in CI, and exposes only registered methods. B source declarations cannot change the adapter's executable allowlist.
-- `b check --json` makes diagnostics and foreign assumptions machine-readable for future language-model tooling.
-- `.bee` is the preferred extension; `.bsrc` and `.b` are compatible legacy forms.
+The lowering backend **consumes checked BIR**, not the parsed syntax. The foreign symbol catalog uses one shape for Python and .NET function signatures, includes provenance and never claims behavior is proved. See [BIR](bir.md) and [library coverage](library-audit.md).
 
-This is **not yet** a native ahead-of-time compiler. B lowers to Python AST. Its type checker is incomplete, and its runtime is not isolated from malicious foreign code.
+The JSON BIR view (`b ir`) cannot be supplied directly as trusted executable input: it is not independently verified on re-import.
 
 ## Proposed design beyond v0.3
 
-1. **Canonical typed B IR:** operation graph with versioned serialization and semantics independent of Python AST.
+1. **Canonical typed B IR (partially implemented):** BIR v1 is a typed semantic tree with a JSON inspection view and one lowering backend; stable IDs, executable deserialization and additional backends are not implemented.
 2. **Verified B core:** independent, small proof checker and explicit behavior contracts; track exactly which statements are proved, disproved and unknown.
 3. **Generated interfaces:** Python `.pyi`, .NET assembly metadata, C ABI, Rust bindings and Wasm component/WIT produce version-pinned signatures with provenance and conversion rules.
 4. **Runtime bridges:** keep native data inside its home runtime; share array/handle data only when lifetime and ownership are controlled.

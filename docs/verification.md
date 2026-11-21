@@ -54,3 +54,7 @@ The codebase is an experimental **trusted-code toolchain**. The .NET host narrow
 - Recursively check `Dict[Text,T]`, `List[T]` and `Option[T]` at declared/foreign boundaries.
 - Reject statically known heterogeneous list/dictionary literals before attempting execution.
 - Importantly, these extend **type checking**, not behavioral verification of foreign libraries.
+
+## B 0.5 IR correctness boundary
+
+The typed BIR is created only after existing B checks. Its producer is trusted and its consumer is the Python AST backend. JSON output is informational; B does not accept untrusted JSON IR as executable input, avoiding type-forgery attacks by construction. The optimizer folds only pure literal operations and never evaluates or reorders imported calls or erases boundary guards. Regression tests check these assumptions for the implemented subset.
