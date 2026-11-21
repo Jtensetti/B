@@ -6,18 +6,59 @@ import json
 import sys
 from pathlib import Path
 
+from . import __version__
 from .compiler import compile_b
+from .impact import compare
 from .types import BError
 
 
+SPEC_VERSION = __version__.rsplit(".", 1)[0]
+
+
+def compile_file(path: Path):
+    if path.suffix.lower() not in (".bee", ".b4", ".bsrc", ".b"):
+        raise BError("E_EXTENSION", "Expected .bee (preferred), .b4, .bsrc or legacy .b source file")
+    return compile_b(path.read_text(encoding="utf-8"))
+
+
+def show_impact(args) -> int:
+    revisions = []
+    for revision, path in (("before", args.before), ("after", args.after)):
+        try:
+            revisions.append(compile_file(path).analysis)
+        except (BError, OSError, ValueError, RuntimeError) as exc:
+            error = {"code": getattr(exc, "code", "E_INPUT"), "message": str(exc)}
+            if args.json:
+                print(json.dumps({"status": "rejected", "revision": revision, "error": error}))
+            else:
+                print(f"B impact ({revision}, {path}): {exc}", file=sys.stderr)
+            return 1
+    report = compare(*revisions)
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False))
+    else:
+        for row in report["changes"]:
+            old, new = row["before"], row["after"]
+            item = new or old
+            location = f"{old['site']} -> {new['site']}" if row["moved"] else item["site"]
+            condition = item["requirement"]
+            if old and new and old["requirement"] != new["requirement"]:
+                condition = f"{old['requirement']} -> {new['requirement']}"
+            print(f"{row['change']} {item['caller']} [{location}] {condition}: "
+                  f"{old['status'] if old else '-'} -> {new['status'] if new else '-'}")
+        print(f"{len(report['changes'])} changed obligation(s), {report['unchanged']} unchanged")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.7")
+    parser = argparse.ArgumentParser(prog="b", description=f"B programming language v{SPEC_VERSION}")
     sub = parser.add_subparsers(dest="command", required=True)
     for cmd in ("check", "run", "build"):
         p = sub.add_parser(cmd)
         p.add_argument("file", type=Path, help="B source file (.bee preferred; .b4, .bsrc and .b supported)")
         p.add_argument("--strict", action="store_true", help="Reject unresolved static checks")
         if cmd == "check":
+            p.add_argument("--require-proofs", action="store_true", help="Reject any reported contract or divisor obligation without a static proof")
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
     ir_command = sub.add_parser("ir", help="Emit the checked, backend-neutral BIR as JSON")
     ir_command.add_argument("file", type=Path)
@@ -34,7 +75,13 @@ def main(argv: list[str] | None = None) -> int:
     adopt_audit = sub.add_parser("adopt-audit", help="List Python leaf functions B can compile as checked native functions")
     adopt_audit.add_argument("target", help="py:module.name")
     adopt_audit.add_argument("--json", action="store_true")
+    impact = sub.add_parser("impact", help="Compare contract obligations in two revisions")
+    impact.add_argument("before", type=Path)
+    impact.add_argument("after", type=Path)
+    impact.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "impact":
+        return show_impact(args)
     if args.command == "adopt-audit":
         from .adoption import audit_adoptable
         try:
@@ -131,22 +178,18 @@ def main(argv: list[str] | None = None) -> int:
             return 1
     machine = args.command == "check" and args.json
     try:
-        if args.file.suffix.lower() not in (".bee", ".b4", ".bsrc", ".b"):
-            raise BError("E_EXTENSION", "Expected .bee (preferred), .b4, .bsrc or legacy .b source file")
-        source = args.file.read_text(encoding="utf-8")
-        result = compile_b(source, strict=False)
+        result = compile_file(args.file)
+        unresolved = [o for o in result.analysis.obligations if o.status != "proved"]
+        rejection = None
         if args.strict and result.diagnostics:
-            if machine:
-                print(json.dumps({
-                    "status": "rejected", "language": "B", "spec": "0.7", "strict": True,
-                    "error": {"code": "E_STRICT", "message": "Unresolved static warnings"},
-                    "diagnostics": [vars(d) for d in result.diagnostics],
-                    "assumed_foreign_contracts": result.assumptions,
-                    "detected_effects": list(result.ir.detected_effects),
-                    "permitted_effects": list(result.ir.permitted_effects) if result.ir.permitted_effects is not None else None,
-                }, ensure_ascii=False))
-                return 1
-            raise BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
+            rejection = BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
+        elif args.command == "check" and args.require_proofs and unresolved:
+            rejection = BError("E_PROOF_REQUIRED", f"{len(unresolved)} obligation(s) lack a static proof")
+        if rejection and not machine:
+            if args.command == "check":
+                for item in unresolved:
+                    print(item.describe(), file=sys.stderr)
+            raise rejection
         if args.command == "ir":
             print(json.dumps((result.optimized_ir if args.optimized else result.ir).to_dict(), ensure_ascii=False, indent=2, sort_keys=True))
         elif args.command == "build":
@@ -154,7 +197,9 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "check":
             if machine:
                 print(json.dumps({
-                    "status": "accepted", "language": "B", "spec": "0.7",
+                    "status": "rejected" if rejection else "accepted", "language": "B", "spec": SPEC_VERSION,
+                    **({"error": {"code": rejection.code, "message": rejection.message}} if rejection else {}),
+                    "contract_analysis": result.analysis.to_dict(),
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -168,9 +213,13 @@ def main(argv: list[str] | None = None) -> int:
             else:
                 for d in result.diagnostics:
                     print(f"{d.level.upper()} {d.code}: {d.message}")
+                for item in unresolved:
+                    if item.kind == "nonzero":
+                        print(item.describe())
                 for assumption in result.assumptions:
                     print(f"ASSUMED FOREIGN CONTRACT: {assumption}")
-                print(f"B check: {len(result.diagnostics)} unresolved warning(s); syntax and B types valid")
+                print(f"B check: {len(result.diagnostics)} warning(s), {len(unresolved)} unproved obligation(s)")
+            return 1 if rejection else 0
         elif args.command == "run":
             # Running B can run imported Python/.NET code; this is not a sandbox.
             namespace = {"__name__": "__b_program__"}
@@ -179,7 +228,7 @@ def main(argv: list[str] | None = None) -> int:
     except (BError, OSError, RuntimeError, AssertionError, ImportError, ValueError, TypeError, ZeroDivisionError) as exc:
         if machine:
             print(json.dumps({
-                "status": "rejected", "language": "B", "spec": "0.7",
+                "status": "rejected", "language": "B", "spec": SPEC_VERSION,
                 "error": {"code": getattr(exc, "code", "E_RUNTIME"), "message": str(exc)},
             }, ensure_ascii=False))
         else:

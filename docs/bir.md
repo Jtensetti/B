@@ -65,3 +65,5 @@ A proof status applies **only** to that explicit predicate, under the function's
 ## B 0.7 Python source adoption
 
 `adopt py:MODULE.function as alias` produces an ordinary **native** BIR function with the checked function body. Its statement retains `backend: "py-source"` and `target: "py:MODULE.function@sha256:..."` for provenance. This is intentionally different from a `foreign_symbols` entry: the compiled program executes the B function, not an external Python callable. A SHA digest identifies read source bytes but is not a certificate that the original Python algorithm is correct. `behavior_proven` stays `false`. Unsupported source is rejected rather than being reclassified as pure. See [source adoption](source-adoption.md).
+
+B 0.8 adds an optional `constant_precondition_proved` marker to a native call in BIR v2. It records a compiler check after scalar boundary conversion. The per-site contract report is computed on checked, unoptimized BIR. See [contract analysis](composition.md).

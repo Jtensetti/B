@@ -2,11 +2,25 @@
 
 **B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
 
-**Version 0.7 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.8 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
 
-## New in B 0.7: checked Python source adoption
+## What happens when a contract changes?
+
+A provider used to promise a positive count. Its new contract permits zero. B 0.8 can follow that change into two callers. Adding a reserve of ten still produces at least ten. Dividing a cost by the count loses its guarantee that the denominator is nonzero.
+
+```sh
+b impact examples/revisions/count-positive.bee examples/revisions/count-zero.bee
+b check examples/revisions/count-positive.bee --strict --require-proofs --json
+b check examples/revisions/count-zero.bee --require-proofs --json  # exits 1
+```
+
+The report identifies the function, expression site, requirement, proof status and direct dependencies. Native B functions can use independently established integer contracts across calls. The analysis distinguishes a lost guarantee from a demonstrated runtime failure. See [contract analysis and revision comparison](docs/composition.md).
+
+In a [single-task AI maintenance pilot](experiments/change-pilot/README.md), B 0.7, B 0.8 and typed Python each passed the same 110 behavior checks. A separate partial edit passed all four public examples while breaking two callers. B 0.8 identified both lost proofs. Total token and inference costs were unmeasured.
+
+## Checked Python source adoption (0.7)
 
 B can now compile a **small, explicitly restricted subset of Python source into native B functions**, rather than importing an entire Python module at runtime:
 
@@ -33,7 +47,7 @@ print successor(41)
 
 `pure` forbids unknown foreign effects inside a B function. `permit [...]` tracks a small set of program effects (`console` and `foreign`), **not actual OS capabilities**. BIR records whether a postcondition is proved using integer intervals or only checked at runtime. An imported function's type does not prove its behavior. See [the contract and effect specification](docs/contracts-effects.md).
 
-## BIR pipeline (introduced in B 0.5, extended in 0.7)
+## BIR pipeline
 
 A real, **typed backend-neutral intermediate representation (BIR)** sits between B source and the executable backend:
 
@@ -114,11 +128,12 @@ This limitation matters more than adding new punctuation or another file extensi
 | BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
 | Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
 | .NET libraries | Restricted `System.Math` and `Regex` host, metadata verified in CI | Arbitrary assemblies, object models, reflection-based adapters |
-| Correctness | Static types/errors, narrow integer interval proofs, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
+| Correctness | Static types/errors, local and cross-function integer interval proofs, revision comparison, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
 | AI advantage | Explicit machine-readable IR and diagnostics | Any measured improvement in AI's correctness or tokens |
 
 ## Project references
 
+- [Contract analysis and revision comparison (0.8)](docs/composition.md)
 - [Language and grammar](docs/language.md)
 - [Source adoption (0.7): rules, measured limits and BIR provenance](docs/source-adoption.md)
 - [Contracts, interval proofs and effects (0.6)](docs/contracts-effects.md)

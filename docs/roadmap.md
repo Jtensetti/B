@@ -2,6 +2,14 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## B 0.8 and the next experiment
+
+- [x] Track checked integer guarantees across native calls. Compare obligations between working revisions and identify a lost divisor proof separately from callers whose guarantees still hold.
+The [billing pilot](../experiments/change-pilot/README.md) found two correct repairs. Guarding the actual count makes both division proofs pass in 0.8. Guarding the original input also passes the behavior oracle, but would need the relation “positive input implies positive output” to cross the call boundary. Compare the cost of teaching the existing pattern against supporting a small class of such relations before committing to a larger verifier.
+
+- [ ] Measure AI-assisted changes over a varied set of held-out tasks, with the same B compiler and richer diagnostics shown or hidden, and a typed Python comparison. Include specification-only edits, genuine regressions and harmless refactors. Count the cost of creating and maintaining the contracts and the cost of failed runs.
+- [ ] Compare the same contract diagnostics exposed as a Python tool. The result bears directly on the value of a separate language.
+
 ## Implemented through B 0.7
 
 - [x] Experimental `adopt py:MODULE.function as name`: convert an annotated single-expression Python source leaf into a pure, checked native B function, without runtime module imports. Record exact source SHA-256 in BIR.

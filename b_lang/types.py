@@ -152,6 +152,23 @@ def needs_dynamic_guard(actual: Type, expected: Type) -> bool:
     return False
 
 
+def needs_numeric_widening(actual: Type, expected: Type) -> bool:
+    """Whether adopting a common type changes an integer's runtime value."""
+    if expected.name == "Option":
+        contained = actual.args[0] if actual.name == "Option" else actual
+        return needs_numeric_widening(contained, expected.args[0])
+    if actual.name == expected.name and actual.name in ("List", "Dict"):
+        return needs_numeric_widening(actual.args[-1], expected.args[-1])
+    return actual == INT and expected == FLOAT
+
+
+def supports_ordering(typ: Type) -> bool:
+    """Lists compare lexicographically. Dynamic operands defer to runtime."""
+    while typ.name == "List":
+        typ = typ.args[0]
+    return typ in (BOOL, INT, FLOAT, TEXT, ANY)
+
+
 def parse_descriptor(text: str) -> Type:
     """Parse trusted compiler-generated type descriptors without eval()."""
     import re

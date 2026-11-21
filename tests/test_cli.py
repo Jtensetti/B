@@ -9,7 +9,7 @@ def test_bsrc_is_preferred_source_and_check_json(tmp_path: Path, capsys):
     assert main(['check', str(example), '--strict', '--json']) == 0
     record = json.loads(capsys.readouterr().out)
     assert record['status'] == 'accepted'
-    assert record['spec'] == '0.7'
+    assert record['spec'] == '0.8'
     assert record['diagnostics'] == []
     assert record['behavior_proven'] is False
 
@@ -53,3 +53,38 @@ def test_strict_json_rejection_includes_diagnostic_details(tmp_path: Path, capsy
     obj = json.loads(capsys.readouterr().out)
     assert obj['error']['code'] == 'E_STRICT'
     assert any(d['code'] == 'W_UNCHECKED_FOREIGN' for d in obj['diagnostics'])
+
+
+def test_compare_revisions_and_gate_proofs(capsys):
+    fixtures = Path(__file__).resolve().parents[1] / "examples" / "revisions"
+    before, after = (str(fixtures / f"count-{suffix}.bee") for suffix in ("positive", "zero"))
+    assert main(["check", before, "--require-proofs", "--strict", "--json"]) == 0
+    old = json.loads(capsys.readouterr().out)
+    statuses = {f["name"]: f["postcondition_status"] for f in old["function_contracts"]}
+    assert statuses["total_with_reserve"] == "proved-composition"
+    assert main(["check", after, "--require-proofs", "--json"]) == 1
+    new = json.loads(capsys.readouterr().out)
+    assert new["error"]["code"] == "E_PROOF_REQUIRED"
+    unresolved = [o for o in new["contract_analysis"]["obligations"] if o["status"] != "proved"]
+    assert [(o["kind"], o["caller"], o["dependencies"]) for o in unresolved] == [
+        ("nonzero", "cost_per_item", ["count"])
+    ]
+    assert main(["impact", before, after, "--json"]) == 0
+    impact = json.loads(capsys.readouterr().out)
+    assert [(r["after"]["caller"], r["after"]["status"]) for r in impact["changes"]
+            if r["change"] == "lost-proof"] == [("cost_per_item", "unknown")]
+    assert impact["unchanged"] > 0
+
+
+def test_impact_distinguishes_removed_obligation_from_a_proof(tmp_path, capsys):
+    before = tmp_path / "old.bee"
+    before.write_text("fn ratio(n: Int) -> Float = 1 / n")
+    after = tmp_path / "new.bee"
+    after.write_text("fn ratio(n: Int) -> Float = 0.0")
+    assert main(["impact", str(before), str(after), "--json"]) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert [c["change"] for c in report["changes"]] == ["removed"]
+    after.write_text("fn =")
+    assert main(["impact", str(before), str(after), "--json"]) == 1
+    report = json.loads(capsys.readouterr().out)
+    assert report["revision"] == "after" and report["error"]["code"] == "E_SYNTAX"
