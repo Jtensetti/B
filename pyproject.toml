@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "b-language"
-version = "0.6.0"
-description = "B: a typed programming language with semantic IR, contracts and effect checks"
+version = "0.7.0"
+description = "B: a typed programming language with semantic IR, contracts, effects and verified-source adoption"
 readme = "README.md"
 requires-python = ">=3.11"
 license = "MIT"

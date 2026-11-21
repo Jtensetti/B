@@ -61,3 +61,7 @@ The unoptimized BIR retains the original checked expression tree; `--optimized` 
 `ProgramIR` now includes `permitted_effects` (`null` when not declared) and `detected_effects`. Each function statement may include `declared_pure`, inferred `effects`, checked `requires` and `ensures` expressions, and `postcondition_status` of `proved-interval` or `runtime-check`. These fields are part of the checked IR, not comments injected into generated Python. The Python backend emits and preserves runtime checks from BIR.
 
 A proof status applies **only** to that explicit predicate, under the function's `requires` assumptions. The `behavior_proven: false` program-level flag remains deliberately false. See [contracts and effects](contracts-effects.md).
+
+## B 0.7 Python source adoption
+
+`adopt py:MODULE.function as alias` produces an ordinary **native** BIR function with the checked function body. Its statement retains `backend: "py-source"` and `target: "py:MODULE.function@sha256:..."` for provenance. This is intentionally different from a `foreign_symbols` entry: the compiled program executes the B function, not an external Python callable. A SHA digest identifies read source bytes but is not a certificate that the original Python algorithm is correct. `behavior_proven` stays `false`. Unsupported source is rejected rather than being reclassified as pure. See [source adoption](source-adoption.md).

@@ -11,7 +11,7 @@ from .types import BError
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.6")
+    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.7")
     sub = parser.add_subparsers(dest="command", required=True)
     for cmd in ("check", "run", "build"):
         p = sub.add_parser(cmd)
@@ -31,7 +31,32 @@ def main(argv: list[str] | None = None) -> int:
     inspect.add_argument('--json', action='store_true', help='Machine-readable result')
     inspect.add_argument('--live', action='store_true', help='Read live .NET metadata instead of the checked-in snapshot')
     inspect.add_argument('--verify', action='store_true', help='Fail if the live .NET metadata differs from the snapshot')
+    adopt_audit = sub.add_parser("adopt-audit", help="List Python leaf functions B can compile as checked native functions")
+    adopt_audit.add_argument("target", help="py:module.name")
+    adopt_audit.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "adopt-audit":
+        from .adoption import audit_adoptable
+        try:
+            if not args.target.startswith("py:"):
+                raise BError("E_ADOPT", "Expected py:module.name")
+            report = audit_adoptable(args.target[3:])
+            if args.json:
+                print(json.dumps(report, ensure_ascii=False, sort_keys=True))
+            else:
+                print(f"{report['target']}: {report['adoptable']}/{report['public_top_level_functions']} adoptable source functions")
+                for name in report['accepted']:
+                    print(f"  + {name}")
+                for name, data in report['rejected'].items():
+                    print(f"  - {name}: {data['code']} {data['reason']}")
+            return 0
+        except (BError, OSError, RuntimeError) as exc:
+            if args.json:
+                print(json.dumps({"status": "rejected", "error": {"code": getattr(exc, "code", "E_ADOPT"), "message": str(exc)}}, ensure_ascii=False))
+            else:
+                print(f"B adopt-audit: {exc}", file=sys.stderr)
+            return 1
+
     if args.command == "audit":
         from .audit import audit_python
         try:
@@ -113,7 +138,7 @@ def main(argv: list[str] | None = None) -> int:
         if args.strict and result.diagnostics:
             if machine:
                 print(json.dumps({
-                    "status": "rejected", "language": "B", "spec": "0.6", "strict": True,
+                    "status": "rejected", "language": "B", "spec": "0.7", "strict": True,
                     "error": {"code": "E_STRICT", "message": "Unresolved static warnings"},
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -129,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "check":
             if machine:
                 print(json.dumps({
-                    "status": "accepted", "language": "B", "spec": "0.6",
+                    "status": "accepted", "language": "B", "spec": "0.7",
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -154,7 +179,7 @@ def main(argv: list[str] | None = None) -> int:
     except (BError, OSError, RuntimeError, AssertionError, ImportError, ValueError, TypeError, ZeroDivisionError) as exc:
         if machine:
             print(json.dumps({
-                "status": "rejected", "language": "B", "spec": "0.6",
+                "status": "rejected", "language": "B", "spec": "0.7",
                 "error": {"code": getattr(exc, "code", "E_RUNTIME"), "message": str(exc)},
             }, ensure_ascii=False))
         else:

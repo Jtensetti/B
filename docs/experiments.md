@@ -79,3 +79,9 @@ The experimental feature set is intentionally narrow. The local check reports th
 `tests/test_contracts_differential.py` uses a fixed seed to construct 240 bounded integer contracts and compares `proved-interval` claims against enumerated actual executions. This regression check did **not** find a counterexample; it is neither a formal soundness proof nor a comparison of different AI models. See [the specification](contracts-effects.md).
 
 The actual research hypothesis is unproven: whether B's native contracts/effects reduce end-to-end AI programming cost compared with mature existing tools at equal budgets. This must be tested independently later.
+
+## B 0.7 – native adoption of foreign Python source (21 November 2026)
+
+`b adopt-audit py:MODULE --json` measures functions **eligible to be recompiled as native B** under the tiny typed-expression subset (not all library functions and not all Python interop). Observed using local CPython 3.13: controlled `b_examples.pure_kernels` 5/9, standard library `statistics` 0/20, standard library `textwrap` 0/5. The failure on large real libraries is a meaningful limitation, not evidence that the language is universally compatible. The local regression suite includes 2,000 seeded result comparisons between admitted B functions and their Python-source counterparts, plus tests for rejection of calls, global state, decorated functions, invalid types, unsupported syntax, and modules with import-time side effects. These are empirical regression checks, not general semantic equivalence proofs.
+
+Use `python -m scripts.benchmark_adoption` to rerun the observations and `b ir examples/adopt.bee --strict` to inspect inlined native BIR and source hashes. **Next gate:** measure adoption eligibility in real packages; make controlled ABI/interop comparisons; only expand accepted Python syntax when its semantics can be matched exactly for the B type domain. An independent AI implementation benchmark remains pending.

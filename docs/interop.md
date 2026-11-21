@@ -64,3 +64,7 @@ The discovery reader now supports a **small explicit subset** of `@overload` set
 `b_lang.interop.ForeignCatalog` uses a common `ForeignSymbol` representation for discovered Python functions and .NET host metadata. A typed call retains its adapter (`py` / `net`), full foreign name, assumed signature and provenance; `behavior_proven` remains false. `b ir` displays only the typed external functions actually called. The Python backend then lowers those references to the existing CPython importer or allowlisted .NET host.
 
 `b audit py:MODULE` reports a narrowly defined *direct public function declaration* coverage metric, **not** a package-level completeness claim. The 2026-11-21 observation found almost no support for large scientific libraries' complex public annotations. See [the full audit](library-audit.md). The compiler still allows dynamic Python calls in non-strict mode, but that is not equivalent to statically checked compatibility.
+
+## Checked source adoption (B 0.7)
+
+Separate from `use`, the `adopt py:MODULE.function as local` operation may statically translate a tiny single-expression Python function into an ordinary native B function. No Python module import is emitted. A source SHA-256 appears in the BIR function origin; unsupported constructs are rejected. The tool does not claim that arbitrary Python code is pure or behaviorally verified. See [source adoption and coverage](source-adoption.md).

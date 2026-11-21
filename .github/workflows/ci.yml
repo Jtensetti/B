@@ -41,6 +41,11 @@ jobs:
       - run: b ir examples/polyglot.bee --strict > /tmp/bir.json
       - run: python -c "import json; d=json.load(open('/tmp/bir.json')); assert d['schema']=='bir' and d['version']==2"
       - run: b audit py:b_examples.demo_lib --json
+      - run: b check examples/adopt.bee --strict --json
+      - run: b run examples/adopt.bee
+      - run: b adopt-audit py:b_examples.pure_kernels --json
+      - run: b adopt-audit py:statistics --json
+      - run: python -m scripts.benchmark_adoption
       - run: b check examples/contracts.bee --strict --json
       - run: b run examples/contracts.bee
       - run: b check examples/effects.bee --strict --json

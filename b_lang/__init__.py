@@ -1,2 +1,2 @@
-"""B language prototype: parser, checker and Python lowering."""
-__version__ = "0.1.0"
+"""B: experimental language, type checker and backend-neutral BIR."""
+__version__ = "0.7.0"

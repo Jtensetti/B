@@ -62,6 +62,7 @@ class ToModel(Transformer):
     def comparison(self, xs): return Expr("cmp", (xs[0], str(xs[1]), xs[2]))
     def foreign_stmt(self, xs): return Stmt("foreign", (xs[0], xs[1] or [], xs[2]))
     def use_stmt(self, xs): return Stmt("use", (str(xs[0]), xs[1], str(xs[2])))
+    def adopt_stmt(self, xs): return Stmt("adopt", (str(xs[0]), str(xs[1])))
     def let_stmt(self, xs): return Stmt("let", (str(xs[0]), xs[1], xs[2]))
     def fn_stmt(self, xs):
         flags = {key: value for item in xs[3:-1] if item is not None for key, value in (item,)}
