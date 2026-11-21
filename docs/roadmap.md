@@ -2,10 +2,17 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
-## B 0.8 and the next experiment
+## B 0.9
+
+The compiler supports a [bounded fragment of conditional integer guarantees](conditional-guarantees.md). On the same checker a rule can be switched off, and optional repair guidance switched on. The [maintenance pilot](../experiments/law-pilot/README.md) exercises both interventions. A [separate correspondence experiment](../experiments/operator-correspondence/README.md) asks which input is most informative when several interpretations of an operation agree on familiar examples.
+
+A candidate next experiment is to start with competing contracts inferred from examples, choose an input that separates them, and send the surviving candidate to the verifier. Measure how often this finds a useful contract, the cost of unsuccessful proposals and the frequency of missing the true rule when the candidate family is too narrow.
+
+## B 0.8
 
 - [x] Track checked integer guarantees across native calls. Compare obligations between working revisions and identify a lost divisor proof separately from callers whose guarantees still hold.
-The [billing pilot](../experiments/change-pilot/README.md) found two correct repairs. Guarding the actual count makes both division proofs pass in 0.8. Guarding the original input also passes the behavior oracle, but would need the relation “positive input implies positive output” to cross the call boundary. Compare the cost of teaching the existing pattern against supporting a small class of such relations before committing to a larger verifier.
+
+The [billing pilot](../experiments/change-pilot/README.md) found two correct repairs. Guarding the actual count makes both division proofs pass in 0.8. Guarding the original input also passed the behavior oracle. Its unresolved proof motivated the conditional-guarantee experiment in 0.9.
 
 - [ ] Measure AI-assisted changes over a varied set of held-out tasks, with the same B compiler and richer diagnostics shown or hidden, and a typed Python comparison. Include specification-only edits, genuine regressions and harmless refactors. Count the cost of creating and maintaining the contracts and the cost of failed runs.
 - [ ] Compare the same contract diagnostics exposed as a Python tool. The result bears directly on the value of a separate language.

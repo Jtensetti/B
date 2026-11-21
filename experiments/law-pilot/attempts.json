@@ -1,0 +1,69 @@
+[
+  {
+    "condition": "ordinary",
+    "check": 1,
+    "status": "rejected",
+    "obligations": 6,
+    "unproved": [
+      "calibrated",
+      "raise_event",
+      "lower_event"
+    ],
+    "hints": [],
+    "json_bytes": 3098,
+    "report_sha256": "61b606207ff9d132e975d165112453666ae228899d5fa54c359470b484ae2b1f"
+  },
+  {
+    "condition": "ordinary",
+    "check": 2,
+    "status": "accepted",
+    "obligations": 5,
+    "unproved": [],
+    "hints": [],
+    "json_bytes": 2268,
+    "report_sha256": "9022e0980e18d3ee2ab587fa0bdce06e89f0a4627b0d4c7161214f245be28a16"
+  },
+  {
+    "condition": "targeted-feedback",
+    "check": 1,
+    "status": "rejected",
+    "obligations": 6,
+    "unproved": [
+      "calibrated",
+      "raise_event",
+      "lower_event"
+    ],
+    "hints": [
+      {
+        "target": "raise_event",
+        "suggestion": "Evaluate calibrated(step) once and test its result before the call, or prove calibrated(step) > 0 from a contract relating the producer's result to its input. Preserve the required behavior outside the bound."
+      },
+      {
+        "target": "lower_event",
+        "suggestion": "Evaluate calibrated(step) once and test its result before the call, or prove calibrated(step) < 0 from a contract relating the producer's result to its input. Preserve the required behavior outside the bound."
+      }
+    ],
+    "json_bytes": 4433,
+    "report_sha256": "c1c4471a5ec2a14ec1c0642f5a7b2d432199579f10f038ce9d36523dbc37bc3b"
+  },
+  {
+    "condition": "targeted-feedback",
+    "check": 2,
+    "status": "accepted",
+    "obligations": 5,
+    "unproved": [],
+    "hints": [],
+    "json_bytes": 2284,
+    "report_sha256": "d8a6f59b5a4d960b75514f82cb51dfaf7ebd9c744867fa9279ad6b5a277ed76d"
+  },
+  {
+    "condition": "conditional-guarantees",
+    "check": 1,
+    "status": "accepted",
+    "obligations": 6,
+    "unproved": [],
+    "hints": [],
+    "json_bytes": 2587,
+    "report_sha256": "fc6f121926295ed20b66566709e6e704f30904e9b0c33465f3aab4c9f1c725e2"
+  }
+]

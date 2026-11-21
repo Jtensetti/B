@@ -2,9 +2,20 @@
 
 **B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
 
-**Version 0.8 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.9 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## When a result depends on the input
+
+In B 0.9 a producer can publish a checked rule such as “after tick three, velocity is negative.” A caller in that time range can prove that descent speed is positive. A second caller can safely use it as a divisor. A variant in which the body rebounds at tick five loses all three proofs.
+
+```sh
+b check examples/mechanics/flight.bee --strict --require-proofs
+b impact examples/mechanics/flight.bee examples/mechanics/rebound.bee
+```
+
+On a sequencer maintenance task, six AI submissions passed all 102 behavior checks. The initial difference in checker calls disappeared when a new group learned its configuration upfront. See [conditional guarantees, examples and limits](docs/conditional-guarantees.md), the [AI maintenance experiment](experiments/law-pilot/README.md) and the [cross-language operator probe](experiments/operator-correspondence/README.md).
 
 ## What happens when a contract changes?
 

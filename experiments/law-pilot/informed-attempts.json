@@ -1,0 +1,35 @@
+[
+  {
+    "condition": "ordinary",
+    "submitted_patch": "ordinary.patch",
+    "check": 1,
+    "status": "accepted",
+    "obligations": 5,
+    "unproved": [],
+    "hints": [],
+    "json_bytes": 2268,
+    "report_sha256": "9022e0980e18d3ee2ab587fa0bdce06e89f0a4627b0d4c7161214f245be28a16"
+  },
+  {
+    "condition": "targeted-feedback",
+    "submitted_patch": "ordinary.patch",
+    "check": 1,
+    "status": "accepted",
+    "obligations": 5,
+    "unproved": [],
+    "hints": [],
+    "json_bytes": 2284,
+    "report_sha256": "d8a6f59b5a4d960b75514f82cb51dfaf7ebd9c744867fa9279ad6b5a277ed76d"
+  },
+  {
+    "condition": "conditional-guarantees",
+    "submitted_patch": "informed-conditional-guarantees.patch",
+    "check": 1,
+    "status": "accepted",
+    "obligations": 6,
+    "unproved": [],
+    "hints": [],
+    "json_bytes": 2590,
+    "report_sha256": "d6185cdf70b914c22f2ee65403abef8cec40bcee1d49f7301e9070317d7a357c"
+  }
+]

@@ -15,10 +15,10 @@ from .types import BError
 SPEC_VERSION = __version__.rsplit(".", 1)[0]
 
 
-def compile_file(path: Path):
+def compile_file(path: Path, *, conditional_guarantees: bool = True):
     if path.suffix.lower() not in (".bee", ".b4", ".bsrc", ".b"):
         raise BError("E_EXTENSION", "Expected .bee (preferred), .b4, .bsrc or legacy .b source file")
-    return compile_b(path.read_text(encoding="utf-8"))
+    return compile_b(path.read_text(encoding="utf-8"), conditional_guarantees=conditional_guarantees)
 
 
 def show_impact(args) -> int:
@@ -58,6 +58,10 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("file", type=Path, help="B source file (.bee preferred; .b4, .bsrc and .b supported)")
         p.add_argument("--strict", action="store_true", help="Reject unresolved static checks")
         if cmd == "check":
+            p.add_argument("--no-conditional-guarantees", action="store_true",
+                           help="Run the same checker with conditional result guarantees disabled")
+            p.add_argument("--explain", action="store_true",
+                           help="Explain open divisor and integer argument checks")
             p.add_argument("--require-proofs", action="store_true", help="Reject any reported contract or divisor obligation without a static proof")
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
     ir_command = sub.add_parser("ir", help="Emit the checked, backend-neutral BIR as JSON")
@@ -178,7 +182,12 @@ def main(argv: list[str] | None = None) -> int:
             return 1
     machine = args.command == "check" and args.json
     try:
-        result = compile_file(args.file)
+        use_rules = args.command != "check" or not args.no_conditional_guarantees
+        result = compile_file(args.file, conditional_guarantees=use_rules)
+        hints = []
+        if args.command == "check" and args.explain:
+            from .guidance import guidance
+            hints = guidance(result.ir, result.analysis, conditional_guarantees=use_rules)
         unresolved = [o for o in result.analysis.obligations if o.status != "proved"]
         rejection = None
         if args.strict and result.diagnostics:
@@ -189,6 +198,8 @@ def main(argv: list[str] | None = None) -> int:
             if args.command == "check":
                 for item in unresolved:
                     print(item.describe(), file=sys.stderr)
+                for hint in hints:
+                    print(f"{hint['caller']} [{hint['site']}] {hint['detail']} {hint['suggestion']}", file=sys.stderr)
             raise rejection
         if args.command == "ir":
             print(json.dumps((result.optimized_ir if args.optimized else result.ir).to_dict(), ensure_ascii=False, indent=2, sort_keys=True))
@@ -200,6 +211,8 @@ def main(argv: list[str] | None = None) -> int:
                     "status": "rejected" if rejection else "accepted", "language": "B", "spec": SPEC_VERSION,
                     **({"error": {"code": rejection.code, "message": rejection.message}} if rejection else {}),
                     "contract_analysis": result.analysis.to_dict(),
+                    "conditional_guarantees": use_rules,
+                    **({"guidance": hints} if args.explain else {}),
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -216,6 +229,8 @@ def main(argv: list[str] | None = None) -> int:
                 for item in unresolved:
                     if item.kind == "nonzero":
                         print(item.describe())
+                for hint in hints:
+                    print(f"{hint['caller']} [{hint['site']}] {hint['detail']} {hint['suggestion']}")
                 for assumption in result.assumptions:
                     print(f"ASSUMED FOREIGN CONTRACT: {assumption}")
                 print(f"B check: {len(result.diagnostics)} warning(s), {len(unresolved)} unproved obligation(s)")

@@ -9,7 +9,7 @@ def test_bsrc_is_preferred_source_and_check_json(tmp_path: Path, capsys):
     assert main(['check', str(example), '--strict', '--json']) == 0
     record = json.loads(capsys.readouterr().out)
     assert record['status'] == 'accepted'
-    assert record['spec'] == '0.8'
+    assert record['spec'] == '0.9'
     assert record['diagnostics'] == []
     assert record['behavior_proven'] is False
 
@@ -88,3 +88,45 @@ def test_impact_distinguishes_removed_obligation_from_a_proof(tmp_path, capsys):
     assert main(["impact", str(before), str(after), "--json"]) == 1
     report = json.loads(capsys.readouterr().out)
     assert report["revision"] == "after" and report["error"]["code"] == "E_SYNTAX"
+
+
+def test_conditional_rules_guidance_and_gravity_example(capsys):
+    fixtures = Path(__file__).resolve().parents[1] / "examples" / "mechanics"
+    model = str(fixtures / "flight.bee")
+    assert main(["check", model, "--require-proofs", "--strict", "--json"]) == 0
+    on = json.loads(capsys.readouterr().out)
+    assert all(o["status"] == "proved" for o in on["contract_analysis"]["obligations"])
+    assert any(f["postcondition_status"] == "proved-conditional" for f in on["function_contracts"])
+    assert "guidance" not in on
+    assert main(["check", model, "--no-conditional-guarantees", "--require-proofs", "--explain", "--json"]) == 1
+    off = json.loads(capsys.readouterr().out)
+    assert off["conditional_guarantees"] is False
+    assert off["error"]["code"] == "E_PROOF_REQUIRED"
+    assert any(o["kind"] == "nonzero" for o in off["guidance"])
+    assert main(["impact", model, str(fixtures / "rebound.bee"), "--json"]) == 0
+    diff = json.loads(capsys.readouterr().out)
+    assert {(r["after"]["caller"], r["after"]["kind"]) for r in diff["changes"]
+            if r["change"] == "lost-proof"} == {
+                ("velocity", "ensures"), ("descent_speed", "ensures"), ("time_per_unit", "nonzero")
+            }
+
+
+def test_ideal_flight_against_tick_oracle_and_rebound_counterexample():
+    import pytest
+    from b_lang.cli import compile_file
+    from b_lang.runtime import BContractError
+
+    fixtures = Path(__file__).resolve().parents[1] / "examples" / "mechanics"
+    ideal, rebounding = {}, {}
+    exec(compile_file(fixtures / "flight.bee").code, ideal)
+    exec(compile_file(fixtures / "rebound.bee").code, rebounding)
+    speed = 3
+    for tick in range(12):
+        assert ideal["velocity"](tick) == speed
+        if tick > 3:
+            assert ideal["time_per_unit"](tick) == -1 / speed
+        if tick < 5:
+            assert rebounding["velocity"](tick) == speed
+        speed -= 1
+    with pytest.raises(BContractError):
+        rebounding["velocity"](5)

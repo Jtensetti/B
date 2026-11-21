@@ -1,0 +1,6 @@
+fn calibrated(step: Int) -> Int pure requires step >= -12 and step <= 12 ensures result >= -25 and result <= 25 = if step < 0 then step * 2 - 1 else if step > 0 then step * 2 + 1 else 0
+fn raise_event(pitch: Int) -> Int pure requires pitch > 0 = 100 + pitch
+fn lower_event(pitch: Int) -> Int pure requires pitch < 0 = 200 - pitch
+fn event(step: Int) -> Int pure requires step >= -12 and step <= 12 = if step == 0 then 0 else 255
+fn preview(step: Int) -> Int pure requires step >= -12 and step <= 12 = 64 + calibrated(step)
+fn footer(channel: Int) -> Int pure = channel * 7 + 4
