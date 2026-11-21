@@ -26,13 +26,14 @@ parameter     = identifier, ":", type ;
 type_list     = type, {",", type} ;
 type          = identifier, ["[", type, {",", type}, "]"] ;
 expression    = "if", expression, "then", expression, "else", expression
-              | logical_expression ;
+              | coalesce_expression ;
+coalesce_expression = logical_expression, ["??", coalesce_expression] ;
 list          = "[", [expression, {",", expression}], "]" ;
 dictionary    = "{", [pair, {",", pair}], "}" ;
 pair          = expression, ":", expression ;
 ```
 
-Expressions also allow literals (`true`, `false`, `none`, numbers, strings), references, calls, attribute access and grouping. Precedence (highest to lowest): postfix attribute/call, unary `not`/`-`, multiplication/division/modulo, addition/subtraction, comparison, `and`, `or`, conditional. Both conditional branches are statically type-checked, even if the condition is constant.
+Expressions also allow literals (`true`, `false`, `none`, numbers, strings), references, calls, attribute access and grouping. Precedence (highest to lowest): postfix attribute/call, unary `not`/`-`, multiplication/division/modulo, addition/subtraction, comparison, `and`, `or`, `??` (right associative), conditional. Both conditional branches are statically type-checked, even if the condition is constant.
 
 ## 3. B types
 
@@ -48,13 +49,14 @@ Expressions also allow literals (`true`, `false`, `none`, numbers, strings), ref
 | `Dict[Text, T]` | Python dict with string keys | Keys must be `Text`, values guard recursively; snapshots across typed boundaries |
 | `Any` | Dynamic Python value | Explicit loss of static type information; narrowing needs runtime guards |
 
-Subtyping/assignability is limited to identity, `Int -> Float`, `T -> Option[T]`, `None -> Option[T]`, recursive container compatibility and `Any` with guarded narrowing. A `Dict` key type must be `Text`. `if ... then Int else None` infers `Option[Int]`. Incompatible *fully known* element types in a list or dictionary are rejected before running; unknown dynamic values produce boundary warnings/guards where they are narrowed. Empty lists and dicts infer an `Any` value type until context narrows them.
+Subtyping/assignability is limited to identity, `Int -> Float`, `T -> Option[T]`, `None -> Option[T]`, recursive container compatibility and `Any` with guarded narrowing. A `Dict` key type must be `Text`. `if ... then Int else None` infers `Option[Int]`. `optional ?? default` safely extracts a value or uses the fallback; it requires `Option[T]` on the left and a compatible value on the right. The left operand is evaluated exactly once and the fallback is lazy. Incompatible *fully known* element types in a list or dictionary are rejected before running; unknown dynamic values produce boundary warnings/guards where they are narrowed. Empty lists and dicts infer an `Any` value type until context narrows them.
 
 Example:
 
 ```text
 let entries: Dict[Text, Option[Int]] = {"known": 9, "missing": none}
 let maybe: Option[Int] = if true then 4 else none
+let sure: Int = maybe ?? 0
 print entries
 ```
 
@@ -107,7 +109,7 @@ For `net:`, the B host has only an explicit set of allowed `System.Math` and `Sy
 
 ## 7. Current limitations and status
 
-No B-authored module imports; generic B functions; loops; reassignment; records; general effects/capabilities; exception modeling; asynchronous calls; zero-copy data exchange; Java/Rust/WASM backends; arbitrary .NET libraries; true native B compilation; formal proof or safe execution of untrusted code. `Option` values do not yet support pattern matching / case analysis, so callers cannot simply unwrap them to `T` inside B. Type checking is conservative and may reject useful Python calls; this is safer than silently claiming a type it cannot establish.
+No B-authored module imports; generic B functions; loops; reassignment; records; general effects/capabilities; exception modeling; asynchronous calls; zero-copy data exchange; Java/Rust/WASM backends; arbitrary .NET libraries; true native B compilation; formal proof or safe execution of untrusted code. `Option` values support a typed `??` fallback, but not yet exhaustive pattern matching/case analysis or unsafe forced unwrapping. Type checking is conservative and may reject useful Python calls; this is safer than silently claiming a type it cannot establish.
 
 ## 8. Versioning
 

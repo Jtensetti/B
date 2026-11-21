@@ -60,4 +60,6 @@ b check examples/polytypes.bee --strict --json
 b run examples/polytypes.bee
 ```
 
+19. **Typed fallback with no duplicated effects:** `optional ?? fallback` requires `Option[T]`, rejects incompatible defaults, evaluates the optional-producing expression once and never evaluates the default unless needed. A stateful foreign function is used as the regression test.
+
 As in earlier versions, these are language and interoperability tests, **not** measurements of independent AI-generated code quality, total cost per correct task, or general proof of imported library behavior.

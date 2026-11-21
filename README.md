@@ -14,6 +14,7 @@ use py:b_examples.poly_lib as lib
 let label: Text = lib.describe("b")
 let number: Int = lib.describe(41)
 let possible: Option[Int] = lib.find_code("Ada")
+let usable: Int = possible ?? 0
 let doubled: Dict[Text, Float] = lib.adjust({"a": 2.0, "b": 3.5})
 
 print label
@@ -22,7 +23,7 @@ print possible
 print doubled
 ```
 
-This is **B syntax**, not Python. B discovers two `@overload` variants of `describe` in the adjacent Python stub, picks the unambiguous variant from the B argument types and checks its return type during execution. The `Option` and `Dict` types are also first-class B types. The sample calls a real, installed Python module. B can refuse ambiguous calls before any user program is executed.
+This is **B syntax**, not Python. B discovers two `@overload` variants of `describe` in the adjacent Python stub, picks the unambiguous variant from the B argument types and checks its return type during execution. The `Option` and `Dict` types are also first-class B types. The `??` operator supplies a typed fallback for missing optional values and evaluates its left operand once. The sample calls a real, installed Python module. B can refuse ambiguous calls before any user program is executed.
 
 ## Polyglot call to .NET and Python
 
@@ -52,6 +53,7 @@ b run examples/polyglot.bee
 b inspect py:b_examples.poly_lib --json
 b inspect net:System.Math --verify  # requires .NET 10
 b check examples/hello.b4 --strict
+b run examples/coalesce.bee
 pytest -q
 ```
 
@@ -61,7 +63,7 @@ B `b check` parses and checks B code without running it. Python import discovery
 
 | Area | Implemented in 0.4 | Still missing |
 | --- | --- | --- |
-| Language | Let, typed functions, if, collections, booleans, arithmetic | Loops, records, modules, generic B functions |
+| Language | Let, typed functions, if, `??`, collections, booleans, arithmetic | Loops, records, modules, generic B functions |
 | Types | `Int`, `Float`, `Text`, `Bool`, `Any`, `Option`, `List`, `Dict` | Full unions, Result, pattern matching, objects |
 | Python ecosystem | Real imports; limited non-executing `.pyi`/`.py` AST discovery; basic overload selection | Broad typeshed, keyword-only args, typevars, protocols |
 | .NET ecosystem | Explicit Math/Regex adapter; metadata snapshot checked against live reflection in CI | Arbitrary packages, objects, generic methods |

@@ -63,6 +63,7 @@ class Compiler:
         self.discovered: dict[str, Binding] = {}
         self.discovery_sources: dict[str, str] = {}
         self.net_registry = net_bindings()
+        self._temp_counter = 0
 
     def warn(self, code: str, message: str):
         entry = Diagnostic("warning", code, message)
@@ -120,6 +121,39 @@ class Compiler:
     def infer(self, ex: Expr, scope: dict[str, Symbol] | None = None) -> Value:
         symbols = self.symbols if scope is None else scope
         kind, p = ex.kind, ex.parts
+        if kind == "coalesce":
+            left = self.infer(p[0], symbols)
+            if left.type.name != "Option":
+                raise BError("E_TYPE", "Left side of ?? must be Option[T]")
+            right = self.infer(p[1], symbols)
+            inner = left.type.args[0]
+            if right.type == NONE:
+                result_type = left.type
+            elif right.type.name == "Option":
+                merged = unify(inner, right.type.args[0])
+                if merged == ANY and inner != ANY and right.type.args[0] != ANY:
+                    raise BError("E_TYPE", f"Incompatible coalesce values: {inner} and {right.type}")
+                result_type = Type("Option", (merged,))
+            elif right.type == ANY and inner != ANY:
+                self._check_type(right, inner, "?? fallback")
+                result_type = inner
+            else:
+                result_type = unify(inner, right.type)
+                if result_type == ANY and inner != ANY and right.type != ANY:
+                    raise BError("E_TYPE", f"Incompatible coalesce values: {inner} and {right.type}")
+            # Evaluate left exactly ONCE: it may be an imported call with side effects.
+            self._temp_counter += 1
+            tmp = f"_b_coalesce_{self._temp_counter}"
+            test = ast.Compare(
+                left=ast.NamedExpr(target=ast.Name(id=tmp, ctx=ast.Store()), value=left.node),
+                ops=[ast.IsNot()], comparators=[ast.Constant(None)],
+            )
+            const = right.constant if left.constant is None else left.constant
+            if left.constant is NOT_CONST:
+                const = NOT_CONST
+            return Value(result_type, ast.IfExp(
+                test=test, body=ast.Name(id=tmp, ctx=ast.Load()), orelse=right.node,
+            ), const)
         if kind == "conditional":
             cond, yes, no = p
             cv = self.infer(cond, symbols)

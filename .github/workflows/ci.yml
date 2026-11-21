@@ -35,3 +35,5 @@ jobs:
       - run: b run examples/polytypes.bee
       - run: b check examples/hello.b4 --strict
       - run: b inspect py:b_examples.poly_lib --json
+      - run: b check examples/coalesce.bee --strict
+      - run: b run examples/coalesce.bee

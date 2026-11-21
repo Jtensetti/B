@@ -15,7 +15,9 @@ param: NAME ":" type_expr
 type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 
 ?expr: "if" expr "then" expr "else" expr -> conditional
-     | or_expr
+     | coalesce_expr
+?coalesce_expr: or_expr "??" coalesce_expr -> coalesce
+              | or_expr
 ?or_expr: or_expr "or" and_expr     -> or_op
         | and_expr
 ?and_expr: and_expr "and" cmp_expr -> and_op

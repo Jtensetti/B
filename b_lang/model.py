@@ -44,6 +44,7 @@ class ToModel(Transformer):
         for kind, val in xs[1:]: base = Expr(kind, (base, val))
         return base
     def conditional(self, xs): return Expr("conditional", tuple(xs))
+    def coalesce(self, xs): return Expr("coalesce", tuple(xs))
     def not_op(self, xs): return Expr("not", (xs[0],))
     def neg(self, xs): return Expr("neg", (xs[0],))
     def add(self, xs): return Expr("add", tuple(xs))

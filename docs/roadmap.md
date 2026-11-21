@@ -6,6 +6,7 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 - [x] B syntax, AST, expression-bodied functions, immutable bindings, operators, lists, conditionals.
 - [x] `Option[T]` and `Dict[Text,T]` with literals/inference and recursive runtime type guards.
+- [x] Typed lazy `??` fallback; its left operand executes once even when it is a foreign call.
 - [x] Reject known heterogeneous collection values before running (rather than delaying to dynamic checks).
 - [x] Conservative Python `.pyi`/`.py` AST signature extraction, trailing defaults and two-or-more `@overload` declarations.
 - [x] Reject ambiguous overload resolution instead of guessing a result type.

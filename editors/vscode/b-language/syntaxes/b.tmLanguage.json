@@ -11,6 +11,6 @@
     {"name": "constant.language.bee", "match": "\\b(?:true|false|none)\\b"},
     {"name": "constant.numeric.bee", "match": "\\b\\d+(?:\\.\\d+)?\\b"},
     {"name": "support.constant.bee", "match": "\\b(?:py|net)(?=:)"},
-    {"name": "keyword.operator.bee", "match": "(?:->|==|!=|<=|>=|[+\\-*/%<>:=])"}
+    {"name": "keyword.operator.bee", "match": "(?:->|\\?\\?|==|!=|<=|>=|[+\\-*/%<>:=])"}
   ]
 }

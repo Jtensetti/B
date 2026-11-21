@@ -181,3 +181,44 @@ def test_union_optional_annotation_and_nested_dict_from_source(tmp_path, monkeyp
     assert str(found.signatures['choose'].result) == 'Option[Dict[Text, List[Int]]]'
     result = compile_b('use py:b_union as m\nprint m.choose("yes")', strict=True)
     assert result.assumptions
+
+
+def test_null_coalescing_operator_is_typed_and_lazy():
+    out, _ = run('''fn keep(x: Option[Int]) -> Option[Int] = x
+let a: Int = keep(none) ?? 4
+let b: Int = keep(9) ?? 4
+print a
+print b''')
+    assert out.splitlines() == ['4', '9']
+
+
+def test_null_coalescing_rejects_wrong_fallback_before_execution():
+    with pytest.raises(BError) as e:
+        compile_b('let x: Option[Int] = none\nprint x ?? "oops"')
+    assert e.value.code == 'E_TYPE'
+
+
+def test_null_coalescing_rejects_non_option_lhs():
+    with pytest.raises(BError) as e:
+        compile_b('print 4 ?? 5')
+    assert e.value.code == 'E_TYPE'
+
+
+def test_null_coalescing_has_expected_precedence():
+    out, _ = run('let x: Option[Int] = none\nprint x ?? 2 + 3')
+    assert out.strip() == '5'
+
+
+def test_null_coalescing_foreign_operand_evaluated_once(tmp_path, monkeypatch):
+    (tmp_path / 'b_tick.py').write_text(
+        'counter = 0\n'
+        'def tick():\n'
+        '    global counter\n'
+        '    counter += 1\n'
+        '    return counter\n', encoding='utf-8')
+    (tmp_path / 'b_tick.pyi').write_text('def tick() -> int | None: ...\n', encoding='utf-8')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    out, _ = run('use py:b_tick as m\nprint m.tick() ?? 99')
+    import b_tick
+    assert out.strip() == '1'
+    assert b_tick.counter == 1
