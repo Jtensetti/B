@@ -15,13 +15,13 @@ from b_lang.types import BError
 
 
 def test_real_python_stub_autoloads_without_foreign_declaration():
-    source = '''use py:examples.demo_lib as t
+    source = '''use py:b_examples.demo_lib as t
 let m: Float = t.weighted_mean([1.0, 5.0], [1.0, 3.0])
 print m'''
     compiled = compile_b(source, strict=True)
     assert not compiled.diagnostics
     assert compiled.assumptions == [
-        'py:examples.demo_lib.weighted_mean (pyi): signature assumed, not behavior proved'
+        'py:b_examples.demo_lib.weighted_mean (pyi): signature assumed, not behavior proved'
     ]
     out = io.StringIO()
     with redirect_stdout(out):
@@ -30,21 +30,21 @@ print m'''
 
 
 def test_python_default_arity_from_stub():
-    one = compile_b('use py:examples.demo_lib as t\nprint t.repeat("X")', strict=True)
+    one = compile_b('use py:b_examples.demo_lib as t\nprint t.repeat("X")', strict=True)
     out = io.StringIO()
     with redirect_stdout(out): exec(one.code, {})
     assert out.getvalue().strip() == 'X'
-    two = compile_b('use py:examples.demo_lib as t\nprint t.repeat("X", 3)', strict=True)
+    two = compile_b('use py:b_examples.demo_lib as t\nprint t.repeat("X", 3)', strict=True)
     out = io.StringIO()
     with redirect_stdout(out): exec(two.code, {})
     assert out.getvalue().strip() == 'XXX'
     with pytest.raises(BError, match='E_ARITY'):
-        compile_b('use py:examples.demo_lib as t\nprint t.repeat()')
+        compile_b('use py:b_examples.demo_lib as t\nprint t.repeat()')
 
 
 def test_autodiscovery_rejects_wrong_types_preexecution():
     with pytest.raises(BError) as e:
-        compile_b('use py:examples.demo_lib as t\nprint t.clamp("bad", 0.0, 1.0)')
+        compile_b('use py:b_examples.demo_lib as t\nprint t.clamp("bad", 0.0, 1.0)')
     assert e.value.code == 'E_TYPE'
 
 
@@ -116,7 +116,7 @@ def test_net_manifest_is_inspectable_without_net_runtime(capsys):
 
 
 def test_python_inspection_command(capsys):
-    assert main(['inspect', 'py:examples.demo_lib', '--json']) == 0
+    assert main(['inspect', 'py:b_examples.demo_lib', '--json']) == 0
     result = json.loads(capsys.readouterr().out)
     assert result['provenance'] == 'pyi'
     assert result['behavior_proven'] is False

@@ -18,10 +18,11 @@ dev = ["pytest>=8,<10"]
 b = "b_lang.cli:main"
 
 [tool.setuptools.packages.find]
-include = ["b_lang*"]
+include = ["b_lang*", "b_examples*"]
 
 [tool.setuptools.package-data]
 b_lang = ["*.lark", "*.json"]
+b_examples = ["*.pyi"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

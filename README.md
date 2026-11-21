@@ -22,7 +22,7 @@ The `.NET` methods in this example are implemented in the [B .NET host](dotnet/B
 ## New in 0.3: automatically discover Python library signatures
 
 ```b
-use py:examples.demo_lib as tools
+use py:b_examples.demo_lib as tools
 
 let result: Float = tools.clamp(12.0, 0.0, 10.0)
 let message: Text = tools.repeat("B", 3)
@@ -30,7 +30,7 @@ print message
 print result
 ```
 
-B finds the adjacent [`demo_lib.pyi`](examples/demo_lib.pyi), reads its typed function declarations *as syntax*, and registers supported positional signatures automatically. No B `foreign` declarations or compiler registry edits are necessary. If a `.pyi` is absent, B can recognize a conservative subset of `.py` function annotations. B refuses to guess unrepresentable types or overload sets. It **does not execute the Python module while extracting the signatures**; Python's module discovery may nevertheless import *parent packages*.
+B finds the adjacent [`demo_lib.pyi`](b_examples/demo_lib.pyi), reads its typed function declarations *as syntax*, and registers supported positional signatures automatically. No B `foreign` declarations or compiler registry edits are necessary. If a `.pyi` is absent, B can recognize a conservative subset of `.py` function annotations. B refuses to guess unrepresentable types or overload sets. It **does not execute the Python module while extracting the signatures**; Python's module discovery may nevertheless import *parent packages*.
 
 For imported functions with unknown signatures, non-strict checks still warn; `--strict` rejects unresolved warnings. Explicit `foreign` declarations remain available for such functions.
 
@@ -50,7 +50,7 @@ pytest -q
 Inspect what B actually knows about the libraries:
 
 ```sh
-b inspect py:examples.demo_lib
+b inspect py:b_examples.demo_lib
 b inspect net:System.Math
 b inspect net:System.Math --verify    # requires .NET SDK, compares live reflection with manifest
 b check examples/auto_discovery.bee --strict --json

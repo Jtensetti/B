@@ -25,7 +25,7 @@ python -m pip install -e '.[dev]'
 pytest -q
 b check examples/auto_discovery.bee --strict --json
 b run examples/polyglot.bee
-b inspect py:examples.demo_lib
+b inspect py:b_examples.demo_lib
 b inspect net:System.Math --verify
 ```
 
@@ -34,7 +34,7 @@ The final test requires .NET 10. CI installs the SDK and builds the host. To tes
 
 ## B v0.3 incremental experiments
 
-8. **Non-executing Python signature extraction:** `examples/demo_lib.pyi` is parsed using `ast.parse`, not imported. B uses its supported typed exports with no explicit `foreign` declarations. Tests assert that checking a source with an import-time side effect does not trigger the target module; parent package resolution remains a documented exception.
+8. **Non-executing Python signature extraction:** `b_examples/demo_lib.pyi` is parsed using `ast.parse`, not imported. B uses its supported typed exports with no explicit `foreign` declarations. Tests assert that checking a source with an import-time side effect does not trigger the target module; parent package resolution remains a documented exception.
 9. **Reject rather than invent signatures:** unknown typing constructs, overloads and nonrepresentable annotations are skipped. Strict checking then refuses the unknown call. Explicitly wrong argument types and positional argument counts fail before execution.
 10. **Foreign contract honesty:** a stub that claims the wrong return type gets caught by a runtime guard, but a correct type with a wrong value would remain undetected. `b check --json` records metadata signatures as assumptions even in strict mode.
 11. **.NET metadata drift gate:** a reflection endpoint lists transport-compatible overloads on the *already permitted* .NET types. `b inspect net:System.Math --verify` compares the host results with the manifest used for checking. This is a metadata consistency test, not general .NET reflection or proof.
