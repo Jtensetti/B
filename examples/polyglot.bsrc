@@ -6,5 +6,4 @@ use net:System.Text.RegularExpressions.Regex as Regex
 let valid: Bool = Regex.IsMatch("item-42", "^item-[0-9]+$")
 let average: Float = stats.mean([3.0, 4.0, 5.0])
 let score: Float = if valid then Math.Sqrt(average * average + 9.0) else 0.0
-assert score >= 0.0
 print score
