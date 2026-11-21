@@ -31,3 +31,7 @@ jobs:
       - run: b run examples/auto_discovery.bee
       - run: b inspect py:b_examples.demo_lib --json
       - run: b inspect net:System.Math --verify --json
+      - run: b check examples/polytypes.bee --strict --json
+      - run: b run examples/polytypes.bee
+      - run: b check examples/hello.b4 --strict
+      - run: b inspect py:b_examples.poly_lib --json

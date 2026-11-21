@@ -70,22 +70,23 @@ def test_an_untrusted_annotation_is_not_evaluated(tmp_path, monkeypatch):
     assert not (tmp_path / 'pwned').exists()
 
 
-def test_discovery_skips_nonrepresentable_types_and_overloads(tmp_path, monkeypatch):
+def test_discovery_supports_overloads_and_dicts_but_skips_unknown_types(tmp_path, monkeypatch):
     (tmp_path / 'b_unsupported.py').write_text('def f(x): return x\n', encoding='utf-8')
     (tmp_path / 'b_unsupported.pyi').write_text(
         'from typing import overload\n'
         '@overload\ndef f(x: int) -> int: ...\n'
         '@overload\ndef f(x: str) -> str: ...\n'
         'def f(x: object) -> object: ...\n'
-        'def g(x: dict[str, int]) -> int: ...\n', encoding='utf-8')
+        'def g(x: dict[str, int]) -> int: ...\n'
+        'def unsupported(x: tuple[int, str]) -> int: ...\n', encoding='utf-8')
     monkeypatch.syspath_prepend(str(tmp_path))
     found = inspect_python('b_unsupported')
-    assert found.signatures == {}
-    assert 'f' in found.skipped and 'g' in found.skipped
-    result = compile_b('use py:b_unsupported as m\nprint m.f(2)')
-    assert any(d.code == 'W_UNCHECKED_FOREIGN' for d in result.diagnostics)
+    assert set(found.signatures) == {'f', 'g'}
+    assert 'unsupported' in found.skipped
+    result = compile_b('use py:b_unsupported as m\nprint m.f(2)', strict=True)
+    assert result.diagnostics == []
     with pytest.raises(BError, match='E_STRICT'):
-        compile_b('use py:b_unsupported as m\nprint m.f(2)', strict=True)
+        compile_b('use py:b_unsupported as m\nprint m.unsupported(2)', strict=True)
 
 
 def test_py_source_annotations_can_be_discovered_without_stub(tmp_path, monkeypatch):
@@ -124,7 +125,7 @@ def test_python_inspection_command(capsys):
 
 
 def test_bee_extension_and_compatibility(tmp_path: Path, capsys):
-    for ext in ('.bee', '.bsrc', '.b'):
+    for ext in ('.bee', '.b4', '.bsrc', '.b'):
         path = tmp_path / ('ok'+ext)
         path.write_text('print 5\n', encoding='utf-8')
         assert main(['check', str(path), '--strict']) == 0

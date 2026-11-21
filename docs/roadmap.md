@@ -1,66 +1,40 @@
-# B roadmap and implementation ledger
+# B roadmap — evidence before promises
 
-The long-term target is a new language with its own semantics, a minimal model-friendly representation, strong preflight checking and reliable access to existing ecosystems. Features below are intentionally distinguished by execution evidence, not by aspiration.
+B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
-## v0.1 — completed foundation
+## Implemented through B 0.4
 
-- [x] B's own parser and syntax tree
-- [x] Native immutable bindings, typed expression functions, lists and arithmetic
-- [x] Initial type rules and compile-time constant checks
-- [x] Python AST backend and `b check/run/build`
-- [x] Python imports and a limited .NET Math bridge over JSON lines
-- [x] Local unit tests and cross-runtime CI
+- [x] B syntax, AST, expression-bodied functions, immutable bindings, operators, lists, conditionals.
+- [x] `Option[T]` and `Dict[Text,T]` with literals/inference and recursive runtime type guards.
+- [x] Reject known heterogeneous collection values before running (rather than delaying to dynamic checks).
+- [x] Conservative Python `.pyi`/`.py` AST signature extraction, trailing defaults and two-or-more `@overload` declarations.
+- [x] Reject ambiguous overload resolution instead of guessing a result type.
+- [x] Real Python imports and explicitly permitted .NET Math/Regex methods.
+- [x] Runtime boundary value guards, metadata provenance, JSON diagnostics, strict-mode preflight checks.
+- [x] B polyglot and negative tests, Python 3.11/3.13 + .NET 10 GitHub CI.
+- [x] `.bee` canonical, `.b4` optional, `.bsrc`/`.b` backward compatible.
 
-## v0.3 — implemented and undergoing integration checks
+## Next: coverage with honest static information
 
-- [x] New recommended extension `.bsrc`, retaining `.b` compatibility
-- [x] B conditional expressions with static branch checks
-- [x] `foreign` to type real imported Python methods without changing the compiler registry
-- [x] Runtime checks on known foreign argument and result boundaries
-- [x] Recursive dynamic-list guard when narrowing `List[Any]`
-- [x] Additional .NET `Regex.IsMatch` bridge and cross-runtime integration test
-- [x] Machine-readable `b check --json` results including trusted foreign assumptions
-- [x] Deterministic differential testing of 300 generated expressions
-- [x] Basic `.bsrc` VS Code grammar
+- [ ] `Result[Ok, Error]`, records and stable object/resource reference semantics.
+- [ ] Keyword arguments, Python typing overload rules and more of typeshed (`Sequence`, `Iterable`, `Literal`, `Protocol`, selected generics).
+- [ ] .NET generic signatures and permission-scoped metadata adapters for selected real packages.
+- [ ] Versions/lockfiles and explicit dependency/version provenance for metadata; cache signatures by version.
+- [ ] Typed intermediate representation (IR) shared by multiple backends, not merely Python AST.
+- [ ] Measure actual library coverage on pinned NumPy/pandas and .NET packages, including unsupported signatures.
 
-## v0.3 — scale the interoperability
+## Later: guarantees and machine efficiency
 
-- [ ] Automatically derive and cache Python signatures from trusted stubs (`.pyi`) with provenance and version locks
-- [ ] Generate .NET bindings from metadata with overload, nullability and exception handling
-- [ ] Structured records/tuples, nullable types and explicit failure values (`Option` / `Result`)
-- [ ] Foreign handles for objects, explicit resource lifetime and useful bulk array formats
-- [ ] Check both supported and unsupported behavior in version-pinned cross-runtime tests
-- [ ] Define a stable typed intermediate representation independent of Python AST
+- [ ] Explicit effect/capability semantics and bounded resource use for imported operations.
+- [ ] Specified invariants with a separately checkable proof/verification kernel for a useful subset.
+- [ ] Incremental checking and compilation of versioned program IR nodes; local edits that preserve unaffected code.
+- [ ] Other runtimes through real adapters (Rust/C ABI, JVM, WASM Component Model/WIT).
+- [ ] Controlled AI benchmark: B vs Python/C#/Rust with matched model, library access, tokens, runtime, retries and correctness tests.
+- [ ] Constrained decoding and compact machine-facing representation only after measuring performance.
 
-## v0.4 — executable guarantees
+## Things B does *not* establish
 
-- [ ] Formal semantics for the B core and a small independently checkable invariant language
-- [ ] Explicit effect declarations and capabilities for foreign modules
-- [ ] Incremental compilation and proof caching over unchanged IR nodes
-- [ ] Trusted backend and compiler validation / differential testing
-- [ ] Safer isolation for untrusted programs; runtime guards alone are not isolation
-
-## v0.5 — model optimization
-
-- [ ] Stable machine-facing grammar/serialization derived from B IR
-- [ ] Constrained decoding against allowed operations and types
-- [ ] Versioned localized transformations to prevent regressions
-- [ ] Compare B vs existing languages using the same AI model and full cost budget
-- [ ] Distinguish model token improvements from correctness and library coverage
-
-## Excluded assumptions
-
-- “A new spelling or shorter syntax is automatically cheaper for an LLM.”
-- “A declared foreign function signature proves the function behaves correctly.”
-- “The Python backend currently produces native B executables.”
-- “An empty warning list means that every observable behavior is correct.”
-
-
-## B 0.3 delivery
-
-- [x] `.bee` accepted and preferred with `.bsrc`/`.b` compatibility
-- [x] Conservative Python `.pyi` / `.py` AST signature discovery
-- [x] Strict-mode typed calls without `foreign` boilerplate
-- [x] Snapshot of supported .NET host signatures and live-reflection verification in CI
-- [x] `b inspect` reports supported and skipped symbols
-- [ ] Full Python typing semantics, general .NET FFI, native binary backend, proofs
+- Any imported library is functionally correct merely because it has a type stub.
+- All Python annotations, overloads, and .NET assemblies are understood by B.
+- Strict checks guarantee the user's intended behavior or side-effect safety.
+- Fewer source characters automatically mean fewer model tokens or lower total cost.

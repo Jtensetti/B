@@ -36,6 +36,8 @@ type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 ?tail: "." NAME                    -> attribute
      | "(" [args] ")"              -> invoke
 args: expr ("," expr)*
+pairs: pair ("," pair)*
+pair: expr ":" expr
 ?atom: NUMBER                        -> number
      | ESCAPED_STRING                -> string
      | "true"                        -> true
@@ -43,6 +45,7 @@ args: expr ("," expr)*
      | "none"                        -> none
      | NAME                          -> identifier
      | "[" [args] "]"                -> list_literal
+     | "{" [pairs] "}"               -> dict_literal
      | "(" expr ")"                  -> grouped
 
 BACKEND: "py" | "net"
