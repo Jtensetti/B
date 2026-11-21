@@ -275,3 +275,26 @@ fn use(n: Int) -> Float requires n > 0 = 1 / p(n)
     assert env["use"](1) == 1.0
     with pytest.raises(BContractError):
         env["p"](-1)
+
+
+def test_conservation_law_needs_more_than_signs():
+    from pathlib import Path
+
+    example = Path(__file__).resolve().parents[1] / "examples" / "conservation.bee"
+    transfer = example.read_text()
+    for program, excess in ((transfer, 0), (transfer.replace("= booked + 1", "= booked + 2"), 1)):
+        built = compile_b(program)
+        statuses = {o.target: o.status for o in built.analysis.obligations if o.kind == "ensures"}
+        assert statuses == {"free_after": "proved", "booked_after": "proved", "accounted": "unknown"}
+        functions = {}
+        exec(built.code, functions)
+        for free in range(1, 11):
+            for booked in range(10):
+                expected = free + booked
+                actual = functions["free_after"](free) + functions["booked_after"](booked)
+                assert actual - expected == excess
+                if excess:
+                    with pytest.raises(BContractError):
+                        functions["accounted"](free, booked)
+                else:
+                    assert functions["accounted"](free, booked) == expected
