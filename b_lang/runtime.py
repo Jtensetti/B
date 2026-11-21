@@ -14,6 +14,10 @@ from .types import Type, INT, FLOAT, BOOL, TEXT, NONE, ANY, parse_descriptor
 class BAssertionError(AssertionError):
     pass
 
+class BContractError(AssertionError):
+    """A B function requires/ensures condition failed at execution."""
+    pass
+
 class BBoundaryError(RuntimeError):
     pass
 

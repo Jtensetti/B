@@ -2,11 +2,23 @@
 
 **B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
 
-**Version 0.5 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.6 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
 
-## What is new in B 0.5?
+## What is new in B 0.6?
+
+**Effect budgets and function contracts are native B syntax**, checked before the Python backend executes. B can now prove a narrow family of integer postconditions, reject certain broken preconditions and effects, and enforce other contracts at runtime:
+
+```bee
+permit [console]
+fn successor(x: Int) -> Int pure requires x >= 0 ensures result > 0 = x + 1
+print successor(41)
+```
+
+`pure` forbids unknown foreign effects inside a B function. `permit [...]` tracks a small set of program effects (`console` and `foreign`), **not actual OS capabilities**. BIR records whether a postcondition is proved using integer intervals or only checked at runtime. An imported function's type does not prove its behavior. See [the contract and effect specification](docs/contracts-effects.md).
+
+## BIR pipeline (introduced in B 0.5, extended in 0.6)
 
 A real, **typed backend-neutral intermediate representation (BIR)** sits between B source and the executable backend:
 
@@ -15,7 +27,7 @@ A real, **typed backend-neutral intermediate representation (BIR)** sits between
       |
   B parser + B checker + type/provenance catalog
       |
-  BIR v1: types, operations, foreign interfaces and obligations
+  BIR v2: types, contracts, effect classifications, foreign provenance
       |
   conservative pure-operation optimization
       |
@@ -48,6 +60,10 @@ Requires Python 3.11+. Running the .NET example also requires the .NET 10 SDK.
 
 ```sh
 python -m pip install -e '.[dev]'
+b check examples/contracts.bee --strict --json
+b run examples/contracts.bee
+b check examples/effects.bee --strict
+b run examples/effects.bee
 b check examples/polyglot.bee --strict
 b run examples/polyglot.bee
 b ir examples/polyglot.bee --strict           # checked BIR as JSON
@@ -76,16 +92,17 @@ This limitation matters more than adding new punctuation or another file extensi
 
 | Layer | Working today | Not yet provided |
 | --- | --- | --- |
-| B language | Own grammar, immutable names, typed functions, conditions, collections, `??` | Loops, records, pattern matching, user generics |
-| BIR v1 | Typed semantic nodes, foreign catalog, JSON view, pure constant optimization | Stable serialized execution, source maps, multi-target lowering |
+| B language | Own grammar, immutable names, typed functions, conditions, collections, `??`, `pure`, `requires`, `ensures`, `permit` | Loops, records, pattern matching, user generics |
+| BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
 | Python libraries | Actual import/call, limited annotation discovery, overloads and dynamic fallback | Full typeshed, re-export tracking, package-version locking |
 | .NET libraries | Restricted `System.Math` and `Regex` host, metadata verified in CI | Arbitrary assemblies, object models, reflection-based adapters |
-| Correctness | Static syntax/types/known constant errors; runtime boundary guards | Formal correctness proofs, effect guarantees, trusted execution |
+| Correctness | Static types/errors, narrow integer interval proofs, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
 | AI advantage | Explicit machine-readable IR and diagnostics | Any measured improvement in AI's correctness or tokens |
 
 ## Project references
 
 - [Language and grammar](docs/language.md)
+- [Contracts, interval proofs and effects (0.6)](docs/contracts-effects.md)
 - [BIR semantics and implementation](docs/bir.md)
 - [Cross-language library bridges](docs/interop.md)
 - [Real-library audit](docs/library-audit.md)

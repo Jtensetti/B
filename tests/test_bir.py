@@ -31,7 +31,7 @@ print square(p)'''
     result, compiled = _run(source)
     assert result == "100.0"
     serial = json.loads(json.dumps(compiled.ir.to_dict()))
-    assert serial["schema"] == "bir" and serial["version"] == 1
+    assert serial["schema"] == "bir" and serial["version"] == 2
     assert serial["statements"][1]["op"] == "fn"
     assert serial["statements"][1]["parameters"] == [{"name": "x", "type": "Float"}]
     assert len(serial["foreign_symbols"]) == 1

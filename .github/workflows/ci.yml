@@ -39,8 +39,13 @@ jobs:
       - run: b run examples/coalesce.bee
 
       - run: b ir examples/polyglot.bee --strict > /tmp/bir.json
-      - run: python -c "import json; d=json.load(open('/tmp/bir.json')); assert d['schema']=='bir' and d['version']==1"
+      - run: python -c "import json; d=json.load(open('/tmp/bir.json')); assert d['schema']=='bir' and d['version']==2"
       - run: b audit py:b_examples.demo_lib --json
+      - run: b check examples/contracts.bee --strict --json
+      - run: b run examples/contracts.bee
+      - run: b check examples/effects.bee --strict --json
+      - run: b run examples/effects.bee
+      - run: python -c "import json,subprocess; d=json.loads(subprocess.check_output(['b','ir','examples/contracts.bee','--strict'])); assert d['version']==2 and d['statements'][1]['postcondition_status']=='proved-interval'"
   large-library-audit:
     runs-on: ubuntu-latest
     steps:

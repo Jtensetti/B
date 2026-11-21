@@ -71,3 +71,11 @@ As in earlier versions, these are language and interoperability tests, **not** m
 - Large-package audit on locally installed NumPy, pandas, SciPy, SymPy and Pydantic finds **very low static coverage**. This is expected for B's small type language; it is an exposed blocker, not evidence of universal support. Details and precise denominators in [library audit](library-audit.md).
 - A dynamic NumPy call works in non-strict mode; the checker does **not** understand NumPy's API signature in strict mode.
 - None of these tests measures AI code-generation performance or proves the compiler semantically correct on all B programs.
+
+## B 0.6 – contracts and effect preflight (21 November 2026)
+
+The experimental feature set is intentionally narrow. The local check reports the existing test suite and the new contracts/effects tests, including adversarial tests for foreign calls, variable-arity preconditions, inconsistent integer bounds and `Int -> Float` rounding. Two SDK-dependent integration tests are only run by GitHub CI.
+
+`tests/test_contracts_differential.py` uses a fixed seed to construct 240 bounded integer contracts and compares `proved-interval` claims against enumerated actual executions. This regression check did **not** find a counterexample; it is neither a formal soundness proof nor a comparison of different AI models. See [the specification](contracts-effects.md).
+
+The actual research hypothesis is unproven: whether B's native contracts/effects reduce end-to-end AI programming cost compared with mature existing tools at equal budgets. This must be tested independently later.

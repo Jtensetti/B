@@ -11,7 +11,7 @@ from .types import BError
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.5")
+    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.6")
     sub = parser.add_subparsers(dest="command", required=True)
     for cmd in ("check", "run", "build"):
         p = sub.add_parser(cmd)
@@ -113,10 +113,12 @@ def main(argv: list[str] | None = None) -> int:
         if args.strict and result.diagnostics:
             if machine:
                 print(json.dumps({
-                    "status": "rejected", "language": "B", "spec": "0.5", "strict": True,
+                    "status": "rejected", "language": "B", "spec": "0.6", "strict": True,
                     "error": {"code": "E_STRICT", "message": "Unresolved static warnings"},
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
+                    "detected_effects": list(result.ir.detected_effects),
+                    "permitted_effects": list(result.ir.permitted_effects) if result.ir.permitted_effects is not None else None,
                 }, ensure_ascii=False))
                 return 1
             raise BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
@@ -127,11 +129,16 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "check":
             if machine:
                 print(json.dumps({
-                    "status": "accepted", "language": "B", "spec": "0.5",
+                    "status": "accepted", "language": "B", "spec": "0.6",
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
                     "behavior_proven": False,
+                    "detected_effects": list(result.ir.detected_effects),
+                    "permitted_effects": list(result.ir.permitted_effects) if result.ir.permitted_effects is not None else None,
+                    "function_contracts": [{"name": s.name, "declared_pure": s.declared_pure,
+                       "effects": list(s.effects), "postcondition_status": s.verification,
+                       "precondition_runtime_checked": s.requires is not None} for s in result.ir.statements if s.op == "fn"],
                 }, ensure_ascii=False))
             else:
                 for d in result.diagnostics:
@@ -147,7 +154,7 @@ def main(argv: list[str] | None = None) -> int:
     except (BError, OSError, RuntimeError, AssertionError, ImportError, ValueError, TypeError, ZeroDivisionError) as exc:
         if machine:
             print(json.dumps({
-                "status": "rejected", "language": "B", "spec": "0.5",
+                "status": "rejected", "language": "B", "spec": "0.6",
                 "error": {"code": getattr(exc, "code", "E_RUNTIME"), "message": str(exc)},
             }, ensure_ascii=False))
         else:

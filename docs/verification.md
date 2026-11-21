@@ -2,7 +2,7 @@
 
 B aims to make important error classes impossible to accept while accurately reporting everything it has not established. **Passing `b check` is not proof that the program achieves its intended result.**
 
-## Enforced checks in v0.3
+## Enforced checks (B 0.6)
 
 1. B syntax, names, reserved names and duplicate bindings.
 2. Static types for primitive values, lists, expression functions and both branches of conditional expressions.
@@ -23,7 +23,7 @@ B aims to make important error classes impossible to accept while accurately rep
 
 ## The three outcomes we eventually need
 
-For *each explicit property*, future B should distinguish `proved`, `disproved` and `unknown`. v0.3 currently uses a simpler distinction: static errors, warnings and trusted assumptions. A built-in foreign signature or a successful type guard is **not** a machine-checked behavioral proof.
+For *each explicit property*, future B should distinguish `proved`, `disproved` and `unknown`. v0.6 currently uses a simpler distinction: static errors, warnings and trusted assumptions. A built-in foreign signature or a successful type guard is **not** a machine-checked behavioral proof.
 
 ## Example
 
@@ -58,3 +58,13 @@ The codebase is an experimental **trusted-code toolchain**. The .NET host narrow
 ## B 0.5 IR correctness boundary
 
 The typed BIR is created only after existing B checks. Its producer is trusted and its consumer is the Python AST backend. JSON output is informational; B does not accept untrusted JSON IR as executable input, avoiding type-forgery attacks by construction. The optimizer folds only pure literal operations and never evaluates or reorders imported calls or erases boundary guards. Regression tests check these assumptions for the implemented subset.
+
+## Added in B 0.6
+
+- `requires` and `ensures` are native B function clauses; no executable calls or ambient globals are allowed in contract expressions.
+- A small integer interval checker reports `proved-interval`, rejects guaranteed false postconditions, and leaves harder properties as `runtime-check`. It does not claim to verify arbitrary algorithms, foreign code or Float arithmetic.
+- Function input types, preconditions, return types and postconditions are checked again by runtime guards, even when compiled functions are called from Python.
+- `pure` forbids statically classified external effects inside functions. `permit` restricts program-level `console`/`foreign` categories. Any unknown import is conservatively `foreign`, including initialization.
+- **Neither `pure` nor `permit []` is a sandbox or a proof of effect freedom at OS level.** Strict mode requires resolution of warnings, but accepted code can still fail at runtime and use arbitrary resources through permitted foreign code.
+
+See [the exact 0.6 rules](contracts-effects.md).

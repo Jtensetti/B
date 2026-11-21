@@ -1,8 +1,8 @@
-# BIR v1 — B's typed semantic representation
+# BIR v2 — B's typed semantic representation
 
 ## Status and goal
 
-**Implemented in B 0.5.** BIR is the language's backend-independent, typed intermediate representation. It is deliberately *not* Python AST or a textual Python translation. The B checker turns parsed expressions into typed operations, then the Python lowering backend compiles **those operations** to a Python AST. BIR is also exposed as JSON via `b ir`.
+**BIR introduced in B 0.5; contracts and effects added in B 0.6.** BIR is the language's backend-independent, typed intermediate representation. It is deliberately *not* Python AST or a textual Python translation. The B checker turns parsed expressions into typed operations, then the Python lowering backend compiles **those operations** to a Python AST. BIR is also exposed as JSON via `b ir`.
 
 BIR is an intermediate compiler artifact; its JSON output is intended for **inspection**, not for trusted code execution. We do not currently deserialize external BIR as executable programs: a malicious JSON document could otherwise forge type checks. A future BIR loader needs independent structural and type verification before execution.
 
@@ -23,9 +23,9 @@ BIR is an intermediate compiler artifact; its JSON output is intended for **insp
 | Logic | `conditional`, `and`, `or`, `not`, `cmp` | Short-circuit order is preserved |
 | Arithmetic | `add`, `sub`, `mul`, `div`, `mod`, `neg` | Retains B's existing Python-backed arithmetic semantics |
 | Invocation | `call` | A known foreign target records its exact path, e.g. `net:System.Math.Sqrt` |
-| Statements | `import`, `foreign`, `let`, `fn`, `print`, `assert` | Imports carry an adapter and the exact module/type path |
+| Statements | `permit`, `import`, `foreign`, `let`, `fn`, `print`, `assert` | Imports carry an adapter and the exact module/type path |
 
-`ProgramIR` has `schema: "bir"` and `version: 1`, together with `statements`, `foreign_symbols`, `assumed_foreign_contracts` and `behavior_proven: false`. This is intentionally not a comprehensive serialization protocol for all future B versions.
+`ProgramIR` has `schema: "bir"` and `version: 2`, together with `statements`, `foreign_symbols`, `assumed_foreign_contracts` and `behavior_proven: false`. This is intentionally not a comprehensive serialization protocol for all future B versions.
 
 Example:
 
@@ -55,3 +55,9 @@ b build examples/polyglot.bee
 ```
 
 The unoptimized BIR retains the original checked expression tree; `--optimized` displays the BIR passed to the Python code generator.
+
+## Additional BIR v2 fields
+
+`ProgramIR` now includes `permitted_effects` (`null` when not declared) and `detected_effects`. Each function statement may include `declared_pure`, inferred `effects`, checked `requires` and `ensures` expressions, and `postcondition_status` of `proved-interval` or `runtime-check`. These fields are part of the checked IR, not comments injected into generated Python. The Python backend emits and preserves runtime checks from BIR.
+
+A proof status applies **only** to that explicit predicate, under the function's `requires` assumptions. The `behavior_proven: false` program-level flag remains deliberately false. See [contracts and effects](contracts-effects.md).

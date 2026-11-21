@@ -1,4 +1,4 @@
-# B language reference — experimental v0.5
+# B language reference — implemented experimental v0.6
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -14,11 +14,13 @@ The following EBNF captures the implemented constructs; the Lark grammar governs
 
 ```ebnf
 program       = { newline | statement, newline }, [statement] ;
-statement     = use | foreign | let | fn | print | assert ;
+statement     = permit | use | foreign | let | fn | print | assert ;
+permit        = "permit", "[", [identifier, {",", identifier}], "]" ;
 use           = "use", ("py" | "net"), ":", path, "as", identifier ;
 foreign       = "foreign", path, "(", [type_list], ")", "->", type ;
 let           = "let", identifier, [":", type], "=", expression ;
-fn            = "fn", identifier, "(", [parameters], ")", "->", type, "=", expression ;
+fn            = "fn", identifier, "(", [parameters], ")", "->", type,
+                ["pure"], ["requires", expression], ["ensures", expression], "=", expression ;
 print         = "print", expression ;
 assert        = "assert", expression ;
 parameters    = parameter, {",", parameter} ;
@@ -113,10 +115,16 @@ No B-authored module imports; generic B functions; loops; reassignment; records;
 
 ## 8. Versioning
 
-This document describes **B 0.4**. Changes to the grammar, types, interop and accepted code must carry tests. The compiler is an experimental, unverified implementation; runtime guard success is not a proof of full functional correctness.
+This document describes **B 0.6**. Changes to the grammar, types, interop and accepted code must carry tests. The compiler is an experimental, unverified implementation; runtime guard success is not a proof of full functional correctness.
 
-## 7. Typed BIR compilation
+## 9. Typed BIR compilation
 
-The parser still uses the syntax in `syntax.lark`, but v0.5 now creates **BIR v1** after static checking. The Python backend consumes BIR, not B source directly. `b ir FILE` prints the checked BIR as JSON; `--optimized` shows the conservatively simplified version. The latter may fold pure native literal expressions, but not external functions, dynamic guards or mutable values.
+The parser still uses the syntax in `syntax.lark`; v0.5 introduced BIR, and v0.6 extends it to **BIR v2** after static checking. The Python backend consumes BIR, not B source directly. `b ir FILE` prints the checked BIR as JSON; `--optimized` shows the conservatively simplified version. The latter may fold pure native literal expressions, but not external functions, dynamic guards or mutable values.
 
-BIR is an internal, typed compiler representation and has no supported *untrusted JSON input* mode. See [BIR specification](bir.md). B 0.5 does not add new language surface statements or type spellings beyond v0.4.
+BIR is an internal, typed compiler representation and has no supported *untrusted JSON input* mode. See [BIR specification](bir.md). B 0.6 adds new language-level contract and effect declarations, while preserving the type spellings from v0.4.
+
+## 10. Contracts and effects (B 0.6)
+
+A function can declare `pure`, `requires` and `ensures` (in that order). A `requires` predicate is checked before the function body; an `ensures` predicate sees its typed return value through `result` after the body. Contract expressions are restricted to call-free comparisons and arithmetic. A built-in integer interval analyzer certifies a subset; other clauses remain runtime checks and make strict mode refuse the program. Known false precondition calls, impossible preconditions and provably false postconditions are rejected before execution.
+
+`permit [console, foreign]` must be the first statement; omission keeps the v0.5 default. `pure` rejects foreign calls or unknown mutable global captures, while `permit` constrains program-wide tracked effect categories. **Foreign means potentially arbitrary imported behavior, not a safe network/file permission system.** Full operational rules, verification statuses, limitations and examples are in [contracts-effects.md](contracts-effects.md).
