@@ -115,7 +115,7 @@ No B-authored module imports; generic B functions; loops; reassignment; records;
 
 ## 8. Versioning
 
-This document describes **B 0.6**. Changes to the grammar, types, interop and accepted code must carry tests. The compiler is an experimental, unverified implementation; runtime guard success is not a proof of full functional correctness.
+This document describes **B 0.7**. Changes to the grammar, types, interop and accepted code must carry tests. The compiler is an experimental, unverified implementation; runtime guard success is not a proof of full functional correctness.
 
 ## 9. Typed BIR compilation
 
@@ -128,3 +128,14 @@ BIR is an internal, typed compiler representation and has no supported *untruste
 A function can declare `pure`, `requires` and `ensures` (in that order). A `requires` predicate is checked before the function body; an `ensures` predicate sees its typed return value through `result` after the body. Contract expressions are restricted to call-free comparisons and arithmetic. A built-in integer interval analyzer certifies a subset; other clauses remain runtime checks and make strict mode refuse the program. Known false precondition calls, impossible preconditions and provably false postconditions are rejected before execution.
 
 `permit [console, foreign]` must be the first statement; omission keeps the v0.5 default. `pure` rejects foreign calls or unknown mutable global captures, while `permit` constrains program-wide tracked effect categories. **Foreign means potentially arbitrary imported behavior, not a safe network/file permission system.** Full operational rules, verification statuses, limitations and examples are in [contracts-effects.md](contracts-effects.md).
+
+## 11. Adopted Python-source functions (B 0.7)
+
+```
+adopt py:b_examples.pure_kernels.square as sq
+let result: Float = sq(4.0)
+```
+
+Grammar: `adopt_stmt = "adopt", "py", ":", dotted_module_and_function, "as", local_identifier`. The final segment names a single top-level Python function; the preceding segments identify a `.py` source module. `adopt` is **not** the same as `use`: it statically translates a small safe expression subset into an ordinary `fn` in BIR, never imports the Python module at runtime, and treats the resulting function as B-native. It uses explicit Python `int/float/bool/str` annotations as B types and rejects all unsupported syntax. No fallback to unchecked execution exists. See [source adoption specification](source-adoption.md).
+
+`E_ADOPT` signals unsupported source, missing source, ambiguous definitions, effects or unsupported annotations. `b adopt-audit py:MODULE --json` reports eligibility for that narrow subset. The BIR function carries `backend: py-source` and a `target` containing its original source location and SHA-256. No overall behavioral-correctness proof is implied.

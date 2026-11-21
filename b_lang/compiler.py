@@ -1,4 +1,4 @@
-"""B 0.5 compiler: parse -> typed BIR -> Python backend.
+"""B 0.7 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -18,6 +18,7 @@ from lark.exceptions import LarkError
 from .contracts import validate_predicate, constant as contract_constant, restrict as contract_restrict, verify as verify_post
 from .effects import ALLOWED as ALLOWED_EFFECTS, expression_effects, statement_effects
 from .discovery import inspect_python
+from .adoption import adopt_python
 from .interop import ForeignCatalog
 from .ir import ExprIR, ProgramIR, StmtIR
 from .lowering import PythonLowerer
@@ -384,6 +385,17 @@ class Compiler:
             self.permitted_effects = tuple(sorted(declared))
             return StmtIR("permit")
         self.started_statements = True
+        if kind == "adopt":
+            fullname, alias = p
+            adopted = adopt_python(fullname, alias)
+            # Reuse the *native* function checker; do not treat a Python source
+            # annotation as a license to mark arbitrary external code pure.
+            native = self.statement(adopted.statement)
+            if native.effects or not native.declared_pure:
+                raise BError("E_ADOPT", "Adopted code must be a pure B function")
+            from dataclasses import replace
+            return replace(native, backend="py-source", target=(
+                f"py:{fullname}@sha256:{adopted.sha256}"))
         if kind == "foreign":
             path, params, result = p
             parts = path.split(".")

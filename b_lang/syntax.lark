@@ -3,6 +3,7 @@ _NL: NEWLINE
 
 ?stmt: "permit" "[" [names] "]"                          -> permit_stmt
      | "use" BACKEND ":" path "as" NAME                   -> use_stmt
+     | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
      | "let" NAME [":" type_expr] "=" expr               -> let_stmt
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" expr -> fn_stmt
      | "print" expr                                       -> print_stmt

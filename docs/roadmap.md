@@ -2,7 +2,12 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
-## Implemented through B 0.6
+## Implemented through B 0.7
+
+- [x] Experimental `adopt py:MODULE.function as name`: convert an annotated single-expression Python source leaf into a pure, checked native B function, without runtime module imports. Record exact source SHA-256 in BIR.
+- [x] `b adopt-audit py:MODULE --json`: show supported and unsupported functions; honest 0/20 on standard-library `statistics`.
+- [ ] Expand safe source adoption only when semantics can be defined precisely (nested calls, richer types, contracts).
+- [ ] Compare source adoption against Python interop and ordinary B code on held-out AI programming tasks, including costs.
 
 - [x] B syntax, AST, expression-bodied functions, immutable bindings, operators, lists, conditionals.
 - [x] `Option[T]` and `Dict[Text,T]` with literals/inference and recursive runtime type guards.

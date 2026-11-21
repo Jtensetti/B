@@ -1,0 +1,8 @@
+# A real Python source function is checked and compiled into *native B*.
+# No Python module import is emitted, and no external effect permission needed.
+permit [console]
+adopt py:b_examples.pure_kernels.forward as next
+adopt py:b_examples.pure_kernels.square as sq
+fn success(x: Int) -> Int pure requires x >= 0 = next(x)
+print success(41)
+print sq(3.0)

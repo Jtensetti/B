@@ -2,11 +2,26 @@
 
 **B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
 
-**Version 0.6 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.7 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
 
-## What is new in B 0.6?
+## New in B 0.7: checked Python source adoption
+
+B can now compile a **small, explicitly restricted subset of Python source into native B functions**, rather than importing an entire Python module at runtime:
+
+```bee
+permit [console]
+adopt py:b_examples.pure_kernels.square as sq
+fn triple_square(x: Float) -> Float pure = sq(x) * 3.0
+print triple_square(4.0)
+```
+
+The `adopt` directive reads a top-level Python function, translates allowed expression-only code into BIR, type-checks and emits a native B function. **The original Python module is not imported or executed** by that compiled function. Unsupported Python code is rejected (`E_ADOPT`), not silently interpreted. BIR records the source file SHA-256. Inspect candidates with `b adopt-audit py:MODULE --json`.
+
+**Measured limitation:** the first narrow experiment adopted 5/9 functions in our controlled example but **0/20** in Python's real `statistics` module and **0/5** in `textwrap`. This is *not* general library integration or mathematical verification. See [the scope, results and limitations](docs/source-adoption.md).
+
+## Contracts and effects (introduced in B 0.6)
 
 **Effect budgets and function contracts are native B syntax**, checked before the Python backend executes. B can now prove a narrow family of integer postconditions, reject certain broken preconditions and effects, and enforce other contracts at runtime:
 
@@ -18,7 +33,7 @@ print successor(41)
 
 `pure` forbids unknown foreign effects inside a B function. `permit [...]` tracks a small set of program effects (`console` and `foreign`), **not actual OS capabilities**. BIR records whether a postcondition is proved using integer intervals or only checked at runtime. An imported function's type does not prove its behavior. See [the contract and effect specification](docs/contracts-effects.md).
 
-## BIR pipeline (introduced in B 0.5, extended in 0.6)
+## BIR pipeline (introduced in B 0.5, extended in 0.7)
 
 A real, **typed backend-neutral intermediate representation (BIR)** sits between B source and the executable backend:
 
@@ -27,7 +42,7 @@ A real, **typed backend-neutral intermediate representation (BIR)** sits between
       |
   B parser + B checker + type/provenance catalog
       |
-  BIR v2: types, contracts, effect classifications, foreign provenance
+  BIR v2: types, contracts, effect classifications, source provenance
       |
   conservative pure-operation optimization
       |
@@ -60,6 +75,9 @@ Requires Python 3.11+. Running the .NET example also requires the .NET 10 SDK.
 
 ```sh
 python -m pip install -e '.[dev]'
+b check examples/adopt.bee --strict
+b run examples/adopt.bee
+b adopt-audit py:statistics --json
 b check examples/contracts.bee --strict --json
 b run examples/contracts.bee
 b check examples/effects.bee --strict
@@ -92,9 +110,9 @@ This limitation matters more than adding new punctuation or another file extensi
 
 | Layer | Working today | Not yet provided |
 | --- | --- | --- |
-| B language | Own grammar, immutable names, typed functions, conditions, collections, `??`, `pure`, `requires`, `ensures`, `permit` | Loops, records, pattern matching, user generics |
+| B language | Own grammar, immutable names, typed functions, conditions, collections, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | Loops, records, pattern matching, user generics |
 | BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
-| Python libraries | Actual import/call, limited annotation discovery, overloads and dynamic fallback | Full typeshed, re-export tracking, package-version locking |
+| Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
 | .NET libraries | Restricted `System.Math` and `Regex` host, metadata verified in CI | Arbitrary assemblies, object models, reflection-based adapters |
 | Correctness | Static types/errors, narrow integer interval proofs, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
 | AI advantage | Explicit machine-readable IR and diagnostics | Any measured improvement in AI's correctness or tokens |
@@ -102,6 +120,7 @@ This limitation matters more than adding new punctuation or another file extensi
 ## Project references
 
 - [Language and grammar](docs/language.md)
+- [Source adoption (0.7): rules, measured limits and BIR provenance](docs/source-adoption.md)
 - [Contracts, interval proofs and effects (0.6)](docs/contracts-effects.md)
 - [BIR semantics and implementation](docs/bir.md)
 - [Cross-language library bridges](docs/interop.md)
