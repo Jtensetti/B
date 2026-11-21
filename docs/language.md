@@ -42,14 +42,14 @@ The remaining expression precedence, highest first: attribute access/call, unary
 | Type | Runtime representation in current Python backend |
 | --- | --- |
 | `Int` | Python integer (unbounded), excluding booleans |
-| `Float` | Finite Python float or integer at a typed boundary; native arithmetic follows Python numeric rules |
+| `Float` | Finite Python float. Integer arguments and JSON number representations are normalized to Python `float` at typed boundaries; native arithmetic follows Python numeric rules |
 | `Bool` | Python `True`/`False`, not assignable to `Int` |
 | `Text` | Python Unicode string |
 | `List[T]` | Python list with members checked against `T` at annotated boundaries |
 | `Any` | An explicitly dynamic type; not a proof of correctness |
 | `None` | Internal inferred type for `none`; not a permitted declared type |
 
-Type assignability is identity plus `Int` → `Float`, dynamic `Any` (with runtime checks when narrowed), and element-wise `List[T]` compatibility. Inferred heterogeneous lists may have `List[Any]`; narrowing them to `List[Int]` triggers a runtime element check, even when `Any` is nested. In strict mode such unresolved dynamic checks are rejected.
+Type assignability is identity plus `Int` → `Float`, dynamic `Any` (with runtime checks when narrowed), and element-wise `List[T]` compatibility. Inferred heterogeneous lists may have `List[Any]`; narrowing them to `List[Int]` triggers a runtime element check, even when `Any` is nested. Typed lists are copied and their elements normalized at runtime boundaries. Converting an out-of-range `Int` to `Float` raises a boundary error; in-range conversion may round. In strict mode such unresolved dynamic checks are rejected.
 
 Expressions in an `if` must have compatible branch types; when the branches are `Int` and `Float`, the inferred type is `Float`. A known condition selects the known branch for constant propagation. Both branches are type-checked, whether or not the condition is statically known. When no common non-dynamic type can be established, a known-type mismatch is an error.
 

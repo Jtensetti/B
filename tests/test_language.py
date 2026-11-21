@@ -32,7 +32,7 @@ def test_types_and_boolean():
 
 def test_python_standard_library():
     out, _ = run("use py:statistics as stats\nprint stats.mean([1, 2, 3])\n", strict=True)
-    assert out.strip() == "2"
+    assert out.strip() == "2.0"
 
 
 def test_math_constant_known():

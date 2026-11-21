@@ -6,8 +6,9 @@
 2. **Native B conditionals:** `if condition then a else b` parses into B's AST, performs static branch type checks, propagates statically known results and lowers into a Python conditional expression. Only the selected branch executes at runtime.
 3. **Nested dynamic guards:** narrowing `List[Any]` to `List[Int]` now requires a runtime check of every element. A mixed literal and a dynamically imported JSON result are tested as negative cases.
 4. **True multi-runtime text processing:** B calls `statistics.mean`, .NET's `Regex.IsMatch` and .NET's `Math.Sqrt` in a single program. The .NET host's actual execution is exercised in GitHub CI; when .NET is unavailable locally, its runtime tests are marked skipped, not passed.
-5. **Machine-readable diagnostics and explicit extension policy:** `b check FILE.bsrc --json` outputs accepted/rejected status, static diagnostics and foreign assumptions. `.b` remains compatible; `.bsrc` is the preferred source extension.
-6. **Differential expression testing:** a reproducible seeded test generates 300 B arithmetic/conditional expressions and compares their results against equivalent Python expressions. This covers only the implemented expression subset, not general correctness.
+5. **Boundary normalization discovered by CI:** .NET serializes the floating-point value `6.0` as JSON `6`. The initial bridge accepted the result as a `Float` but left a Python `int` in B. B now converts compatible numeric values to finite Python floats, recursively normalizes typed lists, and rejects an integer too large for `Float`. The actual .NET host test exposed this defect.
+6. **Machine-readable diagnostics and explicit extension policy:** `b check FILE.bsrc --json` outputs accepted/rejected status, static diagnostics and foreign assumptions. `.b` remains compatible; `.bsrc` is the preferred source extension.
+7. **Differential expression testing:** a reproducible seeded test generates 300 B arithmetic/conditional expressions and compares their results against equivalent Python expressions. This covers only the implemented expression subset, not general correctness.
 
 ## What these tests do not establish
 

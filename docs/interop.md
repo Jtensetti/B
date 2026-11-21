@@ -13,7 +13,7 @@ let n: Float = stats.median([2.0, 4.0, 100.0])
 - `use py:module as alias` finds and imports the *real* installed CPython package.
 - A small built-in registry recognizes some signatures (`math`, `statistics`).
 - `foreign alias.method(T1, T2) -> R` supplies an explicit signature for any callable exposed by an imported Python module. It does not modify the Python package.
-- B type-checks the call, validates the foreign arguments immediately before dispatch, and validates the returned value against the declared B return type.
+- B type-checks the call, validates the foreign arguments immediately before dispatch, and validates and normalizes the returned value against the declared B return type (including converting a JSON `6` to a B `Float` `6.0`).
 - `foreign` declarations are trusted assumptions about signatures, **not validated contracts about behavior**. The runtime may detect a mismatched return type, but cannot tell whether a correctly typed value is the correct answer.
 - Without a signature, unknown Python members are dynamic with a `W_UNCHECKED_FOREIGN` warning. Strict mode rejects those warnings.
 - Imports execute in the running Python process with its full privileges; they are neither sandboxed nor effect-checked.

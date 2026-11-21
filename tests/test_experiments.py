@@ -49,7 +49,7 @@ let m: Float = stats.median([10, 20, 30])
 print m
 '''
     stdout, checked = run_b(src)
-    assert stdout.strip() == '20'
+    assert stdout.strip() == '20.0'
     assert checked.assumptions == ['py:statistics.median(List[Float]) -> Float']
     assert not checked.diagnostics
 
@@ -122,7 +122,7 @@ print typed'''
     source = 'use py:json as json\nlet unknown = json.loads("[1, \\\"oops\\\"]")\nlet typed: List[Int] = unknown\nprint typed'
     compiled = compile_b(source)
     assert {d.code for d in compiled.diagnostics} == {'W_UNCHECKED_FOREIGN', 'W_DYNAMIC_TYPE'}
-    with pytest.raises(BBoundaryError, match='List\\[Int\\]'):
+    with pytest.raises(BBoundaryError, match='Expected Int'):
         exec(compiled.code, {})
 
 
@@ -130,7 +130,7 @@ def test_list_dynamic_guard_from_static_mixed_literal():
     source = 'let mixed = [1, "wrong"]\nlet ints: List[Int] = mixed\nprint ints'
     compiled = compile_b(source)
     assert 'W_DYNAMIC_TYPE' in [d.code for d in compiled.diagnostics]
-    with pytest.raises(BBoundaryError, match='List\\[Int\\]'):
+    with pytest.raises(BBoundaryError, match='Expected Int'):
         exec(compiled.code, {})
 
 
