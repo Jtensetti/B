@@ -71,7 +71,7 @@ class PythonLowerer:
             return ast.Assign(targets=[ast.Name(id=s.name, ctx=ast.Store())], value=ast.Call(
                 func=ast.Name(id="_b_py" if s.backend == "py" else "_b_net", ctx=ast.Load()),
                 args=[ast.Constant(s.target)], keywords=[]))
-        if s.op == "foreign":
+        if s.op in ("foreign", "permit"):
             return ast.Pass()
         if s.op == "let":
             return ast.Assign(targets=[ast.Name(id=s.name, ctx=ast.Store())], value=self.expr(s.expr))
@@ -79,7 +79,34 @@ class PythonLowerer:
             names = [n for n, _ in s.params]
             args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in names],
                                  vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])
-            return ast.FunctionDef(name=s.name, args=args, body=[ast.Return(value=self.expr(s.expr))],
+            body: list[ast.stmt] = []
+            # B arguments are B values even if invoked from Python or via Any.
+            for name, typ in s.params:
+                body.append(ast.Assign(targets=[ast.Name(id=name, ctx=ast.Store())],
+                                       value=ast.Call(func=ast.Name(id="_b_guard", ctx=ast.Load()),
+                                                      args=[ast.Name(id=name, ctx=ast.Load()), ast.Constant(str(typ))],
+                                                      keywords=[])))
+            if s.requires is not None:
+                body.append(ast.If(test=ast.UnaryOp(op=ast.Not(), operand=self.expr(s.requires)),
+                    body=[ast.Raise(exc=ast.Call(func=ast.Name(id="_b_contract_error", ctx=ast.Load()),
+                                  args=[ast.Constant(f"Precondition of {s.name} failed")], keywords=[]),
+                                    cause=None)], orelse=[]))
+            body.append(ast.Assign(targets=[ast.Name(id="_b_result", ctx=ast.Store())], value=self.expr(s.expr)))
+            if s.ensures is not None:
+                # `result` is an expression-scope pseudo-variable, not a mutable B binding.
+                condition = self.expr(s.ensures)
+                class ReplaceResult(ast.NodeTransformer):
+                    def visit_Name(self, node):
+                        if node.id == "result":
+                            return ast.copy_location(ast.Name(id="_b_result", ctx=ast.Load()), node)
+                        return node
+                condition = ReplaceResult().visit(condition)
+                body.append(ast.If(test=ast.UnaryOp(op=ast.Not(), operand=condition),
+                    body=[ast.Raise(exc=ast.Call(func=ast.Name(id="_b_contract_error", ctx=ast.Load()),
+                                  args=[ast.Constant(f"Postcondition of {s.name} failed")], keywords=[]),
+                                    cause=None)], orelse=[]))
+            body.append(ast.Return(value=ast.Name(id="_b_result", ctx=ast.Load())))
+            return ast.FunctionDef(name=s.name, args=args, body=body,
                                    decorator_list=[], returns=None, type_comment=None)
         if s.op == "print":
             return ast.Expr(value=ast.Call(func=ast.Name(id="print", ctx=ast.Load()),
@@ -96,6 +123,7 @@ class PythonLowerer:
             ast.alias(name="net_module", asname="_b_net"),
             ast.alias(name="guard", asname="_b_guard"),
             ast.alias(name="BAssertionError", asname="_b_assertion_error"),
+            ast.alias(name="BContractError", asname="_b_contract_error"),
         ], level=0)]
         body.extend(self.statement(s) for s in program.statements)
         return ast.fix_missing_locations(ast.Module(body=body, type_ignores=[]))

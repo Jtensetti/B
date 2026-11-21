@@ -74,6 +74,11 @@ class StmtIR:
     params: tuple[tuple[str, Type], ...] = ()
     backend: str | None = None
     target: str | None = None
+    effects: tuple[str, ...] = ()
+    requires: ExprIR | None = None
+    ensures: ExprIR | None = None
+    verification: str | None = None
+    declared_pure: bool = False
 
     def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {"op": self.op}
@@ -89,6 +94,15 @@ class StmtIR:
             d["backend"] = self.backend
         if self.target:
             d["target"] = self.target
+        if self.op == "fn":
+            d["effects"] = list(self.effects)
+            d["declared_pure"] = self.declared_pure
+            if self.requires is not None:
+                d["requires"] = self.requires.to_dict()
+            if self.ensures is not None:
+                d["ensures"] = self.ensures.to_dict()
+            if self.verification is not None:
+                d["postcondition_status"] = self.verification
         return d
 
 
@@ -97,7 +111,9 @@ class ProgramIR:
     statements: tuple[StmtIR, ...]
     foreign_symbols: tuple[ForeignSymbol, ...]
     assumptions: tuple[str, ...] = ()
-    version: int = 1
+    version: int = 2
+    permitted_effects: tuple[str, ...] | None = None
+    detected_effects: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -106,4 +122,6 @@ class ProgramIR:
             "foreign_symbols": [s.to_dict() for s in self.foreign_symbols],
             "assumed_foreign_contracts": list(self.assumptions),
             "behavior_proven": False,
+            "permitted_effects": list(self.permitted_effects) if self.permitted_effects is not None else None,
+            "detected_effects": list(self.detected_effects),
         }

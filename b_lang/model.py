@@ -17,6 +17,11 @@ class Stmt:
 
 class ToModel(Transformer):
     def start(self, values): return list(values)
+    def names(self, xs): return [str(x) for x in xs]
+    def permit_stmt(self, xs): return Stmt("permit", (tuple(xs[0]) if xs and xs[0] is not None else (),))
+    def fn_pure(self, xs): return ("pure", True)
+    def fn_requires(self, xs): return ("requires", xs[0])
+    def fn_ensures(self, xs): return ("ensures", xs[0])
     def path(self, xs): return ".".join(map(str, xs))
     def type_expr(self, xs): return (str(xs[0]), tuple(x for x in xs[1:] if x is not None))
     def params(self, xs): return list(xs)
@@ -59,7 +64,9 @@ class ToModel(Transformer):
     def use_stmt(self, xs): return Stmt("use", (str(xs[0]), xs[1], str(xs[2])))
     def let_stmt(self, xs): return Stmt("let", (str(xs[0]), xs[1], xs[2]))
     def fn_stmt(self, xs):
-        return Stmt("fn", (str(xs[0]), xs[1] or [], xs[2], xs[3]))
+        flags = {key: value for item in xs[3:-1] if item is not None for key, value in (item,)}
+        return Stmt("fn", (str(xs[0]), xs[1] or [], xs[2], xs[-1],
+                            bool(flags.get("pure", False)), flags.get("requires"), flags.get("ensures")))
     def print_stmt(self, xs): return Stmt("print", (xs[0],))
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 

@@ -14,6 +14,8 @@ from typing import Any
 
 from lark.exceptions import LarkError
 
+from .contracts import validate_predicate, constant as contract_constant, restrict as contract_restrict, verify as verify_post
+from .effects import ALLOWED as ALLOWED_EFFECTS, expression_effects, statement_effects
 from .discovery import inspect_python
 from .interop import ForeignCatalog
 from .ir import ExprIR, ProgramIR, StmtIR
@@ -66,6 +68,9 @@ class Symbol:
     foreign: str | None = None
     signature: Binding | None = None
     constant: Any = NOT_CONST
+    effects: frozenset[str] | None = frozenset()
+    requires: ExprIR | None = None
+    parameter_names: tuple[str, ...] = ()
 
 
 class Compiler:
@@ -76,6 +81,8 @@ class Compiler:
         self.registry = ForeignCatalog()
         self.registry.add_net_registry(net_bindings())
         self.used_foreign: set[str] = set()
+        self.permitted_effects: tuple[str, ...] | None = None
+        self.started_statements = False
 
     def warn(self, code: str, message: str):
         d = Diagnostic("warning", code, message)
@@ -258,6 +265,17 @@ class Compiler:
                     raise BError("E_ARITY", f"{label} expects {wanted} arguments, got {len(values)}")
                 for idx, (v, expected) in enumerate(zip(values, sig.params), start=1):
                     self._check_type(v, expected, f"argument {idx} to {label}")
+                if not path and target.kind == "name":
+                    native = symbols[target.parts[0]]
+                    if native.requires is not None:
+                        constants = {name: value.constant for name, value in zip(native.parameter_names, values)}
+                        known = contract_constant(native.requires, {
+                            name: value for name, value in constants.items() if value is not NOT_CONST
+                        })
+                        if known is False:
+                            raise BError("E_PRECONDITION", f"Call to {label} violates its requires clause")
+                        if known is not True:
+                            self.warn("W_RUNTIME_PRECONDITION", f"Call to {label}: requires checked at runtime")
                 children = [tv.node] + [self.guard(v.node, t) if path else v.node
                                        for v, t in zip(values, sig.params)]
                 if ref is not None:
@@ -312,8 +330,32 @@ class Compiler:
                             constant=self._const_op(operator.not_ if kind == "not" else operator.neg, operand.constant))
         raise BError("E_INTERNAL", f"Unrecognized expression {kind}")
 
+    def _contract(self, expr: Expr, scope: dict[str, Symbol], allowed: set[str], label: str) -> ExprIR:
+        node = self.infer(expr, scope)
+        self._check_type(node, BOOL, label)
+        validate_predicate(node.node, allowed)
+        return node.node
+
+    def _pure_captures(self, node: ExprIR, locals_: set[str]) -> None:
+        if node.op == "name" and node.data not in locals_:
+            sym = self.symbols.get(node.data)
+            if not sym or (sym.type != Type("Function")
+                           and (sym.constant is NOT_CONST or type(sym.constant) not in (int, float, bool, str))):
+                raise BError("E_EFFECT", f"Pure function captures unproven global state: {node.data}")
+        for operand in node.operands:
+            self._pure_captures(operand, locals_)
+
     def statement(self, stmt: Stmt) -> StmtIR:
         kind, p = stmt.kind, stmt.parts
+        if kind == "permit":
+            if self.started_statements or self.permitted_effects is not None:
+                raise BError("E_EFFECT", "permit must be the first and only permission declaration")
+            declared = p[0]
+            if len(declared) != len(set(declared)) or any(x not in ALLOWED_EFFECTS for x in declared):
+                raise BError("E_EFFECT", f"Unknown or duplicated permit categories; allowed: {', '.join(sorted(ALLOWED_EFFECTS))}")
+            self.permitted_effects = tuple(sorted(declared))
+            return StmtIR("permit")
+        self.started_statements = True
         if kind == "foreign":
             path, params, result = p
             parts = path.split(".")
@@ -349,7 +391,7 @@ class Compiler:
             else:
                 raise BError("E_IMPORT", f"Unknown backend {backend}")
             self._new(alias, Symbol(MODULE, foreign=f"{backend}:{path}"))
-            return StmtIR("import", name=alias, backend=backend, target=path)
+            return StmtIR("import", name=alias, backend=backend, target=path, effects=("foreign",))
         if kind == "let":
             name, annotation, expr = p
             value = self.infer(expr)
@@ -362,24 +404,53 @@ class Compiler:
                     self._check_type(self.infer(element), wanted.args[0], f"element of {name}")
             self._new(name, Symbol(wanted, constant=value.constant))
             node = self.guard(value.node, wanted) if annotation is not None else value.node
-            return StmtIR("let", name=name, typ=wanted, expr=node)
+            return StmtIR("let", name=name, typ=wanted, expr=node,
+                          effects=tuple(sorted(expression_effects(node, self.symbols))))
         if kind == "fn":
-            name, parameters, result_annotation, expr = p
-            names = [name for name, _ in parameters]
+            name, parameters, result_annotation, expr, declared_pure, raw_pre, raw_post = p
+            names = [param_name for param_name, _ in parameters]
             if len(names) != len(set(names)):
                 raise BError("E_NAME", f"Duplicate parameter in {name}")
             if any(n in self.symbols or n.startswith("_b_") for n in names):
                 raise BError("E_NAME", "Parameters cannot shadow existing names or runtime internals")
+            if raw_post is not None and "result" in names:
+                raise BError("E_CONTRACT", "result is reserved for the ensures clause")
             types = [from_syntax(t) for _, t in parameters]
             result_type = from_syntax(result_annotation)
-            self._new(name, Symbol(Type("Function"), signature=Signature(tuple(types), result_type)))
+            signature = Signature(tuple(types), result_type)
+            self._new(name, Symbol(Type("Function"), signature=signature, effects=None,
+                                   parameter_names=tuple(names)))
             local = {**self.symbols, **{n: Symbol(t) for n, t in zip(names, types)}}
+            pre = self._contract(raw_pre, local, set(names), "requires") if raw_pre else None
+            if pre is not None:
+                contract_restrict(pre, {n for n, t in zip(names, types) if t == INT})
+                if contract_constant(pre, {}) is False:
+                    raise BError("E_PRECONDITION_EMPTY", "Function requires false for every input")
             body = self.infer(expr, local)
             self._check_type(body, result_type, f"return of {name}")
-            return StmtIR("fn", name=name, typ=result_type, expr=self.guard(body.node, result_type),
-                          params=tuple(zip(names, types)))
+            effects = expression_effects(body.node, local)
+            if declared_pure:
+                if effects:
+                    raise BError("E_EFFECT", f"Function {name} declared pure, but has effects: {', '.join(sorted(effects))}")
+                self._pure_captures(body.node, set(names))
+            self.symbols[name].effects = effects
+            self.symbols[name].requires = pre
+            body_node = self.guard(body.node, result_type)
+            proof = None
+            post = None
+            if raw_post is not None:
+                post_scope = {**local, "result": Symbol(result_type)}
+                post = self._contract(raw_post, post_scope, set(names) | {"result"}, "ensures")
+                proof = verify_post(pre, body.node, post, dict(zip(names, types)), result_type)
+                if proof == "runtime-check":
+                    self.warn("W_RUNTIME_POSTCONDITION", f"Function {name}: ensures is not statically proved")
+            return StmtIR("fn", name=name, typ=result_type, expr=body_node,
+                          params=tuple(zip(names, types)), effects=tuple(sorted(effects)),
+                          requires=pre, ensures=post, verification=proof, declared_pure=declared_pure)
         if kind == "print":
-            return StmtIR("print", expr=self.infer(p[0]).node)
+            value = self.infer(p[0])
+            return StmtIR("print", expr=value.node,
+                          effects=tuple(sorted({"console"} | set(expression_effects(value.node, self.symbols)))))
         if kind == "assert":
             value = self.infer(p[0])
             self._check_type(value, BOOL, "assert")
@@ -387,7 +458,8 @@ class Compiler:
                 raise BError("E_ASSERT", "Assertion is statically false")
             if value.constant is NOT_CONST:
                 self.warn("W_RUNTIME_ASSERT", "Assertion can only be checked while executing")
-            return StmtIR("assert", expr=value.node)
+            return StmtIR("assert", expr=value.node,
+                          effects=tuple(sorted(expression_effects(value.node, self.symbols))))
         raise BError("E_INTERNAL", f"Unrecognized statement {kind}")
 
     def compile(self, source: str) -> Compiled:
@@ -396,7 +468,14 @@ class Compiler:
         except LarkError as exc:
             raise BError("E_SYNTAX", str(exc)) from exc
         statements = tuple(self.statement(s) for s in parsed)
-        program = ProgramIR(statements, self.registry.export(self.used_foreign), tuple(self.assumptions))
+        detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
+        if self.permitted_effects is not None:
+            denied = set(detected) - set(self.permitted_effects)
+            if denied:
+                raise BError("E_EFFECT", f"Program uses forbidden effects: {', '.join(sorted(denied))}")
+        program = ProgramIR(statements, self.registry.export(self.used_foreign),
+                            tuple(self.assumptions), permitted_effects=self.permitted_effects,
+                            detected_effects=detected)
         optimized = optimize(program)
         python_module = PythonLowerer().lower(optimized.program)
         return Compiled(ast.unparse(python_module) + "\n", compile(python_module, "<B>", "exec"),

@@ -55,3 +55,7 @@ Instead of prompting the model for hand-formatted source, generate typed operati
 5. Test model-generated programs with independent correctness oracles, including repeated changes, *before* promoting any claim that B is a better language for AI.
 
 The most important experimental result may be a **negative one**: if existing Rust/Python/TypeScript tooling plus constrained generation achieves the same correctness and cost, a new language is not justified. In that case BIR or the verification methods can still be useful as independent tools.
+
+## Pilot delivered in B 0.6
+
+B includes a restricted `pure`/`permit` effect check and `requires`/`ensures` plus integer interval certification. This is **not** full proof-carrying code or a security capability system. The crucial next experiments must compare B's checks against established tools (Dafny, Koka, Python contracts) and must measure completion cost on independent model-generated tasks. See [contracts-effects.md](contracts-effects.md).
