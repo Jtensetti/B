@@ -51,7 +51,7 @@ The above is rejected as `E_EFFECT` because the import may execute Python initia
 
 `ensures` is evaluated against a special read-only `result` identifier after the function body has computed and type-checked its return value. A failing runtime check raises `BContractError`. Both pre- and postconditions use a restricted **call-free**, side-effect-free Boolean grammar (literals, parameters, `result`, `+`, `-`, `*`, comparisons, `and`, `or`, `not`). They cannot import or invoke foreign code or silently read global variables. This makes contracts independent of side effects.
 
-**A precondition is not automatically a proved fact about every caller.** A verified postcondition is conditional on that precondition holding; at runtime the guard enforces it.
+**A precondition is not automatically a proved fact about every caller.** A verified postcondition is conditional on that precondition holding; at runtime the guard enforces it. When evaluating a constant call statically, B normalizes scalar constants to the callee’s declared runtime parameter type first. For example, a large `Int` may round when passed to a `Float` parameter; the preflight checker must use the rounded value. Container values are intentionally not propagated as constants because guards may change their representation.
 
 ## 5. Deliberately narrow proof engine
 

@@ -231,3 +231,31 @@ def test_negative_return_guard_and_contract_effect_in_generated_python():
     program = compile_b('fn p(x: Int) -> Int pure requires x > 0 ensures result > 0 = x', strict=True)
     assert '_b_contract_error' in program.source
     assert '_b_guard' in program.source
+
+
+def test_int_to_float_rounding_is_applied_before_precondition_decision():
+    # 2**53 + 1 is not representable as Float. The source Int is NOT the value
+    # observed by the Float function at runtime.
+    source = ('fn f(x: Float) -> Float requires x == 9007199254740993 = x\n'
+              'print f(9007199254740993)')
+    with pytest.raises(BError) as error:
+        compile_b(source)
+    assert error.value.code == 'E_PRECONDITION'
+
+
+def test_annotated_float_binding_uses_rounded_runtime_constant():
+    source = ('let x: Float = 9007199254740993\n'
+              'assert x == 9007199254740993')
+    with pytest.raises(BError) as error:
+        compile_b(source)
+    assert error.value.code == 'E_ASSERT'
+
+
+def test_collection_coercion_is_not_silently_constant_propagated():
+    source = ('let raw: List[Float] = [9007199254740993]\n'
+              'assert raw == [9007199254740993]')
+    c = compile_b(source)
+    assert [d.code for d in c.diagnostics] == ['W_RUNTIME_ASSERT']
+    with pytest.raises(BError) as error:
+        compile_b(source, strict=True)
+    assert error.value.code == 'E_STRICT'

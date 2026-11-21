@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import math
 import operator
 from dataclasses import dataclass
 from typing import Any
@@ -111,6 +112,30 @@ class Compiler:
         if name in self.symbols:
             raise BError("E_NAME", f"Redefinition of {name}")
         self.symbols[name] = symbol
+
+    @staticmethod
+    def _at_runtime_constant(value: Any, wanted: Type) -> Any:
+        """Use only scalar constants with the SAME semantics as runtime guards.
+
+        An Int passed as Float is rounded at a boundary, and collection guards
+        may snapshot/coerce members. Those raw source constants are not safe
+        evidence for a requirement or assertion.
+        """
+        if value is NOT_CONST:
+            return NOT_CONST
+        if wanted == INT and type(value) is int:
+            return value
+        if wanted == BOOL and type(value) is bool:
+            return value
+        if wanted == TEXT and type(value) is str:
+            return value
+        if wanted == FLOAT and type(value) in (int, float):
+            try:
+                converted = float(value)
+                return converted if math.isfinite(converted) else NOT_CONST
+            except (OverflowError, ValueError):
+                return NOT_CONST
+        return NOT_CONST
 
     @staticmethod
     def _const_op(fn, *args):
@@ -268,7 +293,10 @@ class Compiler:
                 if not path and target.kind == "name":
                     native = symbols[target.parts[0]]
                     if native.requires is not None:
-                        constants = {name: value.constant for name, value in zip(native.parameter_names, values)}
+                        constants = {
+                            name: self._at_runtime_constant(value.constant, expected)
+                            for name, value, expected in zip(native.parameter_names, values, sig.params)
+                        }
                         known = contract_constant(native.requires, {
                             name: value for name, value in constants.items() if value is not NOT_CONST
                         })
@@ -402,7 +430,7 @@ class Compiler:
             if wanted.name == "List" and expr.kind == "list":
                 for element in expr.parts:
                     self._check_type(self.infer(element), wanted.args[0], f"element of {name}")
-            self._new(name, Symbol(wanted, constant=value.constant))
+            self._new(name, Symbol(wanted, constant=self._at_runtime_constant(value.constant, wanted)))
             node = self.guard(value.node, wanted) if annotation is not None else value.node
             return StmtIR("let", name=name, typ=wanted, expr=node,
                           effects=tuple(sorted(expression_effects(node, self.symbols))))
