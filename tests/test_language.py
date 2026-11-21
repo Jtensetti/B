@@ -74,7 +74,7 @@ def test_unknown_python_library_is_explicitly_unverified():
     source = 'use py:json as json\nprint json.dumps([1,2,3])'
     out, checked = run(source)
     assert out.strip() == '[1, 2, 3]'
-    assert any(d.code == "W_UNCHECKED_FOREIGN" for d in checked.diagnostics)
+    assert [d.code for d in checked.diagnostics] == ["W_UNCHECKED_FOREIGN"]
     with pytest.raises(BError) as err: compile_b(source, strict=True)
     assert err.value.code == "E_STRICT"
 
@@ -95,3 +95,12 @@ def test_generated_python_syntax_is_valid():
     import ast
     result = compile_b("use py:statistics as stats\nlet m = stats.mean([1,2,3])\nprint m")
     ast.parse(result.source)
+
+
+def test_unknown_foreign_attribute_is_not_silently_proven():
+    source = 'use py:math as math\nlet external = math.tau\nprint external'
+    value, report = run(source)
+    assert float(value.strip()) > 6
+    assert any(d.code == "W_UNCHECKED_FOREIGN" for d in report.diagnostics)
+    with pytest.raises(BError) as err: compile_b(source, strict=True)
+    assert err.value.code == "E_STRICT"

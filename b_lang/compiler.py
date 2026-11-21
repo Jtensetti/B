@@ -107,8 +107,11 @@ class Compiler:
             node = ast.Attribute(value=bv.node, attr=attr, ctx=ast.Load())
             path = self._foreign_path(ex, symbols)
             if path in ATTRIBUTES: return Value(ATTRIBUTES[path], self._guard(node, ATTRIBUTES[path]))
-            if path and path.startswith("net:") and path not in BINDINGS:
+            if path in BINDINGS: return Value(Type("Function"), node)
+            if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
+            if path and path.startswith("py:"):
+                self.warn("W_UNCHECKED_FOREIGN", f"Unspecified Python symbol {path}; no static signature available")
             return Value(ANY, node)
         if kind == "invoke":
             target, raw_args = p
@@ -129,7 +132,8 @@ class Compiler:
                 raise BError("E_FOREIGN", f"Unregistered .NET call {path}")
             if tv.type != ANY:
                 raise BError("E_TYPE", f"Cannot call value of type {tv.type}")
-            self.warn("W_UNCHECKED_FOREIGN", f"Unspecified call {path or '<computed>'}; no static signature available")
+            if not (path and path.startswith("py:")):
+                self.warn("W_UNCHECKED_FOREIGN", f"Unspecified call {path or '<computed>'}; no static signature available")
             return Value(ANY, ast.Call(func=tv.node, args=[v.node for v in values], keywords=[]))
         if kind in OPS:
             lhs, rhs = self.infer(p[0], symbols), self.infer(p[1], symbols)

@@ -78,6 +78,7 @@ B does not yet guarantee memory safety across foreign boundaries, resource bound
 ## Documentation
 
 - [B v0.1 language reference](docs/language.md) — syntax, types, evaluation and error rules
+- [B 1.0 design proposal](docs/design-b1.md) — proposed richer syntax and formal semantics (not implemented)
 - [Architecture](docs/architecture.md) — compiler, runtime, intermediate representation, future backends
 - [Foreign-function interfaces](docs/interop.md) — interoperability, type mapping, trust and serialization
 - [Verification](docs/verification.md) — which properties are checked, which are not

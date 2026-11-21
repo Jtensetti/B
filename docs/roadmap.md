@@ -12,7 +12,7 @@
 - [x] .NET 10 host source with JSON-lines bridge to `System.Math` subset
 - [x] Python unit tests, cross-runtime integration test and GitHub Actions workflow
 
-**Testing caveat:** local environment has Python but no .NET SDK; true cross-runtime execution must be validated by GitHub Actions or a machine with .NET 10 installed. Do not mark this as validated until successful CI evidence exists.
+**Testing evidence:** local Python run: 27 tests passed, one .NET-dependent test skipped. GitHub Actions completed the Python 3.11 and 3.13 matrix, built the .NET 10 adapter, and ran the real Python/.NET interoperability test successfully in [CI run 44922651119](https://github.com/Jtensetti/B/actions/runs/44922651119). Future changes must keep CI green. Neither unit tests nor CI prove general behavioral correctness.
 
 ## v0.2 — correct the foundations
 
