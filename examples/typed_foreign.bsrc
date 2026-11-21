@@ -1,0 +1,5 @@
+# A typed call to a real Python library function without modifying B's registry.
+use py:statistics as stats
+foreign stats.median(List[Float]) -> Float
+let value: Float = stats.median([2.0, 4.0, 100.0])
+print value

@@ -1,44 +1,44 @@
-# Interoperability model
+# B interoperability v0.2
 
-B does **not** reinterpret a Python library as C# or vice versa. B exposes a *foreign function* with an explicit signature and dispatches the call to its native runtime.
+B connects to foreign runtimes through explicitly typed boundaries. Imported code retains its original implementation and licensing; B does **not** translate its source into B, and does not claim the foreign library is correct.
 
-## v0.1 `py:` imports
+## Python: directly imported packages
 
-- `use py:statistics as stats` resolves an installed module.
-- Registered function signatures are checked statically. The known return type is guarded at runtime.
-- Unknown Python functions return B `Any` and generate `W_UNCHECKED_FOREIGN` when called.
-- `--strict` rejects such calls, but does not verify the internals of known functions.
-- Python imports may run arbitrary Python code, access files and execute side effects. **This is not a sandbox**.
+```text
+use py:statistics as stats
+foreign stats.median(List[Float]) -> Float
+let n: Float = stats.median([2.0, 4.0, 100.0])
+```
 
-## v0.1 `net:` imports
+- `use py:module as alias` finds and imports the *real* installed CPython package.
+- A small built-in registry recognizes some signatures (`math`, `statistics`).
+- `foreign alias.method(T1, T2) -> R` supplies an explicit signature for any callable exposed by an imported Python module. It does not modify the Python package.
+- B type-checks the call, validates the foreign arguments immediately before dispatch, and validates the returned value against the declared B return type.
+- `foreign` declarations are trusted assumptions about signatures, **not validated contracts about behavior**. The runtime may detect a mismatched return type, but cannot tell whether a correctly typed value is the correct answer.
+- Without a signature, unknown Python members are dynamic with a `W_UNCHECKED_FOREIGN` warning. Strict mode rejects those warnings.
+- Imports execute in the running Python process with its full privileges; they are neither sandboxed nor effect-checked.
 
-- `use net:System.Math as Math` binds a proxy.
-- Calls are transmitted as JSON lines to a persistent .NET 10 process built from `dotnet/B.NetHost`.
-- Only `System.Math.Sqrt`, `Pow`, `Abs`, `Min` and `Max` are allowlisted.
-- The host only accepts finite JSON numbers for these methods and returns finite JSON numeric results.
-- Other types, methods and assemblies are rejected, not guessed.
-- Runtime guards validate declared B types on returned values.
+## .NET: narrow typed process boundary
 
-This interface **copies and serializes** data. It cannot directly share object references, callbacks, large arrays or arbitrary CLR objects. It is slow for many tiny calls and unsuitable for high-throughput numeric arrays without a redesigned transport.
+- B's .NET adapter is a persistent .NET 10 process communicating through typed JSON lines.
+- Implemented types: `System.Math` (`Sqrt`, `Pow`, `Abs`, `Min`, `Max`) and `System.Text.RegularExpressions.Regex` (`IsMatch`).
+- All method names are allowlisted in the adapter; B-source `foreign` declarations cannot extend this whitelist.
+- Finite numeric values and text/bool results are checked. Regex evaluation is limited to 250 ms to constrain a common denial-of-service risk; this is not a sandbox or overall CPU limit.
+- JSON transport loses shared object identity, requires copies and conversion, and is not zero-copy.
+- External .NET methods that return an unexpected B type cause a boundary error. Exceptions are returned as host error messages.
 
-## Where a large library ecosystem could come from
+## Why `foreign` matters
 
-| Ecosystem | Likely adapter approach | Key difficulty |
+Previously, a user of a library not in B's small built-in signature registry had to choose unchecked dynamic calls or change compiler code. In v0.2 the B program can define its own signature. This expands the *reachable* Python API surface, but a false user declaration remains possible. Trusted metadata generation and version locking are future work.
+
+## Planned high-coverage binding generation
+
+| Ecosystem | Candidate strategy | Important limitations |
 | --- | --- | --- |
-| Python | CPython FFI, type stubs, introspection, handles | Dynamic types, arbitrary effects, reference ownership and GIL |
-| .NET | Metadata plus in-process managed hosting or sidecars | CLR object lifetimes, generics, async, overloads |
-| Rust | Exposed C ABI or Wasm component interfaces | Lifetime and ownership contracts; Rust source is not a stable ABI |
-| Java | JVM host with metadata-driven bindings | GC handles, overloads, reflection, asynchronous execution |
-| C/C++ | C ABI or explicitly generated bindings | Pointers, undefined behavior, layouts and memory safety |
-| WebAssembly | WIT / component model | Component and runtime feature compatibility |
+| Python | Read trusted `.pyi` stubs and importable metadata; generate `foreign` manifests | Dynamic features, overloaded functions, arbitrary effects |
+| .NET | Read assembly metadata; generate transport-safe typed adapters | CLR object identity, overload resolution, generics, async |
+| Rust / C | Consume explicit C ABI, WIT, or generated bindings | Lifetimes, pointers and unstable native Rust ABI |
+| Java | JVM metadata and process/in-process adapters | GC, handles, overloads, exceptions |
+| WebAssembly | Component model/WIT type boundaries | Runtime support, resource semantics, transport |
 
-A future B IR must represent at least numeric width, nullable values, text encoding, records, lists, results/errors, resource handles, async semantics and effects. `Int` is currently arbitrary-precision; converting it to a bounded foreign integer must require range checks. Float/decimal conversions must not silently lose guarantees.
-
-## Trust tiers (proposed)
-
-- `native-verified`: properties established within the supported B semantics.
-- `contract-checked`: declared foreign signature, runtime guards, but unverified library behavior.
-- `dynamic`: no static signature; usage explicitly warned or forbidden by policy.
-- `proved`: machine-checked behavioral claim under stated assumptions (not implemented).
-
-These tiers should attach to every imported symbol in future versions. A semantic contract or specification can be wrong and must have provenance and tests.
+A future stable B IR must handle fixed-width numbers, floats and decimals, nullability, records, results, resource handles, effects and asynchronous behavior. B 0.2 has none of these guarantees at the general level.

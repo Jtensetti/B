@@ -1,57 +1,56 @@
-# Roadmap and implementation ledger
+# B roadmap and implementation ledger
 
-## v0.1 — implemented
+The long-term target is a new language with its own semantics, a minimal model-friendly representation, strong preflight checking and reliable access to existing ecosystems. Features below are intentionally distinguished by execution evidence, not by aspiration.
 
-- [x] Independently parsed `.b` program syntax and AST
-- [x] Immutable top-level bindings and typed expression functions
-- [x] Static type checks with concise named diagnostics
-- [x] Constant folding for checks and division-by-zero rejection
-- [x] Python AST lowering and a `b` CLI (`check`, `run`, `build`)
-- [x] Real imports from installed Python libraries
-- [x] Typed manifest for a small number of Python and .NET symbols
-- [x] .NET 10 host source with JSON-lines bridge to `System.Math` subset
-- [x] Python unit tests, cross-runtime integration test and GitHub Actions workflow
+## v0.1 — completed foundation
 
-**Testing evidence:** local Python run: 27 tests passed, one .NET-dependent test skipped. GitHub Actions completed the Python 3.11 and 3.13 matrix, built the .NET 10 adapter, and ran the real Python/.NET interoperability test successfully in [CI run 44922651119](https://github.com/Jtensetti/B/actions/runs/44922651119). Future changes must keep CI green. Neither unit tests nor CI prove general behavioral correctness.
+- [x] B's own parser and syntax tree
+- [x] Native immutable bindings, typed expression functions, lists and arithmetic
+- [x] Initial type rules and compile-time constant checks
+- [x] Python AST backend and `b check/run/build`
+- [x] Python imports and a limited .NET Math bridge over JSON lines
+- [x] Local unit tests and cross-runtime CI
 
-## v0.2 — correct the foundations
+## v0.2 — implemented and undergoing integration checks
 
-- [ ] More complete type soundness tests and typed AST property tests
-- [ ] Explicit coercion rules, numeric limits, rounding and error semantics
-- [ ] Proper B program modules and import resolution
-- [ ] Data records, `Option`, `Result`, branches and loops
-- [ ] Source locations and structured error responses for AI tools
-- [ ] Metadata provenance/version locking and signature file format
-- [ ] Cross-runtime exception mapping and process lifetime specification
-- [ ] Sandboxed Python worker or capability-based isolation for untrusted programs
+- [x] New recommended extension `.bsrc`, retaining `.b` compatibility
+- [x] B conditional expressions with static branch checks
+- [x] `foreign` to type real imported Python methods without changing the compiler registry
+- [x] Runtime checks on known foreign argument and result boundaries
+- [x] Recursive dynamic-list guard when narrowing `List[Any]`
+- [x] Additional .NET `Regex.IsMatch` bridge and cross-runtime integration test
+- [x] Machine-readable `b check --json` results including trusted foreign assumptions
+- [x] Deterministic differential testing of 300 generated expressions
+- [x] Basic `.bsrc` VS Code grammar
 
-## v0.3 — broad interoperability
+## v0.3 — scale the interoperability
 
-- [ ] Generate Python bindings from type stubs/inspectable metadata
-- [ ] Generate .NET bindings from metadata and overload resolution
-- [ ] Typed bulk arrays and zero-copy shared memory where verified safe
-- [ ] Add Rust via C ABI / WIT component boundary
-- [ ] Record runtime effects, failures and allocation ownership
+- [ ] Automatically derive and cache Python signatures from trusted stubs (`.pyi`) with provenance and version locks
+- [ ] Generate .NET bindings from metadata with overload, nullability and exception handling
+- [ ] Structured records/tuples, nullable types and explicit failure values (`Option` / `Result`)
+- [ ] Foreign handles for objects, explicit resource lifetime and useful bulk array formats
+- [ ] Check both supported and unsupported behavior in version-pinned cross-runtime tests
+- [ ] Define a stable typed intermediate representation independent of Python AST
 
-## v0.4 — real verification
+## v0.4 — executable guarantees
 
-- [ ] Formal operational semantics for stable core IR
-- [ ] Machine-checkable contracts and pure-effect separation
-- [ ] Incremental verification with dependency graph
-- [ ] Distinguish `proved`, `disproved` and `unknown` at each contract
-- [ ] Differential and mutation testing against native languages
+- [ ] Formal semantics for the B core and a small independently checkable invariant language
+- [ ] Explicit effect declarations and capabilities for foreign modules
+- [ ] Incremental compilation and proof caching over unchanged IR nodes
+- [ ] Trusted backend and compiler validation / differential testing
+- [ ] Safer isolation for untrusted programs; runtime guards alone are not isolation
 
-## v0.5 — optimize for models, based on measurement
+## v0.5 — model optimization
 
-- [ ] Compact model-facing serialization derived from IR
-- [ ] Controlled grammar/type guided token generation
-- [ ] Versioned change operations instead of whole-file rewrites
-- [ ] Real cost/accuracy benchmarks against competitive baselines
-- [ ] Custom tokenization or finetuning only if the measured gain justifies it
+- [ ] Stable machine-facing grammar/serialization derived from B IR
+- [ ] Constrained decoding against allowed operations and types
+- [ ] Versioned localized transformations to prevent regressions
+- [ ] Compare B vs existing languages using the same AI model and full cost budget
+- [ ] Distinguish model token improvements from correctness and library coverage
 
-## Rejected premature design commitments
+## Excluded assumptions
 
-- A universal replacement for Python/C#/Rust without adapters.
-- Automatic proof of arbitrary third-party libraries.
-- Assuming natural-language-like ambiguity improves program generation.
-- Equating shorter source with lower actual model cost.
+- “A new spelling or shorter syntax is automatically cheaper for an LLM.”
+- “A declared foreign function signature proves the function behaves correctly.”
+- “The Python backend currently produces native B executables.”
+- “An empty warning list means that every observable behavior is correct.”

@@ -22,3 +22,6 @@ jobs:
       - run: pytest -q
       - run: b check examples/polyglot.b --strict
       - run: b run examples/polyglot.b
+      - run: b check examples/polyglot.bsrc --strict
+      - run: b run examples/polyglot.bsrc
+      - run: b check examples/typed_foreign.bsrc --strict --json

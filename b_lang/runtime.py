@@ -87,6 +87,6 @@ class _DotNetType:
         return invoke
 
 def net_module(fullname: str):
-    if fullname != "System.Math":
-        raise BBoundaryError(f"The v0.1 .NET adapter only exposes System.Math, not {fullname}")
+    if fullname not in ("System.Math", "System.Text.RegularExpressions.Regex"):
+        raise BBoundaryError(f"Unregistered .NET type: {fullname}")
     return _DotNetType(fullname)

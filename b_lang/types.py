@@ -65,5 +65,17 @@ BINDINGS: dict[str, Signature] = {
     "net:System.Math.Abs": Signature((FLOAT,), FLOAT),
     "net:System.Math.Min": Signature((FLOAT, FLOAT), FLOAT),
     "net:System.Math.Max": Signature((FLOAT, FLOAT), FLOAT),
+    "net:System.Text.RegularExpressions.Regex.IsMatch": Signature((TEXT, TEXT), BOOL),
 }
 ATTRIBUTES: dict[str, Type] = {"py:math.pi": FLOAT, "py:math.e": FLOAT}
+
+
+def needs_dynamic_guard(actual: Type, expected: Type) -> bool:
+    """True when dynamic portions of an otherwise assignable type need a runtime check."""
+    if expected == ANY:
+        return False
+    if actual == ANY:
+        return True
+    if actual.name == expected.name == "List" and len(actual.args) == len(expected.args) == 1:
+        return needs_dynamic_guard(actual.args[0], expected.args[0])
+    return False

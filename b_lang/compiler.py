@@ -9,7 +9,7 @@ from lark.exceptions import LarkError
 from .model import Expr, Stmt, parse
 from .types import (
     Type, BError, INT, FLOAT, BOOL, TEXT, NONE, ANY, MODULE,
-    BINDINGS, ATTRIBUTES, Signature, assignable, from_syntax, unify,
+    BINDINGS, ATTRIBUTES, Signature, assignable, from_syntax, unify, needs_dynamic_guard,
 )
 
 NOT_CONST = object()
@@ -32,6 +32,7 @@ class Compiled:
     source: str
     code: Any
     diagnostics: list[Diagnostic]
+    assumptions: list[str]
 
 @dataclass
 class Symbol:
@@ -55,6 +56,8 @@ class Compiler:
     def __init__(self):
         self.symbols: dict[str, Symbol] = {}
         self.diagnostics: list[Diagnostic] = []
+        self.foreign_bindings: dict[str, Signature] = {}
+        self.assumptions: list[str] = []
 
     def warn(self, code: str, message: str):
         entry = Diagnostic("warning", code, message)
@@ -63,7 +66,7 @@ class Compiler:
     def _check_type(self, value: Value, expected: Type, context: str):
         if not assignable(value.type, expected):
             raise BError("E_TYPE", f"{context}: expected {expected}, got {value.type}")
-        if value.type == ANY and expected != ANY:
+        if needs_dynamic_guard(value.type, expected):
             self.warn("W_DYNAMIC_TYPE", f"{context} comes from an untyped boundary; checked at runtime")
             value.node = self._guard(value.node, expected)
 
@@ -82,6 +85,22 @@ class Compiler:
     def infer(self, ex: Expr, scope: dict[str, Symbol] | None = None) -> Value:
         symbols = self.symbols if scope is None else scope
         kind, p = ex.kind, ex.parts
+        if kind == "conditional":
+            cond, yes, no = p
+            cv = self.infer(cond, symbols)
+            self._check_type(cv, BOOL, "if condition")
+            yv, nv = self.infer(yes, symbols), self.infer(no, symbols)
+            typ = unify(yv.type, nv.type)
+            if typ == ANY and yv.type != ANY and nv.type != ANY:
+                raise BError("E_TYPE", f"if branches have incompatible types: {yv.type} versus {nv.type}")
+            if needs_dynamic_guard(yv.type, typ):
+                self._check_type(yv, typ, "if then branch")
+            if needs_dynamic_guard(nv.type, typ):
+                self._check_type(nv, typ, "if else branch")
+            constant = NOT_CONST
+            if type(cv.constant) is bool:
+                constant = yv.constant if cv.constant else nv.constant
+            return Value(typ, ast.IfExp(test=cv.node, body=yv.node, orelse=nv.node), constant)
         if kind == "literal":
             v = p[0]
             t = BOOL if type(v) is bool else INT if type(v) is int else FLOAT if type(v) is float else TEXT if type(v) is str else NONE
@@ -107,7 +126,7 @@ class Compiler:
             node = ast.Attribute(value=bv.node, attr=attr, ctx=ast.Load())
             path = self._foreign_path(ex, symbols)
             if path in ATTRIBUTES: return Value(ATTRIBUTES[path], self._guard(node, ATTRIBUTES[path]))
-            if path in BINDINGS: return Value(Type("Function"), node)
+            if path in BINDINGS or path in self.foreign_bindings: return Value(Type("Function"), node)
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
             if path and path.startswith("py:"):
@@ -118,7 +137,7 @@ class Compiler:
             tv = self.infer(target, symbols)
             values = [self.infer(a, symbols) for a in raw_args]
             path = self._foreign_path(target, symbols)
-            sig = BINDINGS.get(path) if path else None
+            sig = (self.foreign_bindings.get(path) or BINDINGS.get(path)) if path else None
             if sig is None and target.kind == "name":
                 sig = symbols[target.parts[0]].signature
             if sig:
@@ -126,7 +145,11 @@ class Compiler:
                     raise BError("E_ARITY", f"{path or target.parts[0]} expects {len(sig.params)} arguments, got {len(values)}")
                 for n, (value, expected) in enumerate(zip(values, sig.params), start=1):
                     self._check_type(value, expected, f"argument {n} to {path or target.parts[0]}")
-                call = ast.Call(func=tv.node, args=[v.node for v in values], keywords=[])
+                # Guard even statically typed calls at a foreign boundary: the imported
+                # function has never been verified and may return an unexpected value.
+                guarded_args = [self._guard(v.node, t) if path else v.node
+                                for v, t in zip(values, sig.params)]
+                call = ast.Call(func=tv.node, args=guarded_args, keywords=[])
                 return Value(sig.result, self._guard(call, sig.result) if path else call)
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET call {path}")
@@ -177,6 +200,28 @@ class Compiler:
 
     def statement(self, s: Stmt) -> ast.stmt:
         kind, p = s.kind, s.parts
+        if kind == "foreign":
+            path, params, result = p
+            parts = path.split(".")
+            if len(parts) < 2:
+                raise BError("E_FOREIGN", "Foreign declaration requires an imported alias and a member")
+            alias = parts[0]
+            sym = self.symbols.get(alias)
+            if not sym or sym.type != MODULE or not sym.foreign:
+                raise BError("E_FOREIGN", f"{alias} must be an imported foreign module")
+            fullname = sym.foreign + "." + ".".join(parts[1:])
+            if fullname in self.foreign_bindings or fullname in BINDINGS:
+                raise BError("E_FOREIGN", f"A binding already exists for {fullname}")
+            if fullname.startswith("net:"):
+                # Only explicit host allowlist methods can be called; a declaration
+                # must not override the host's security boundary.
+                raise BError("E_FOREIGN", "Custom .NET declarations require a host adapter; only built-in .NET bindings work")
+            sig = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
+            if any(t in (NONE, MODULE) for t in (*sig.params, sig.result)):
+                raise BError("E_TYPE", "Foreign signatures cannot use internal None or Module types")
+            self.foreign_bindings[fullname] = sig
+            self.assumptions.append(f"{fullname}({', '.join(map(str, sig.params))}) -> {sig.result}")
+            return ast.Pass()
         if kind == "use":
             backend, path, alias = p
             if backend == "py":
@@ -240,7 +285,7 @@ class Compiler:
         for statement in statements: body.append(self.statement(statement))
         module = ast.fix_missing_locations(ast.Module(body=body, type_ignores=[]))
         python_source = ast.unparse(module) + "\n"
-        return Compiled(python_source, compile(module, "<B>", "exec"), self.diagnostics)
+        return Compiled(python_source, compile(module, "<B>", "exec"), self.diagnostics, self.assumptions)
 
 def compile_b(source: str, strict: bool = False) -> Compiled:
     result = Compiler().compile(source)

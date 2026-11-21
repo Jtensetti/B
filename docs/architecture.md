@@ -1,60 +1,51 @@
 # B architecture
 
-## Goal
+## Target
 
-Design **one genuinely new source language** whose compiler and type system can reuse foreign packages through explicit, inspectable interfaces. Optimise **total cost per independently verified successful programming task**, including model tokens, retries, compilation, runtime and adapter overhead. Do not optimise for minimal source length in isolation.
+A new programming language with defined semantics and a compiler/runtime that reuses foreign ecosystems through typed adapters. The future machine-facing representation should optimize **total cost per independently correct result**, not merely source length.
 
-## Implemented pipeline (v0.1)
+## Implemented pipeline (v0.2)
 
 ```text
-B UTF-8 source
-      |
-      v
-Lark grammar / parser ---> B model.Expr / model.Stmt
-                                  |
-                                  v
-                    B type and constant checker
-                         |             |
-                 errors/warnings     typed program
-                                       |
-                                       v
-                           Python AST lowering
-                                       |
-                                       v
-                                Python bytecode
-                                  /       \
-                         CPython modules   .NET 10 host
-                                             JSON lines
-                                          System.Math subset
+.bsrc source (legacy .b accepted)
+        |
+        v
+B Lark grammar -> B Expr/Stmt syntax tree
+        |
+        v
+B checker: names, types, known constants, conditions
+        |                              \
+        |                              +-- diagnostics, assumed foreign contracts
+        v
+Python AST lowering (backend implementation, NOT B syntax)
+        |
+        v
+Python bytecode -> CPython libraries
+        |
+        +-------------> typed JSON-lines .NET host
+                          System.Math and Regex.IsMatch
 ```
 
-This is an interpreter/compiler prototype, not a native B backend. It deliberately uses existing library runtimes rather than translating foreign source code. The Python lowering is an implementation technique; Python syntax is **not** the language definition of B.
+- Native B `if` expressions and single-assignment bindings are part of the language, not agent-workflow instructions.
+- Foreign `py:` calls can use built-in recognized signatures or explicit B `foreign` declarations. Unknown signatures become dynamic and are rejected in strict mode.
+- The .NET bridge exposes only explicit registered methods. B source declarations cannot change the adapter's executable allowlist.
+- `b check --json` makes diagnostics and foreign assumptions machine-readable for future language-model tooling.
+- `.bsrc` is recommended over `.b` due to historical filename collisions.
 
-## Proposed architecture beyond v0.1
+This is **not yet** a native ahead-of-time compiler. B lowers to Python AST. Its type checker is incomplete, and its runtime is not isolated from malicious foreign code.
 
-1. **Typed canonical IR.** B operations, bindings, effects, resources and ownership rules are represented without source-language-specific AST nodes. The IR must have a formal operational semantics, versioned serialization and reproducible builds.
-2. **Compiler/verifier core.** Syntax checking, type inference, effect checking, incremental dependency analysis, contracts, optional proof checking, and diagnostics operate on this IR. A compiler error must identify the violated rule; an unknown proof obligation must not be labeled success.
-3. **Adapter generator.** Extract Python type stubs, .NET metadata, C/Rust ABIs, and WebAssembly component interfaces into explicit B signatures with provenance, versions, cost, permitted effects and marshaling rules. No arbitrary behavior can be proven from signatures alone.
-4. **Backend selection.** Initially Python + .NET bridge; later native and Wasm component backends. Prefer keeping data in its native runtime. Crossing a boundary should be explicit in cost estimates and may require a conversion or handle ownership policy.
-5. **Incremental change model.** Make the canonical IR addressable by stable IDs, so a model may edit exactly one node with version checks and rerun only impacted analyses. This is a future language-tooling feature, not the language itself.
+## Proposed design beyond v0.2
 
-## Non-goals
-
-- Guessing foreign-library semantics through language-model intuition.
-- Treating JSON transport as a zero-copy foreign ABI.
-- Promising arbitrary third-party libraries are free of bugs.
-- A syntax designed only to minimize punctuation or characters.
-- Hiding runtime warnings behind a green `check` label.
+1. **Canonical typed B IR:** operation graph with versioned serialization and semantics independent of Python AST.
+2. **Verified B core:** independent, small proof checker and explicit behavior contracts; track exactly which statements are proved, disproved and unknown.
+3. **Generated interfaces:** Python `.pyi`, .NET assembly metadata, C ABI, Rust bindings and Wasm component/WIT produce version-pinned signatures with provenance and conversion rules.
+4. **Runtime bridges:** keep native data inside its home runtime; share array/handle data only when lifetime and ownership are controlled.
+5. **Model-facing API:** compact serialization for the *same* IR, grammar/type-constrained generation and structured corrections. Measure its value against strong native-language baselines before optimizing a tokenizer.
 
 ## Trusted computing base
 
-B's checker, lowering, runtime guards and adapter implementations are trusted components. A false signature, bug in B's checker, or nonconforming adapter invalidates relevant guarantees. Runtime dependencies are **not** automatically proof-carrying. Differential tests and independent reference implementations are future requirements.
+B's parser, checker, lowering, runtime guard and FFI adapters are all trusted implementation components. Any defect in them can invalidate a check. No third-party library becomes verified merely by being imported. Differential testing and later a small proof checker can reduce—but not magically eliminate—these assumptions.
 
-## References to evaluate, not directly copy
+## Relevant systems to evaluate
 
-- WebAssembly Component Model + WIT for shared type-level interfaces and canonical ABI.
-- MLIR and LLVM for typed, optimizable intermediate representations.
-- GraalVM's polyglot interoperability for cross-language value semantics.
-- Rust ownership and effect systems; Lean/Dafny for independently checkable proofs.
-
-A project should only adopt parts that survive integration, performance and correctness benchmarks.
+MLIR and LLVM intermediate representations; WebAssembly Component Model/WIT; GraalVM interoperability; Rust ownership; Lean/Dafny correctness obligations. Borrow the techniques only where measurements show a gain.
