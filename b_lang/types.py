@@ -53,6 +53,11 @@ def unify(left: Type, right: Type) -> Type:
 class Signature:
     params: tuple[Type, ...]
     result: Type
+    min_arity: int | None = None
+
+    @property
+    def required(self) -> int:
+        return len(self.params) if self.min_arity is None else self.min_arity
 
 # Explicit, narrow signatures. Unlisted Python symbols remain dynamically checked.
 # Manifest signatures describe the boundary but do NOT prove library internals.
@@ -60,12 +65,7 @@ BINDINGS: dict[str, Signature] = {
     "py:statistics.mean": Signature((Type("List", (FLOAT,)),), FLOAT),
     "py:math.sqrt": Signature((FLOAT,), FLOAT),
     "py:math.pow": Signature((FLOAT, FLOAT), FLOAT),
-    "net:System.Math.Sqrt": Signature((FLOAT,), FLOAT),
-    "net:System.Math.Pow": Signature((FLOAT, FLOAT), FLOAT),
-    "net:System.Math.Abs": Signature((FLOAT,), FLOAT),
-    "net:System.Math.Min": Signature((FLOAT, FLOAT), FLOAT),
-    "net:System.Math.Max": Signature((FLOAT, FLOAT), FLOAT),
-    "net:System.Text.RegularExpressions.Regex.IsMatch": Signature((TEXT, TEXT), BOOL),
+
 }
 ATTRIBUTES: dict[str, Type] = {"py:math.pi": FLOAT, "py:math.e": FLOAT}
 

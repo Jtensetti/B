@@ -1,4 +1,4 @@
-"""Command line interface for B (.bsrc preferred; .b legacy compatible)."""
+"""Command line interface for B (.bee preferred; .bsrc and .b compatible)."""
 from __future__ import annotations
 
 import argparse
@@ -11,25 +11,78 @@ from .types import BError
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.2")
+    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.3")
     sub = parser.add_subparsers(dest="command", required=True)
     for cmd in ("check", "run", "build"):
         p = sub.add_parser(cmd)
-        p.add_argument("file", type=Path, help="B source file (.bsrc preferred; .b supported)")
+        p.add_argument("file", type=Path, help="B source file (.bee preferred; .bsrc and .b supported)")
         p.add_argument("--strict", action="store_true", help="Reject unresolved static checks")
         if cmd == "check":
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
+    inspect = sub.add_parser('inspect', help='Inspect Python static signatures or the .NET host metadata')
+    inspect.add_argument('target', help='py:module.name or net:Full.Type.Name')
+    inspect.add_argument('--json', action='store_true', help='Machine-readable result')
+    inspect.add_argument('--live', action='store_true', help='Read live .NET metadata instead of the checked-in snapshot')
+    inspect.add_argument('--verify', action='store_true', help='Fail if the live .NET metadata differs from the snapshot')
     args = parser.parse_args(argv)
+    if args.command == 'inspect':
+        from .discovery import inspect_python
+        from .netmeta import manifest, describe_live
+        try:
+            if args.target.startswith('py:'):
+                if args.live or args.verify:
+                    raise BError('E_USAGE', '--live and --verify require a net: target')
+                name = args.target[3:]
+                found = inspect_python(name)
+                result = {
+                    'target': args.target, 'origin': found.source, 'provenance': found.source_kind,
+                    'signatures': [dict(name=k, parameters=[str(t) for t in v.params],
+                                        result=str(v.result), min_arity=v.required)
+                                   for k,v in sorted(found.signatures.items())],
+                    'skipped': found.skipped,
+                    'behavior_proven': False,
+                }
+                if found.source_kind == 'unavailable':
+                    raise BError('E_IMPORT', f'Python module {name} is not installed')
+            elif args.target.startswith('net:'):
+                current = describe_live() if (args.live or args.verify) else manifest()
+                if args.verify and current != manifest():
+                    raise BError('E_METADATA', 'Live .NET signatures differ from checked-in manifest')
+                name = args.target[4:]
+                if name not in current['types']:
+                    raise BError('E_IMPORT', f'No .NET host signatures for {name}')
+                result = {'target': args.target, 'origin': current['runtime'],
+                          'provenance': 'live-reflection' if args.live or args.verify else 'verified-snapshot',
+                          'signatures': [dict(name=m['name'], parameters=m['params'],
+                                              result=m['result'], min_arity=len(m['params']))
+                                         for m in current['types'][name]],
+                          'behavior_proven': False}
+            else:
+                raise BError('E_IMPORT', 'Expected py: or net: prefix')
+            if args.json:
+                print(json.dumps(result, ensure_ascii=False))
+            else:
+                print(f"{result['target']} ({result['provenance']})")
+                for row in result['signatures']:
+                    print(f"  {row['name']}({', '.join(row['parameters'])}) -> {row['result']}")
+            return 0
+        except (BError, OSError, RuntimeError) as exc:
+            if args.json:
+                print(json.dumps({'status':'rejected', 'error':{'code':getattr(exc, 'code','E_METADATA'),
+                                                              'message':str(exc)}}))
+            else:
+                print(f'B inspect: {exc}', file=sys.stderr)
+            return 1
     machine = args.command == "check" and args.json
     try:
-        if args.file.suffix.lower() not in (".bsrc", ".b"):
-            raise BError("E_EXTENSION", "Expected .bsrc (preferred) or legacy .b source file")
+        if args.file.suffix.lower() not in (".bee", ".bsrc", ".b"):
+            raise BError("E_EXTENSION", "Expected .bee (preferred), .bsrc or legacy .b source file")
         source = args.file.read_text(encoding="utf-8")
         result = compile_b(source, strict=False)
         if args.strict and result.diagnostics:
             if machine:
                 print(json.dumps({
-                    "status": "rejected", "language": "B", "spec": "0.2", "strict": True,
+                    "status": "rejected", "language": "B", "spec": "0.3", "strict": True,
                     "error": {"code": "E_STRICT", "message": "Unresolved static warnings"},
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -41,7 +94,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "check":
             if machine:
                 print(json.dumps({
-                    "status": "accepted", "language": "B", "spec": "0.2",
+                    "status": "accepted", "language": "B", "spec": "0.3",
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -61,7 +114,7 @@ def main(argv: list[str] | None = None) -> int:
     except (BError, OSError, RuntimeError, AssertionError, ImportError, ValueError, TypeError, ZeroDivisionError) as exc:
         if machine:
             print(json.dumps({
-                "status": "rejected", "language": "B", "spec": "0.2",
+                "status": "rejected", "language": "B", "spec": "0.3",
                 "error": {"code": getattr(exc, "code", "E_RUNTIME"), "message": str(exc)},
             }, ensure_ascii=False))
         else:

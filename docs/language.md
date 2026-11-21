@@ -1,10 +1,10 @@
-# B language reference — implemented experimental v0.2
+# B language reference — implemented experimental v0.3
 
-**Status:** This is the specification for the supported v0.2 subset. It is not a specification for a future universal B. Actual parser rules are in [`b_lang/syntax.lark`](../b_lang/syntax.lark); divergence between specification and compiler is a bug to be tested.
+**Status:** This is the specification for the supported v0.3 subset. It is not a specification for a future universal B. Actual parser rules are in [`b_lang/syntax.lark`](../b_lang/syntax.lark); divergence between specification and compiler is a bug to be tested.
 
 ## 1. Source and lexical rules
 
-- Source is UTF-8 text. File suffix `.bsrc` is preferred; `.b` is supported for v0.1 compatibility.
+- Source is UTF-8 text. File suffix `.bee` is preferred; `.bsrc` and `.b` remain supported for compatibility.
 - Comments begin with `#` and last until the end of the line.
 - A newline terminates a statement. A semicolon is not a statement separator. Whitespace between tokens is ignored; there are no indentation-based blocks.
 - Identifiers match `[A-Za-z_][A-Za-z0-9_]*`. Names beginning `_b_` are reserved for runtime internals.
@@ -14,7 +14,7 @@
 
 ## 2. Grammar
 
-Informative EBNF simplified from the implemented parser. B v0.2 source includes top-level statements and expressions:
+Informative EBNF simplified from the implemented parser. B v0.3 source includes top-level statements and expressions:
 
 ```ebnf
 program       = { newline | statement, newline }, [statement] ;
@@ -35,7 +35,7 @@ expression    = "if", expression, "then", expression, "else", expression
 
 The remaining expression precedence, highest first: attribute access/call, unary `not`/`-`, `*`/`/`/`%`, `+`/`-`, comparisons (`==`, `!=`, `<`, `<=`, `>`, `>=`), `and`, `or`. Parentheses group expressions; list literals use `[...]`. The conditional `if ... then ... else ...` is an expression with lower precedence than `or`; parentheses allow embedding it within arithmetic. Nested `if` expressions associate with the closest `else` following the parser rules.
 
-`use` binds a module alias. The source path may contain dots. `foreign` must follow a corresponding imported `py:` alias and declare a member's positional parameter types and return type; aliases and names cannot be redefined. Declarations for arbitrary .NET methods are not supported: the host must explicitly allowlist those methods first.
+`use` binds a module alias. For `py:` imports, a supported signature can be auto-discovered from `.pyi` stubs or annotated `.py` source. For `net:` imports, method signatures come from a checked-in snapshot verified against CLR reflection by CI. See [interop](interop.md). The source path may contain dots. `foreign` must follow a corresponding imported `py:` alias and declare a member's positional parameter types and return type; aliases and names cannot be redefined. Declarations for arbitrary .NET methods are not supported: the host must explicitly allowlist those methods first.
 
 ## 3. Types
 
@@ -55,7 +55,7 @@ Expressions in an `if` must have compatible branch types; when the branches are 
 
 ## 4. Evaluation
 
-- Top-level `let` values are assigned once in order. B v0.2 has no reassignment statement.
+- Top-level `let` values are assigned once in order. B v0.3 has no reassignment statement.
 - `fn f(x: T) -> R = expression` declares an expression-bodied function with positional typed arguments. The return value is guarded against `R`. Calls must match known arity and types. Termination of recursive functions is not established.
 - Arithmetic, comparison and logic follow the current Python backend's semantics. `and` and `or` short-circuit. `if condition then yes else no` evaluates only the selected branch at runtime.
 - `print value` prints the value and a newline.
@@ -74,9 +74,9 @@ print encoded
 
 B calls the *real* installed `json.dumps` function. The declaration supplies a **trusted boundary contract**: B checks the argument list type before calling, and checks that the returned value is `Text`. It does not prove that `json.dumps` implements the expected JSON semantics. If the declaration lies, the runtime guard may catch a type mismatch but cannot generally detect an incorrect value of the correct type.
 
-Unknown Python symbols are dynamic and produce `W_UNCHECKED_FOREIGN`. Built-in typed signatures exist for a few `statistics` and `math` functions. B v0.2 uses a .NET 10 JSON-lines host with allowlisted `System.Math` methods and `System.Text.RegularExpressions.Regex.IsMatch(Text,Text)->Bool` (with a 250 ms regex matching timeout). The host rejects arbitrary method names, type mismatches and non-finite numeric results.
+Python top-level functions with supported `.pyi` or `.py` positional signatures are registered automatically (without importing the target module during signature extraction). Unknown Python symbols are dynamic and produce `W_UNCHECKED_FOREIGN`. Built-in typed signatures exist for a few `statistics` and `math` functions. B v0.3 uses a .NET 10 JSON-lines host with allowlisted `System.Math` methods and `System.Text.RegularExpressions.Regex.IsMatch(Text,Text)->Bool` (with a 250 ms regex matching timeout). The host rejects arbitrary method names, type mismatches and non-finite numeric results.
 
-A foreign declaration is listed under `assumed_foreign_contracts` in `b check --json`. Strict checking means no unresolved static warnings; it is **not** a guarantee that foreign behavior was proved.
+A user declaration or a **used auto-discovered signature** is listed under `assumed_foreign_contracts` in `b check --json`. Strict checking means no unresolved static warnings; it is **not** a guarantee that foreign behavior was proved.
 
 ## 6. Error codes
 
@@ -91,7 +91,8 @@ A foreign declaration is listed under `assumed_foreign_contracts` in `b check --
 | `E_IMPORT` | An import cannot be resolved |
 | `E_FOREIGN` | Foreign binding invalid, duplicated or not allowlisted |
 | `E_STRICT` | An unresolved warning remains in strict mode |
-| `E_EXTENSION` | File extension is not `.bsrc` or legacy `.b` |
+| `E_EXTENSION` | File extension is not `.bee`, `.bsrc` or `.b` |
+| `E_METADATA` | Live .NET inspection, manifest or metadata verification failed |
 | `W_UNCHECKED_FOREIGN` | Unknown dynamic Python symbol/call |
 | `W_DYNAMIC_TYPE` | A runtime type check is needed when narrowing dynamic data |
 | `W_RUNTIME_ASSERT` | An assertion has not been proven statically |
@@ -100,8 +101,12 @@ A foreign declaration is listed under `assumed_foreign_contracts` in `b check --
 
 ## 7. Not implemented
 
-General native machine code generation; B-authored modules; loops; mutable bindings; user records; generic B functions; richer algebraic types (`Option`, `Result`); Python type-stub ingestion; broad CLR reflection; Java, Rust and WebAssembly interoperability; effect inference; asynchronous programs; multi-agent operations; isolation of untrusted programs; formal behavioral proofs.
+General native machine code generation; B-authored modules; loops; mutable bindings; user records; generic B functions; richer algebraic types (`Option`, `Result`); full Python type-stub semantics; arbitrary CLR reflection; Java, Rust and WebAssembly interoperability; effect inference; asynchronous programs; multi-agent operations; isolation of untrusted programs; formal behavioral proofs.
 
 ## 8. Versioning
 
-This specification describes the implemented v0.2 **subset**. Compiler changes must carry tests and docs. Nothing here gives a guarantee about a foreign library's internals, an untrusted user's Python code or indefinite future runtime environments.
+This specification describes the implemented v0.3 **subset**. Compiler changes must carry tests and docs. Nothing here gives a guarantee about a foreign library's internals, an untrusted user's Python code or indefinite future runtime environments.
+
+## 9. Metadata extraction semantics (new in 0.3)
+
+The compiler prefers a sibling `.pyi` over the importable `.py` for static declarations. It does not execute either file when parsing signatures. Supported annotations are deliberately limited to the B type lattice, and unknown forms are not silently treated as proven. Trailing default parameters set a minimum positional argument count. Duplicate definitions (often overloads) are omitted until B represents overload sets safely. Discovery is not a guarantee that the runtime implementation matches the stub. `b inspect` reports supported and skipped exports. The .NET host has a reflection-generated, CI-verified snapshot of its explicitly allowlisted methods; arbitrary CLR reflection or invocation is unavailable.

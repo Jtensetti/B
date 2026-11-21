@@ -1,44 +1,50 @@
-# B interoperability v0.2
+# Cross-language interoperability in B 0.3
 
-B connects to foreign runtimes through explicitly typed boundaries. Imported code retains its original implementation and licensing; B does **not** translate its source into B, and does not claim the foreign library is correct.
+B's value proposition is reuse of existing software. It does not translate Python or .NET implementations into B, and imported behavior is not formally verified.
 
-## Python: directly imported packages
+## Python metadata discovery
 
-```text
-use py:statistics as stats
-foreign stats.median(List[Float]) -> Float
-let n: Float = stats.median([2.0, 4.0, 100.0])
+For `use py:package.module as alias`, the compiler resolves the module and searches for an adjacent `.pyi` stub. If none is present, it reads the `.py` module source. It parses this text with Python's AST library and collects a deliberately small subset of top-level `def` signatures.
+
+Understood annotations: `int`, `float`, `bool`, `str`, `Any`, and `list[T]` / `List[T]` where T is supported. Positional arguments and trailing defaults work. Async functions, arbitrary decorators, `*args`, keyword-only parameters, Union/Optional, generic overload sets, methods nested in classes, unsupported return values and signatures with missing types are skipped — **not guessed**.
+
+```b
+use py:examples.demo_lib as tools
+let score: Float = tools.clamp(12.0, 0.0, 10.0)
 ```
 
-- `use py:module as alias` finds and imports the *real* installed CPython package.
-- A small built-in registry recognizes some signatures (`math`, `statistics`).
-- `foreign alias.method(T1, T2) -> R` supplies an explicit signature for any callable exposed by an imported Python module. It does not modify the Python package.
-- B type-checks the call, validates the foreign arguments immediately before dispatch, and validates and normalizes the returned value against the declared B return type (including converting a JSON `6` to a B `Float` `6.0`).
-- `foreign` declarations are trusted assumptions about signatures, **not validated contracts about behavior**. The runtime may detect a mismatched return type, but cannot tell whether a correctly typed value is the correct answer.
-- Without a signature, unknown Python members are dynamic with a `W_UNCHECKED_FOREIGN` warning. Strict mode rejects those warnings.
-- Imports execute in the running Python process with its full privileges; they are neither sandboxed nor effect-checked.
+`b inspect py:examples.demo_lib --json` shows each discovered function, its signature and the source (`pyi` or `py`). When a typed function is called, `b check --json` records an assumed foreign signature. A known function that receives a wrong B type fails before execution; actual arguments and return values are also checked at the boundary.
 
-## .NET: narrow typed process boundary
+**Threat and correctness model:** extracting signatures does not execute the target module or evaluate annotation expressions. However, Python's `find_spec` can import *parent packages* for dotted names. `b run` imports and runs library code, which can perform arbitrary I/O. The Python parser, filesystem and package installation are trusted in this prototype; no sandbox is provided. Stubs can be inaccurate or malicious. Type guards cannot detect incorrect results with the correct types. Signature discovery is not behavioral verification.
 
-- B's .NET adapter is a persistent .NET 10 process communicating through typed JSON lines.
-- Implemented types: `System.Math` (`Sqrt`, `Pow`, `Abs`, `Min`, `Max`) and `System.Text.RegularExpressions.Regex` (`IsMatch`).
-- All method names are allowlisted in the adapter; B-source `foreign` declarations cannot extend this whitelist.
-- Finite numeric values and text/bool results are checked. Regex evaluation is limited to 250 ms to constrain a common denial-of-service risk; this is not a sandbox or overall CPU limit.
-- JSON transport loses shared object identity, requires copies and conversion, and is not zero-copy.
-- External .NET methods that return an unexpected B type cause a boundary error. Exceptions are returned as host error messages.
+## Explicit foreign declarations
 
-## Why `foreign` matters
+```b
+use py:statistics as stats
+foreign stats.median(List[Float]) -> Float
+print stats.median([1.0, 3.0, 7.0])
+```
 
-Previously, a user of a library not in B's small built-in signature registry had to choose unchecked dynamic calls or change compiler code. In v0.2 the B program can define its own signature. This expands the *reachable* Python API surface, but a false user declaration remains possible. Trusted metadata generation and version locking are future work.
+Use when automatic discovery cannot represent the signature. Explicit declarations describe the B boundary but are **trusted claims made by the author**, checked only for type compatibility at runtime. A declaration cannot override a known built-in or auto-discovered signature.
 
-## Planned high-coverage binding generation
+## .NET reflection and a permitted transport
 
-| Ecosystem | Candidate strategy | Important limitations |
+The .NET 10 host has a narrow allowlist of static functions. `B.NetHost --describe` enumerates **real CLR metadata via reflection** and returns their transport-compatible B signatures. The generated [`net-signatures.json`](../b_lang/net-signatures.json) is tracked in Git and used for static checks without starting .NET. CI verifies that its contents match current reflection output.
+
+- `System.Math`: `Sqrt`, `Pow`, `Abs`, `Min`, `Max` with `Float` arguments and results.
+- `System.Text.RegularExpressions.Regex`: `IsMatch(Text, Text) -> Bool`; the host uses a 250 ms matching timeout.
+- Calls cross a JSON-lines process boundary. Complex CLR objects, generics, callbacks and zero-copy buffers are not supported.
+- Reflection is used only to describe **allowed** methods, never to authorize an arbitrary method at runtime.
+- Live introspection: `b inspect net:System.Math --live`. Metadata drift check: `b inspect net:System.Math --verify`.
+
+## Planned other ecosystems
+
+| Runtime | Proposed entry point | Major unresolved problem |
 | --- | --- | --- |
-| Python | Read trusted `.pyi` stubs and importable metadata; generate `foreign` manifests | Dynamic features, overloaded functions, arbitrary effects |
-| .NET | Read assembly metadata; generate transport-safe typed adapters | CLR object identity, overload resolution, generics, async |
-| Rust / C | Consume explicit C ABI, WIT, or generated bindings | Lifetimes, pointers and unstable native Rust ABI |
-| Java | JVM metadata and process/in-process adapters | GC, handles, overloads, exceptions |
-| WebAssembly | Component model/WIT type boundaries | Runtime support, resource semantics, transport |
+| Rust and C | C ABI or WebAssembly/WIT | Ownership/lifetime and unsafe pointers |
+| Java | JVM metadata and isolated adapter | Object handles, overloads and concurrency |
+| WebAssembly | Component Model/WIT | Full component ABI/runtime and resource transfer |
+| Arbitrary .NET | Versioned metadata, generated permission-scoped adapter | General overloads, properties, object lifetimes and side effects |
+| Python ecosystem at scale | Typeshed and installed typing metadata | Complex annotations, overloads, side effects and version drift |
 
-A future stable B IR must handle fixed-width numbers, floats and decimals, nullability, records, results, resource handles, effects and asynchronous behavior. B 0.2 has none of these guarantees at the general level.
+A safe and useful general B FFI requires explicit capabilities, effect semantics, nullable/variant/record types, a versioned type schema and targeted adapters. These are research tasks, not accomplished by v0.3.

@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from typing import Any
 from lark.exceptions import LarkError
 from .model import Expr, Stmt, parse
+from .discovery import inspect_python
+from .netmeta import net_bindings
 from .types import (
     Type, BError, INT, FLOAT, BOOL, TEXT, NONE, ANY, MODULE,
     BINDINGS, ATTRIBUTES, Signature, assignable, from_syntax, unify, needs_dynamic_guard,
@@ -58,6 +60,9 @@ class Compiler:
         self.diagnostics: list[Diagnostic] = []
         self.foreign_bindings: dict[str, Signature] = {}
         self.assumptions: list[str] = []
+        self.discovered: dict[str, Signature] = {}
+        self.discovery_sources: dict[str, str] = {}
+        self.net_registry = net_bindings()
 
     def warn(self, code: str, message: str):
         entry = Diagnostic("warning", code, message)
@@ -126,7 +131,7 @@ class Compiler:
             node = ast.Attribute(value=bv.node, attr=attr, ctx=ast.Load())
             path = self._foreign_path(ex, symbols)
             if path in ATTRIBUTES: return Value(ATTRIBUTES[path], self._guard(node, ATTRIBUTES[path]))
-            if path in BINDINGS or path in self.foreign_bindings: return Value(Type("Function"), node)
+            if path in BINDINGS or path in self.foreign_bindings or path in self.discovered or path in self.net_registry: return Value(Type("Function"), node)
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
             if path and path.startswith("py:"):
@@ -137,18 +142,22 @@ class Compiler:
             tv = self.infer(target, symbols)
             values = [self.infer(a, symbols) for a in raw_args]
             path = self._foreign_path(target, symbols)
-            sig = (self.foreign_bindings.get(path) or BINDINGS.get(path)) if path else None
+            sig = (self.foreign_bindings.get(path) or self.discovered.get(path) or self.net_registry.get(path) or BINDINGS.get(path)) if path else None
             if sig is None and target.kind == "name":
                 sig = symbols[target.parts[0]].signature
             if sig:
-                if len(values) != len(sig.params):
-                    raise BError("E_ARITY", f"{path or target.parts[0]} expects {len(sig.params)} arguments, got {len(values)}")
+                if not (sig.required <= len(values) <= len(sig.params)):
+                    wanted = str(sig.required) if sig.required == len(sig.params) else f"{sig.required}–{len(sig.params)}"
+                    raise BError("E_ARITY", f"{path or target.parts[0]} expects {wanted} arguments, got {len(values)}")
                 for n, (value, expected) in enumerate(zip(values, sig.params), start=1):
                     self._check_type(value, expected, f"argument {n} to {path or target.parts[0]}")
                 # Guard even statically typed calls at a foreign boundary: the imported
                 # function has never been verified and may return an unexpected value.
                 guarded_args = [self._guard(v.node, t) if path else v.node
                                 for v, t in zip(values, sig.params)]
+                if path in self.discovery_sources:
+                    assumption = f"{path} ({self.discovery_sources[path]}): signature assumed, not behavior proved"
+                    if assumption not in self.assumptions: self.assumptions.append(assumption)
                 call = ast.Call(func=tv.node, args=guarded_args, keywords=[])
                 return Value(sig.result, self._guard(call, sig.result) if path else call)
             if path and path.startswith("net:"):
@@ -210,7 +219,7 @@ class Compiler:
             if not sym or sym.type != MODULE or not sym.foreign:
                 raise BError("E_FOREIGN", f"{alias} must be an imported foreign module")
             fullname = sym.foreign + "." + ".".join(parts[1:])
-            if fullname in self.foreign_bindings or fullname in BINDINGS:
+            if fullname in self.foreign_bindings or fullname in BINDINGS or fullname in self.discovered or fullname in self.net_registry:
                 raise BError("E_FOREIGN", f"A binding already exists for {fullname}")
             if fullname.startswith("net:"):
                 # Only explicit host allowlist methods can be called; a declaration
@@ -228,7 +237,16 @@ class Compiler:
                 try: found = importlib.util.find_spec(path)
                 except (ImportError, ValueError, ModuleNotFoundError): found = None
                 if found is None: raise BError("E_IMPORT", f"Python module {path} is not installed")
-            elif backend != "net": raise BError("E_IMPORT", f"Unknown backend {backend}")
+                discovered = inspect_python(path)
+                for name, sig in discovered.signatures.items():
+                    full = f"py:{path}.{name}"
+                    if full not in BINDINGS:
+                        self.discovered[full] = sig
+                        self.discovery_sources[full] = discovered.source_kind
+            elif backend == "net":
+                if not any(k.startswith(f"net:{path}.") for k in self.net_registry):
+                    raise BError("E_IMPORT", f"No registered .NET metadata for {path}")
+            else: raise BError("E_IMPORT", f"Unknown backend {backend}")
             self._new(alias, Symbol(MODULE, foreign=f"{backend}:{path}"))
             return ast.Assign(targets=[ast.Name(id=alias, ctx=ast.Store())], value=ast.Call(
                 func=ast.Name(id="_b_py" if backend == "py" else "_b_net", ctx=ast.Load()),

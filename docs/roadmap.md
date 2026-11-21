@@ -11,7 +11,7 @@ The long-term target is a new language with its own semantics, a minimal model-f
 - [x] Python imports and a limited .NET Math bridge over JSON lines
 - [x] Local unit tests and cross-runtime CI
 
-## v0.2 — implemented and undergoing integration checks
+## v0.3 — implemented and undergoing integration checks
 
 - [x] New recommended extension `.bsrc`, retaining `.b` compatibility
 - [x] B conditional expressions with static branch checks
@@ -54,3 +54,13 @@ The long-term target is a new language with its own semantics, a minimal model-f
 - “A declared foreign function signature proves the function behaves correctly.”
 - “The Python backend currently produces native B executables.”
 - “An empty warning list means that every observable behavior is correct.”
+
+
+## B 0.3 delivery
+
+- [x] `.bee` accepted and preferred with `.bsrc`/`.b` compatibility
+- [x] Conservative Python `.pyi` / `.py` AST signature discovery
+- [x] Strict-mode typed calls without `foreign` boilerplate
+- [x] Snapshot of supported .NET host signatures and live-reflection verification in CI
+- [x] `b inspect` reports supported and skipped symbols
+- [ ] Full Python typing semantics, general .NET FFI, native binary backend, proofs

@@ -1,24 +1,19 @@
-# B source filenames
+# B source file extension
 
-## Decision: `.bsrc`
+**Decision (v0.3): `.bee` is the preferred extension.** Existing `.bsrc` (v0.2) and `.b` (v0.1) continue to work. `b` refuses `.be` by default to avoid an established conflict.
 
-The recommended B source filename suffix is **`.bsrc`** (B source), starting with B v0.2. The CLI accepts `.bsrc` and legacy `.b` files. New examples, editor configuration and documentation use `.bsrc`.
+| Candidate | Existing use | Decision |
+| --- | --- | --- |
+| `.b` | Historic Bell Labs B language and other uses | Legacy B compatibility only |
+| `.be` | Berry programming language, documented executable script suffix | Do not claim |
+| `.bee` | BeeSchema schema files, older Bee Archiver data files | Adopt for B, despite non-exclusive use |
+| `.bsrc` | B v0.2 source convention | Keep compatible |
 
-## Why not `.b`?
+A file suffix is not a global namespace or a proof of uniqueness. `.bee` must never be identified as B based on suffix alone where content could originate from other software. The VS Code grammar uses an extension association only when explicitly installed, and the B CLI validates the source using its own parser.
 
-`.b` is already used by **Ken Thompson's original B language**, created at Bell Labs in 1969 as a precursor to C, and by tools compiling source for that language. It also appears as an extension for **Brainfuck** and **Limbo**, among other software/data formats. B's v0.1 used `.b` without assessing these conflicts.
+Primary sources and examples:
+- Berry documents `.be`: https://berry.readthedocs.io/en/latest/source/en/Chapter-1.html
+- BeeSchema uses `*.bee`: https://github.com/Michael-K-GH/BeeSchema
+- Bee Archiver `.bee`: https://file.org/extension/bee
 
-- Historical B: https://en.wikipedia.org/wiki/B_(programming_language)
-- Current old-B compiler using `.b`: https://github.com/Spydr06/BCause
-- Languages and formats claiming `.b`: https://blog.mathieuacher.com/PL-ultimate-llm/ext/b/index.html
-
-There is **no global filename extension registry** ensuring a suffix is uniquely available. We did not find a clearly established competing programming-language use of `.bsrc` in a targeted web search in November 2026. This is not an exclusive reservation. Additional local/filetype associations may exist.
-
-## Compatibility contract
-
-- New source files: `program.bsrc`.
-- Legacy source files: `program.b` continue to be accepted.
-- Unrelated suffixes are rejected by the CLI with `E_EXTENSION`.
-- Source file content and language semantics are identical for `.bsrc` and `.b`.
-- GitHub may not recognize `.bsrc` as a language until GitHub Linguist supports it. The included VS Code grammar recognizes `.bsrc` without stealing existing `.b` associations.
-- `b` remains the command-line tool name in this experimental project; it may conflict with another command installed on a user's machine. `python -m b_lang.cli` is an alternative.
+No binary file format or MIME registration is claimed by B v0.3.

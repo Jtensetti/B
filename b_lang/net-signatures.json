@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "runtime": "B.NetHost/.NET10",
+  "types": {
+    "System.Math": [
+      {"name": "Abs", "params": ["Float"], "result": "Float"},
+      {"name": "Max", "params": ["Float", "Float"], "result": "Float"},
+      {"name": "Min", "params": ["Float", "Float"], "result": "Float"},
+      {"name": "Pow", "params": ["Float", "Float"], "result": "Float"},
+      {"name": "Sqrt", "params": ["Float"], "result": "Float"}
+    ],
+    "System.Text.RegularExpressions.Regex": [
+      {"name": "IsMatch", "params": ["Text", "Text"], "result": "Bool"}
+    ]
+  }
+}
