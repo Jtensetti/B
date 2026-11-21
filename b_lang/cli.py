@@ -11,7 +11,7 @@ from .types import BError
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.4")
+    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.5")
     sub = parser.add_subparsers(dest="command", required=True)
     for cmd in ("check", "run", "build"):
         p = sub.add_parser(cmd)
@@ -19,12 +19,38 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("--strict", action="store_true", help="Reject unresolved static checks")
         if cmd == "check":
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
+    ir_command = sub.add_parser("ir", help="Emit the checked, backend-neutral BIR as JSON")
+    ir_command.add_argument("file", type=Path)
+    ir_command.add_argument("--strict", action="store_true")
+    ir_command.add_argument("--optimized", action="store_true", help="Show BIR after the safe optimization pass")
+    audit_command = sub.add_parser("audit", help="Measure direct Python signatures visible to B; does not import target")
+    audit_command.add_argument("target", help="py:module.name")
+    audit_command.add_argument("--json", action="store_true")
     inspect = sub.add_parser('inspect', help='Inspect Python static signatures or the .NET host metadata')
     inspect.add_argument('target', help='py:module.name or net:Full.Type.Name')
     inspect.add_argument('--json', action='store_true', help='Machine-readable result')
     inspect.add_argument('--live', action='store_true', help='Read live .NET metadata instead of the checked-in snapshot')
     inspect.add_argument('--verify', action='store_true', help='Fail if the live .NET metadata differs from the snapshot')
     args = parser.parse_args(argv)
+    if args.command == "audit":
+        from .audit import audit_python
+        try:
+            if not args.target.startswith("py:"):
+                raise BError("E_IMPORT", "audit currently accepts py:module only")
+            data = audit_python(args.target[3:]).to_dict()
+            if args.json:
+                print(json.dumps(data, ensure_ascii=False, sort_keys=True))
+            else:
+                print(f"{data['target']}: {data['static_signatures']}/{data['public_direct_functions']} direct public functions supported")
+                print(f"  named re-exports: {data['named_reexports']}; star re-exports: {data['star_reexports']}; classes: {data['public_classes']}")
+                print("  Note: this is NOT total package/API coverage; runtime behavior is not verified")
+            return 0
+        except (BError, OSError, RuntimeError) as exc:
+            if args.json:
+                print(json.dumps({"status": "rejected", "error": {"code": getattr(exc, "code", "E_METADATA"), "message": str(exc)}}))
+            else:
+                print(f"B audit: {exc}", file=sys.stderr)
+            return 1
     if args.command == 'inspect':
         from .discovery import inspect_python
         from .netmeta import manifest, describe_live
@@ -87,19 +113,21 @@ def main(argv: list[str] | None = None) -> int:
         if args.strict and result.diagnostics:
             if machine:
                 print(json.dumps({
-                    "status": "rejected", "language": "B", "spec": "0.4", "strict": True,
+                    "status": "rejected", "language": "B", "spec": "0.5", "strict": True,
                     "error": {"code": "E_STRICT", "message": "Unresolved static warnings"},
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
                 }, ensure_ascii=False))
                 return 1
             raise BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
-        if args.command == "build":
+        if args.command == "ir":
+            print(json.dumps((result.optimized_ir if args.optimized else result.ir).to_dict(), ensure_ascii=False, indent=2, sort_keys=True))
+        elif args.command == "build":
             print(result.source, end="")
         elif args.command == "check":
             if machine:
                 print(json.dumps({
-                    "status": "accepted", "language": "B", "spec": "0.4",
+                    "status": "accepted", "language": "B", "spec": "0.5",
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -119,7 +147,7 @@ def main(argv: list[str] | None = None) -> int:
     except (BError, OSError, RuntimeError, AssertionError, ImportError, ValueError, TypeError, ZeroDivisionError) as exc:
         if machine:
             print(json.dumps({
-                "status": "rejected", "language": "B", "spec": "0.4",
+                "status": "rejected", "language": "B", "spec": "0.5",
                 "error": {"code": getattr(exc, "code", "E_RUNTIME"), "message": str(exc)},
             }, ensure_ascii=False))
         else:

@@ -1,4 +1,4 @@
-# B language reference — experimental v0.4
+# B language reference — experimental v0.5
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -114,3 +114,9 @@ No B-authored module imports; generic B functions; loops; reassignment; records;
 ## 8. Versioning
 
 This document describes **B 0.4**. Changes to the grammar, types, interop and accepted code must carry tests. The compiler is an experimental, unverified implementation; runtime guard success is not a proof of full functional correctness.
+
+## 7. Typed BIR compilation
+
+The parser still uses the syntax in `syntax.lark`, but v0.5 now creates **BIR v1** after static checking. The Python backend consumes BIR, not B source directly. `b ir FILE` prints the checked BIR as JSON; `--optimized` shows the conservatively simplified version. The latter may fold pure native literal expressions, but not external functions, dynamic guards or mutable values.
+
+BIR is an internal, typed compiler representation and has no supported *untrusted JSON input* mode. See [BIR specification](bir.md). B 0.5 does not add new language surface statements or type spellings beyond v0.4.

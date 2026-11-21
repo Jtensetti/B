@@ -1,86 +1,99 @@
 # B
 
-**An experimental programming language that combines existing software ecosystems without forcing them into one language.** B has its own parser, types, static checks and compiler pipeline; its implementation currently lowers B to Python AST/bytecode and calls a small real .NET host for selected foreign methods.
+**B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
 
-**Version 0.4.** Canonical source extension: **`.bee`**. `.b4` is an optional playful alias; `.bsrc` and `.b` remain accepted. B is unrelated to the 1960s Bell Labs B language.
+**Version 0.5 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
-> This is a working *prototype*, not a universal compiler, a security sandbox, or a mathematically proved programming system. `b check --strict` means only the implemented static rules and constraints were satisfied. Imported libraries' behavior remains an external assumption.
+> **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
 
-## B 0.4: more libraries, fewer guesses
+## What is new in B 0.5?
+
+A real, **typed backend-neutral intermediate representation (BIR)** sits between B source and the executable backend:
 
 ```text
-use py:b_examples.poly_lib as lib
-
-let label: Text = lib.describe("b")
-let number: Int = lib.describe(41)
-let possible: Option[Int] = lib.find_code("Ada")
-let usable: Int = possible ?? 0
-let doubled: Dict[Text, Float] = lib.adjust({"a": 2.0, "b": 3.5})
-
-print label
-print number
-print possible
-print doubled
+  .bee source
+      |
+  B parser + B checker + type/provenance catalog
+      |
+  BIR v1: types, operations, foreign interfaces and obligations
+      |
+  conservative pure-operation optimization
+      |
+  Python AST backend --> CPython / real Python packages
+                        --> explicit typed .NET bridge
 ```
 
-This is **B syntax**, not Python. B discovers two `@overload` variants of `describe` in the adjacent Python stub, picks the unambiguous variant from the B argument types and checks its return type during execution. The `Option` and `Dict` types are also first-class B types. The `??` operator supplies a typed fallback for missing optional values and evaluates its left operand once. The sample calls a real, installed Python module. B can refuse ambiguous calls before any user program is executed.
+The Python backend **consumes BIR**, not the source language's syntax tree. BIR is JSON-inspectable; it can preserve a referenced Python or .NET function's assumed signature, backend and provenance. This makes another backend possible in principle, but **only the Python lowering backend is implemented**.
 
-## Polyglot call to .NET and Python
+BIR optimization folds supported pure literals without evaluating foreign functions or removing runtime type guards.
+
+## A B program
 
 ```text
 use py:statistics as stats
 use net:System.Math as Math
-use net:System.Text.RegularExpressions.Regex as Regex
 
-let valid: Bool = Regex.IsMatch("B-42", "^B-[0-9]+$")
-let average: Float = stats.mean([3.0, 4.0, 5.0])
-let answer: Float = if valid then Math.Sqrt(average * average + 9.0) else 0.0
-print answer
+fn square(x: Float) -> Float = x * x
+let values = [3.0, 4.0, 5.0]
+let avg: Float = stats.mean(values)
+let result: Float = Math.Sqrt(square(avg) + 9.0)
+print result
 ```
 
-The .NET host permits a narrow set of Math and Regex methods and communicates with the B runtime via typed JSON lines. This is **not** a generic .NET binding. The Python `statistics.mean` call is from the actual standard library.
+This is B source, not a Python program. The `statistics.mean` function runs in CPython and `System.Math.Sqrt` through the explicit .NET host. Both calls appear in the **same** BIR vocabulary with distinct foreign backend tags.
 
-## Install and try
+## Install and run
 
-Python 3.11+ and `pip` are required; .NET examples and full cross-runtime CI also require the **.NET 10 SDK**.
+Requires Python 3.11+. Running the .NET example also requires the .NET 10 SDK.
 
 ```sh
 python -m pip install -e '.[dev]'
-b check examples/polytypes.bee --strict --json
-b run examples/polytypes.bee
 b check examples/polyglot.bee --strict
 b run examples/polyglot.bee
-b inspect py:b_examples.poly_lib --json
-b inspect net:System.Math --verify  # requires .NET 10
-b check examples/hello.b4 --strict
-b run examples/coalesce.bee
+b ir examples/polyglot.bee --strict           # checked BIR as JSON
+b ir examples/polyglot.bee --optimized        # BIR after pure literal folding
+b build examples/polyglot.bee                 # show emitted Python backend code
+b inspect py:b_examples.poly_lib --json      # static signatures
+b audit py:b_examples.demo_lib --json        # coverage: direct functions only
 pytest -q
 ```
 
-B `b check` parses and checks B code without running it. Python import discovery may execute parent package initializers in dotted imports, and `b run` executes foreign code with the current process's permissions. Do not treat this as a sandbox.
+To measure coverage of installed real packages (no installation is performed):
 
-## Implemented versus planned
+```sh
+python -m scripts.audit_libraries > audit.json
+b audit py:numpy --json
+b run examples/numpy_unchecked.bee  # requires NumPy; dynamic, not strict-safe
+```
 
-| Area | Implemented in 0.4 | Still missing |
+## The important negative result
+
+Our local audit on **21 November 2026** found that B 0.5 could statically understand **0 of 1 directly declared functions** in NumPy's root stub, which also contains hundreds of named re-exports. In the submodule `numpy._core.fromnumeric`, B could parse **0 of 41** direct public function declarations. This **does not mean NumPy has one function, or that zero NumPy functions can be executed by B**: it means our intentionally restricted signature reader cannot yet interpret its complex API definitions. See [the measured audit](docs/library-audit.md), [raw observation](docs/coverage-observed-2026-11-21.json) and [coverage tool](b_lang/audit.py).
+
+This limitation matters more than adding new punctuation or another file extension. Next steps must tackle public re-exports, object/array types, generics, keyword arguments and verified conversions.
+
+## Implemented boundaries
+
+| Layer | Working today | Not yet provided |
 | --- | --- | --- |
-| Language | Let, typed functions, if, `??`, collections, booleans, arithmetic | Loops, records, modules, generic B functions |
-| Types | `Int`, `Float`, `Text`, `Bool`, `Any`, `Option`, `List`, `Dict` | Full unions, Result, pattern matching, objects |
-| Python ecosystem | Real imports; limited non-executing `.pyi`/`.py` AST discovery; basic overload selection | Broad typeshed, keyword-only args, typevars, protocols |
-| .NET ecosystem | Explicit Math/Regex adapter; metadata snapshot checked against live reflection in CI | Arbitrary packages, objects, generic methods |
-| Verification | Types, arity, known constant errors, typed runtime boundaries | General behavioral proof, effects, isolation |
-| Machine optimization | Machine-readable errors and library discovery | Measured model token savings, typed native IR, constrained decoding |
+| B language | Own grammar, immutable names, typed functions, conditions, collections, `??` | Loops, records, pattern matching, user generics |
+| BIR v1 | Typed semantic nodes, foreign catalog, JSON view, pure constant optimization | Stable serialized execution, source maps, multi-target lowering |
+| Python libraries | Actual import/call, limited annotation discovery, overloads and dynamic fallback | Full typeshed, re-export tracking, package-version locking |
+| .NET libraries | Restricted `System.Math` and `Regex` host, metadata verified in CI | Arbitrary assemblies, object models, reflection-based adapters |
+| Correctness | Static syntax/types/known constant errors; runtime boundary guards | Formal correctness proofs, effect guarantees, trusted execution |
+| AI advantage | Explicit machine-readable IR and diagnostics | Any measured improvement in AI's correctness or tokens |
 
-## Why B exists
+## Project references
 
-The hypothesis is that an AI should write **less new code** by composing existing verified or well-specified operations, while a single language/compiler checks the parts of the composition it can actually know. We have **not** yet demonstrated that B beats Python on AI programming tasks. That comparison needs independent generated programs, matched budgets, real libraries, and behavioral tests.
+- [Language and grammar](docs/language.md)
+- [BIR semantics and implementation](docs/bir.md)
+- [Cross-language library bridges](docs/interop.md)
+- [Real-library audit](docs/library-audit.md)
+- [Experimental evidence](docs/experiments.md)
+- [Architectural decisions](docs/architecture.md)
+- [Research directions beyond interoperability](docs/research-directions.md)
+- [Roadmap](docs/roadmap.md)
 
-## Documentation
-
-- [Language specification](docs/language.md) — grammar, types, evaluation, diagnostics.
-- [Interop and foreign assumptions](docs/interop.md) — Python/.NET integration and its trust limits.
-- [Experiments](docs/experiments.md) — tests and what they do not establish.
-- [Roadmap](docs/roadmap.md) — implemented vs planned.
-- [File suffix rationale](docs/file-extension.md) — `.bee`, `.b4`, `.bi`, other collisions.
-- [VS Code syntax support](editors/vscode/b-language) — optional local highlighting extension.
+**Status:** the code is a research prototype, with tests on the implemented subset. An independent AI building and modifying a substantial B application has **not** yet been evaluated.
 
 MIT licensed.

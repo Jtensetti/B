@@ -1,27 +1,46 @@
-"""B checker and compiler to Python AST. Foreign code is never considered proven."""
+"""B 0.5 compiler: parse -> typed BIR -> Python backend.
+
+The checker never evaluates B source or foreign implementations. Foreign
+signatures are assumptions, not proofs. The executable backend consumes typed
+BIR rather than reconstructing B semantics directly from surface syntax.
+"""
 from __future__ import annotations
+
 import ast
 import importlib.util
 import operator
 from dataclasses import dataclass
 from typing import Any
+
 from lark.exceptions import LarkError
-from .model import Expr, Stmt, parse
+
 from .discovery import inspect_python
+from .interop import ForeignCatalog
+from .ir import ExprIR, ProgramIR, StmtIR
+from .lowering import PythonLowerer
+from .optimizer import optimize
+from .model import Expr, Stmt, parse
 from .netmeta import net_bindings
 from .types import (
     Type, BError, INT, FLOAT, BOOL, TEXT, NONE, ANY, MODULE,
-    BINDINGS, ATTRIBUTES, Signature, Overloads, Binding, assignable, from_syntax, unify, needs_dynamic_guard,
+    ATTRIBUTES, Signature, Overloads, Binding, assignable,
+    from_syntax, unify, needs_dynamic_guard,
 )
 
 NOT_CONST = object()
 NUMERIC = (INT, FLOAT)
+OPS = {"add": operator.add, "sub": operator.sub, "mul": operator.mul,
+       "div": operator.truediv, "mod": operator.mod}
+CMP = {"==": operator.eq, "!=": operator.ne, "<": operator.lt,
+       ">": operator.gt, "<=": operator.le, ">=": operator.ge}
+
 
 @dataclass
 class Value:
     type: Type
-    node: ast.expr
+    node: ExprIR
     constant: Any = NOT_CONST
+
 
 @dataclass
 class Diagnostic:
@@ -29,12 +48,17 @@ class Diagnostic:
     code: str
     message: str
 
+
 @dataclass
 class Compiled:
     source: str
     code: Any
     diagnostics: list[Diagnostic]
     assumptions: list[str]
+    ir: ProgramIR
+    optimized_ir: ProgramIR
+    folds: int
+
 
 @dataclass
 class Symbol:
@@ -43,80 +67,84 @@ class Symbol:
     signature: Binding | None = None
     constant: Any = NOT_CONST
 
-OPS = {
-    "add": (ast.Add, operator.add), "sub": (ast.Sub, operator.sub),
-    "mul": (ast.Mult, operator.mul), "div": (ast.Div, operator.truediv),
-    "mod": (ast.Mod, operator.mod),
-}
-CMP = {
-    "==": (ast.Eq, operator.eq), "!=": (ast.NotEq, operator.ne),
-    "<": (ast.Lt, operator.lt), ">": (ast.Gt, operator.gt),
-    "<=": (ast.LtE, operator.le), ">=": (ast.GtE, operator.ge),
-}
 
 class Compiler:
     def __init__(self):
         self.symbols: dict[str, Symbol] = {}
         self.diagnostics: list[Diagnostic] = []
-        self.foreign_bindings: dict[str, Signature] = {}
         self.assumptions: list[str] = []
-        self.discovered: dict[str, Binding] = {}
-        self.discovery_sources: dict[str, str] = {}
-        self.net_registry = net_bindings()
-        self._temp_counter = 0
+        self.registry = ForeignCatalog()
+        self.registry.add_net_registry(net_bindings())
+        self.used_foreign: set[str] = set()
 
     def warn(self, code: str, message: str):
-        entry = Diagnostic("warning", code, message)
-        if entry not in self.diagnostics: self.diagnostics.append(entry)
+        d = Diagnostic("warning", code, message)
+        if d not in self.diagnostics:
+            self.diagnostics.append(d)
+
+    @staticmethod
+    def val(typ: Type, op: str, *parts: ExprIR, constant: Any = NOT_CONST,
+            data: Any = None, foreign: str | None = None) -> Value:
+        return Value(typ, ExprIR(op, typ, tuple(parts), data, foreign), constant)
+
+    @staticmethod
+    def guard(node: ExprIR, typ: Type) -> ExprIR:
+        return ExprIR("guard", typ, (node,))
 
     def _check_type(self, value: Value, expected: Type, context: str):
         if not assignable(value.type, expected):
             raise BError("E_TYPE", f"{context}: expected {expected}, got {value.type}")
         if needs_dynamic_guard(value.type, expected):
             self.warn("W_DYNAMIC_TYPE", f"{context} comes from an untyped boundary; checked at runtime")
-            value.node = self._guard(value.node, expected)
+            value.node = self.guard(value.node, expected)
 
     def _new(self, name: str, symbol: Symbol):
         if name.startswith("_b_"):
             raise BError("E_NAME", "Names starting _b_ are reserved for the B runtime")
-        if name in self.symbols: raise BError("E_NAME", f"Redefinition of {name}")
+        if name in self.symbols:
+            raise BError("E_NAME", f"Redefinition of {name}")
         self.symbols[name] = symbol
 
-    def _const_op(self, fn, *args):
-        if any(x is NOT_CONST for x in args): return NOT_CONST
-        try: return fn(*args)
-        except ZeroDivisionError: raise BError("E_DIV_ZERO", "Division by zero is guaranteed")
-        except (ValueError, TypeError, OverflowError): return NOT_CONST
+    @staticmethod
+    def _const_op(fn, *args):
+        if any(v is NOT_CONST for v in args):
+            return NOT_CONST
+        try:
+            return fn(*args)
+        except ZeroDivisionError:
+            raise BError("E_DIV_ZERO", "Division by zero is guaranteed")
+        except (ValueError, TypeError, OverflowError):
+            return NOT_CONST
 
     @staticmethod
     def _resolve_binding(binding: Binding, values: list[Value], target: str) -> Signature:
-        """Resolve only unambiguous fully understood overload sets.
-
-        B does not guess which declaration is intended from context. Dynamic
-        values that could select different overloads are rejected before run.
-        """
+        """Only unambiguous matching overloads may be used for static typing."""
         if isinstance(binding, Signature):
             return binding
         arities = [sig for sig in binding.options if sig.required <= len(values) <= len(sig.params)]
         if not arities:
             raise BError("E_ARITY", f"No overload of {target} accepts {len(values)} arguments")
         candidates = [sig for sig in arities if all(
-            assignable(v.type, exp) for v, exp in zip(values, sig.params)
-        )]
+            assignable(v.type, t) for v, t in zip(values, sig.params))]
         if not candidates:
-            options = "; ".join("(" + ", ".join(map(str, s.params)) + ")" for s in arities)
+            options = "; ".join("(" + ", ".join(map(str, sig.params)) + ")" for sig in arities)
             raise BError("E_TYPE", f"No overload of {target} matches argument types; choices: {options}")
         if len(candidates) == 1:
             return candidates[0]
-        exact = [sig for sig in candidates if all(
-            v.type == t for v, t in zip(values, sig.params)
-        )]
+        exact = [sig for sig in candidates if all(v.type == t for v, t in zip(values, sig.params))]
         if len(exact) == 1:
             return exact[0]
-        # Multiple truly identical signatures can be coalesced without guessing.
         if len(set(candidates)) == 1:
             return candidates[0]
         raise BError("E_OVERLOAD_AMBIGUOUS", f"Ambiguous overload of {target}; annotate or narrow arguments")
+
+    def _foreign_path(self, ex: Expr, scope: dict[str, Symbol]) -> str | None:
+        if ex.kind == "name":
+            return scope[ex.parts[0]].foreign
+        if ex.kind == "attr":
+            base = self._foreign_path(ex.parts[0], scope)
+            return f"{base}.{ex.parts[1]}" if base else None
+        return None
 
     def infer(self, ex: Expr, scope: dict[str, Symbol] | None = None) -> Value:
         symbols = self.symbols if scope is None else scope
@@ -128,37 +156,27 @@ class Compiler:
             right = self.infer(p[1], symbols)
             inner = left.type.args[0]
             if right.type == NONE:
-                result_type = left.type
+                typ = left.type
             elif right.type.name == "Option":
                 merged = unify(inner, right.type.args[0])
                 if merged == ANY and inner != ANY and right.type.args[0] != ANY:
                     raise BError("E_TYPE", f"Incompatible coalesce values: {inner} and {right.type}")
-                result_type = Type("Option", (merged,))
+                typ = Type("Option", (merged,))
             elif right.type == ANY and inner != ANY:
                 self._check_type(right, inner, "?? fallback")
-                result_type = inner
+                typ = inner
             else:
-                result_type = unify(inner, right.type)
-                if result_type == ANY and inner != ANY and right.type != ANY:
+                typ = unify(inner, right.type)
+                if typ == ANY and inner != ANY and right.type != ANY:
                     raise BError("E_TYPE", f"Incompatible coalesce values: {inner} and {right.type}")
-            # Evaluate left exactly ONCE: it may be an imported call with side effects.
-            self._temp_counter += 1
-            tmp = f"_b_coalesce_{self._temp_counter}"
-            test = ast.Compare(
-                left=ast.NamedExpr(target=ast.Name(id=tmp, ctx=ast.Store()), value=left.node),
-                ops=[ast.IsNot()], comparators=[ast.Constant(None)],
-            )
             const = right.constant if left.constant is None else left.constant
             if left.constant is NOT_CONST:
                 const = NOT_CONST
-            return Value(result_type, ast.IfExp(
-                test=test, body=ast.Name(id=tmp, ctx=ast.Load()), orelse=right.node,
-            ), const)
+            return self.val(typ, "coalesce", left.node, right.node, constant=const)
         if kind == "conditional":
-            cond, yes, no = p
-            cv = self.infer(cond, symbols)
+            cv = self.infer(p[0], symbols)
             self._check_type(cv, BOOL, "if condition")
-            yv, nv = self.infer(yes, symbols), self.infer(no, symbols)
+            yv, nv = self.infer(p[1], symbols), self.infer(p[2], symbols)
             typ = unify(yv.type, nv.type)
             if typ == ANY and yv.type != ANY and nv.type != ANY:
                 raise BError("E_TYPE", f"if branches have incompatible types: {yv.type} versus {nv.type}")
@@ -166,228 +184,224 @@ class Compiler:
                 self._check_type(yv, typ, "if then branch")
             if needs_dynamic_guard(nv.type, typ):
                 self._check_type(nv, typ, "if else branch")
-            constant = NOT_CONST
+            const = NOT_CONST
             if type(cv.constant) is bool:
-                constant = yv.constant if cv.constant else nv.constant
-            return Value(typ, ast.IfExp(test=cv.node, body=yv.node, orelse=nv.node), constant)
+                const = yv.constant if cv.constant else nv.constant
+            return self.val(typ, "conditional", cv.node, yv.node, nv.node, constant=const)
         if kind == "literal":
-            v = p[0]
-            t = BOOL if type(v) is bool else INT if type(v) is int else FLOAT if type(v) is float else TEXT if type(v) is str else NONE
-            return Value(t, ast.Constant(v), v)
+            raw = p[0]
+            typ = BOOL if type(raw) is bool else INT if type(raw) is int else FLOAT if type(raw) is float else TEXT if type(raw) is str else NONE
+            return self.val(typ, "literal", data=raw, constant=raw)
         if kind == "name":
             name = p[0]
-            if name not in symbols: raise BError("E_NAME", f"Unknown name {name}")
+            if name not in symbols:
+                raise BError("E_NAME", f"Unknown name {name}")
             sym = symbols[name]
-            return Value(sym.type, ast.Name(id=name, ctx=ast.Load()), sym.constant)
+            return self.val(sym.type, "name", data=name, constant=sym.constant)
         if kind == "list":
             items = [self.infer(i, symbols) for i in p]
             element_type = ANY
             if items:
                 element_type = items[0].type
-                for i in items[1:]: element_type = unify(element_type, i.type)
-            const = [i.constant for i in items] if all(i.constant is not NOT_CONST for i in items) else NOT_CONST
+                for i in items[1:]:
+                    element_type = unify(element_type, i.type)
             if element_type == ANY and all(i.type != ANY for i in items) and len(items) > 1:
                 raise BError("E_TYPE", "List contains incompatible element types")
-            return Value(Type("List", (element_type,)), ast.List(elts=[i.node for i in items], ctx=ast.Load()), const)
+            const = [i.constant for i in items] if all(i.constant is not NOT_CONST for i in items) else NOT_CONST
+            return self.val(Type("List", (element_type,)), "list", *(v.node for v in items), constant=const)
         if kind == "dict":
-            keys: list[ast.expr] = []
-            values: list[ast.expr] = []
+            flattened: list[ExprIR] = []
             value_type = None
-            for key_expr, val_expr in p:
-                key, value = self.infer(key_expr, symbols), self.infer(val_expr, symbols)
+            for key_expr, value_expr in p:
+                key, val = self.infer(key_expr, symbols), self.infer(value_expr, symbols)
                 self._check_type(key, TEXT, "dictionary key")
-                keys.append(key.node)
-                values.append(value.node)
+                flattened.extend((key.node, val.node))
                 if value_type is None:
-                    value_type = value.type
+                    value_type = val.type
                 else:
-                    combined = unify(value_type, value.type)
-                    if combined == ANY and value_type != ANY and value.type != ANY:
-                        raise BError("E_TYPE", f"Dictionary values disagree: {value_type} versus {value.type}")
-                    value_type = combined
-            return Value(Type("Dict", (TEXT, value_type or ANY)), ast.Dict(keys=keys, values=values))
+                    merged = unify(value_type, val.type)
+                    if merged == ANY and value_type != ANY and val.type != ANY:
+                        raise BError("E_TYPE", f"Dictionary values disagree: {value_type} versus {val.type}")
+                    value_type = merged
+            return self.val(Type("Dict", (TEXT, value_type or ANY)), "dict", *flattened)
         if kind == "attr":
-            base, attr = p
+            base, name = p
             bv = self.infer(base, symbols)
-            if bv.type != MODULE and bv.type != ANY:
-                raise BError("E_TYPE", f"Cannot access attribute {attr} on {bv.type}")
-            node = ast.Attribute(value=bv.node, attr=attr, ctx=ast.Load())
+            if bv.type not in (MODULE, ANY):
+                raise BError("E_TYPE", f"Cannot access attribute {name} on {bv.type}")
             path = self._foreign_path(ex, symbols)
-            if path in ATTRIBUTES: return Value(ATTRIBUTES[path], self._guard(node, ATTRIBUTES[path]))
-            if path in BINDINGS or path in self.foreign_bindings or path in self.discovered or path in self.net_registry: return Value(Type("Function"), node)
+            if path in ATTRIBUTES:
+                ref = self.val(ATTRIBUTES[path], "attr", bv.node, data=name, foreign=path)
+                ref.node = self.guard(ref.node, ATTRIBUTES[path])
+                return ref
+            if path and self.registry.lookup(path):
+                return self.val(Type("Function"), "attr", bv.node, data=name, foreign=path)
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
             if path and path.startswith("py:"):
                 self.warn("W_UNCHECKED_FOREIGN", f"Unspecified Python symbol {path}; no static signature available")
-            return Value(ANY, node)
+            return self.val(ANY, "attr", bv.node, data=name, foreign=path)
         if kind == "invoke":
             target, raw_args = p
             tv = self.infer(target, symbols)
-            values = [self.infer(a, symbols) for a in raw_args]
+            values = [self.infer(arg, symbols) for arg in raw_args]
             path = self._foreign_path(target, symbols)
-            binding = (self.foreign_bindings.get(path) or self.discovered.get(path) or self.net_registry.get(path) or BINDINGS.get(path)) if path else None
+            ref = self.registry.lookup(path)
+            binding = ref.binding if ref else None
             if binding is None and target.kind == "name":
                 binding = symbols[target.parts[0]].signature
             if binding:
-                sig = self._resolve_binding(binding, values, path or target.parts[0])
-                if not (sig.required <= len(values) <= len(sig.params)):
+                label = path or target.parts[0]
+                sig = self._resolve_binding(binding, values, label)
+                if not sig.required <= len(values) <= len(sig.params):
                     wanted = str(sig.required) if sig.required == len(sig.params) else f"{sig.required}–{len(sig.params)}"
-                    raise BError("E_ARITY", f"{path or target.parts[0]} expects {wanted} arguments, got {len(values)}")
-                for n, (value, expected) in enumerate(zip(values, sig.params), start=1):
-                    self._check_type(value, expected, f"argument {n} to {path or target.parts[0]}")
-                # Guard even statically typed calls at a foreign boundary: the imported
-                # function has never been verified and may return an unexpected value.
-                guarded_args = [self._guard(v.node, t) if path else v.node
-                                for v, t in zip(values, sig.params)]
-                if path in self.discovery_sources:
-                    assumption = f"{path} ({self.discovery_sources[path]}): signature assumed, not behavior proved"
-                    if assumption not in self.assumptions: self.assumptions.append(assumption)
-                call = ast.Call(func=tv.node, args=guarded_args, keywords=[])
-                return Value(sig.result, self._guard(call, sig.result) if path else call)
+                    raise BError("E_ARITY", f"{label} expects {wanted} arguments, got {len(values)}")
+                for idx, (v, expected) in enumerate(zip(values, sig.params), start=1):
+                    self._check_type(v, expected, f"argument {idx} to {label}")
+                children = [tv.node] + [self.guard(v.node, t) if path else v.node
+                                       for v, t in zip(values, sig.params)]
+                if ref is not None:
+                    self.used_foreign.add(ref.path)
+                    if ref.provenance not in ("curated-builtin", "verified-host-snapshot", "user-declaration"):
+                        assumed = f"{ref.path} ({ref.provenance}): signature assumed, not behavior proved"
+                        if assumed not in self.assumptions:
+                            self.assumptions.append(assumed)
+                result = self.val(sig.result, "call", *children, foreign=path)
+                if path:
+                    result.node = self.guard(result.node, sig.result)
+                return result
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET call {path}")
             if tv.type != ANY:
                 raise BError("E_TYPE", f"Cannot call value of type {tv.type}")
-            if not (path and path.startswith("py:")):
+            if not path or not path.startswith("py:"):
                 self.warn("W_UNCHECKED_FOREIGN", f"Unspecified call {path or '<computed>'}; no static signature available")
-            return Value(ANY, ast.Call(func=tv.node, args=[v.node for v in values], keywords=[]))
+            return self.val(ANY, "call", tv.node, *(v.node for v in values), foreign=path)
         if kind in OPS:
             lhs, rhs = self.infer(p[0], symbols), self.infer(p[1], symbols)
             typ = FLOAT if kind == "div" else unify(lhs.type, rhs.type)
-            if kind == "add" and lhs.type == rhs.type == TEXT: typ = TEXT
-            elif kind == "add" and lhs.type.name == rhs.type.name == "List": typ = unify(lhs.type, rhs.type)
+            if kind == "add" and lhs.type == rhs.type == TEXT:
+                typ = TEXT
+            elif kind == "add" and lhs.type.name == rhs.type.name == "List":
+                typ = unify(lhs.type, rhs.type)
             elif not (lhs.type in NUMERIC + (ANY,) and rhs.type in NUMERIC + (ANY,)):
                 raise BError("E_TYPE", f"{kind} requires numbers, got {lhs.type} and {rhs.type}")
             if kind in ("div", "mod") and rhs.constant == 0:
                 raise BError("E_DIV_ZERO", "Division by zero is guaranteed")
-            return Value(typ, ast.BinOp(left=lhs.node, op=OPS[kind][0](), right=rhs.node), self._const_op(OPS[kind][1], lhs.constant, rhs.constant))
+            return self.val(typ, kind, lhs.node, rhs.node,
+                            constant=self._const_op(OPS[kind], lhs.constant, rhs.constant))
         if kind == "cmp":
             lhs, op, rhs = p
             lv, rv = self.infer(lhs, symbols), self.infer(rhs, symbols)
             if lv.type != ANY and rv.type != ANY and not (assignable(lv.type, rv.type) or assignable(rv.type, lv.type)):
                 raise BError("E_TYPE", f"Cannot compare {lv.type} and {rv.type}")
-            return Value(BOOL, ast.Compare(left=lv.node, ops=[CMP[op][0]()], comparators=[rv.node]), self._const_op(CMP[op][1], lv.constant, rv.constant))
+            return self.val(BOOL, "cmp", lv.node, rv.node, data=op,
+                            constant=self._const_op(CMP[op], lv.constant, rv.constant))
         if kind in ("and", "or"):
-            lv, rv = self.infer(p[0], symbols), self.infer(p[1], symbols)
-            self._check_type(lv, BOOL, kind); self._check_type(rv, BOOL, kind)
-            fn = (lambda a,b: a and b) if kind == "and" else (lambda a,b: a or b)
-            return Value(BOOL, ast.BoolOp(op=ast.And() if kind == "and" else ast.Or(), values=[lv.node, rv.node]), self._const_op(fn, lv.constant, rv.constant))
+            left, right = self.infer(p[0], symbols), self.infer(p[1], symbols)
+            self._check_type(left, BOOL, kind)
+            self._check_type(right, BOOL, kind)
+            fn = (lambda a, b: a and b) if kind == "and" else (lambda a, b: a or b)
+            return self.val(BOOL, kind, left.node, right.node,
+                            constant=self._const_op(fn, left.constant, right.constant))
         if kind in ("not", "neg"):
-            val = self.infer(p[0], symbols)
-            expected = BOOL if kind == "not" else FLOAT
-            if kind == "neg" and val.type == INT: expected = INT
-            self._check_type(val, expected, kind)
-            return Value(BOOL if kind == "not" else val.type, ast.UnaryOp(op=ast.Not() if kind == "not" else ast.USub(), operand=val.node), self._const_op(operator.not_ if kind == "not" else operator.neg, val.constant))
+            operand = self.infer(p[0], symbols)
+            wanted = BOOL if kind == "not" else INT if operand.type == INT else FLOAT
+            self._check_type(operand, wanted, kind)
+            return self.val(BOOL if kind == "not" else operand.type, kind, operand.node,
+                            constant=self._const_op(operator.not_ if kind == "not" else operator.neg, operand.constant))
         raise BError("E_INTERNAL", f"Unrecognized expression {kind}")
 
-    def _foreign_path(self, ex: Expr, scope: dict[str, Symbol]) -> str | None:
-        if ex.kind == "name": return scope[ex.parts[0]].foreign
-        if ex.kind == "attr":
-            base = self._foreign_path(ex.parts[0], scope)
-            return f"{base}.{ex.parts[1]}" if base else None
-        return None
-
-    @staticmethod
-    def _guard(node: ast.expr, typ: Type) -> ast.expr:
-        return ast.Call(func=ast.Name(id="_b_guard", ctx=ast.Load()), args=[node, ast.Constant(str(typ))], keywords=[])
-
-    def statement(self, s: Stmt) -> ast.stmt:
-        kind, p = s.kind, s.parts
+    def statement(self, stmt: Stmt) -> StmtIR:
+        kind, p = stmt.kind, stmt.parts
         if kind == "foreign":
             path, params, result = p
             parts = path.split(".")
             if len(parts) < 2:
                 raise BError("E_FOREIGN", "Foreign declaration requires an imported alias and a member")
-            alias = parts[0]
-            sym = self.symbols.get(alias)
+            sym = self.symbols.get(parts[0])
             if not sym or sym.type != MODULE or not sym.foreign:
-                raise BError("E_FOREIGN", f"{alias} must be an imported foreign module")
+                raise BError("E_FOREIGN", f"{parts[0]} must be an imported foreign module")
             fullname = sym.foreign + "." + ".".join(parts[1:])
-            if fullname in self.foreign_bindings or fullname in BINDINGS or fullname in self.discovered or fullname in self.net_registry:
+            if self.registry.lookup(fullname):
                 raise BError("E_FOREIGN", f"A binding already exists for {fullname}")
             if fullname.startswith("net:"):
-                # Only explicit host allowlist methods can be called; a declaration
-                # must not override the host's security boundary.
-                raise BError("E_FOREIGN", "Custom .NET declarations require a host adapter; only built-in .NET bindings work")
+                raise BError("E_FOREIGN", "Custom .NET declarations require a host adapter; only registered .NET bindings work")
             sig = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
             if any(t in (NONE, MODULE) for t in (*sig.params, sig.result)):
                 raise BError("E_TYPE", "Foreign signatures cannot use internal None or Module types")
-            self.foreign_bindings[fullname] = sig
+            self.registry.add(fullname, sig, "user-declaration")
             self.assumptions.append(f"{fullname}({', '.join(map(str, sig.params))}) -> {sig.result}")
-            return ast.Pass()
+            return StmtIR("foreign", target=fullname)
         if kind == "use":
             backend, path, alias = p
             if backend == "py":
-                try: found = importlib.util.find_spec(path)
-                except (ImportError, ValueError, ModuleNotFoundError): found = None
-                if found is None: raise BError("E_IMPORT", f"Python module {path} is not installed")
-                discovered = inspect_python(path)
-                for name, sig in discovered.signatures.items():
-                    full = f"py:{path}.{name}"
-                    if full not in BINDINGS:
-                        self.discovered[full] = sig
-                        self.discovery_sources[full] = discovered.source_kind
+                try:
+                    found = importlib.util.find_spec(path)
+                except (ImportError, ValueError, ModuleNotFoundError):
+                    found = None
+                if found is None:
+                    raise BError("E_IMPORT", f"Python module {path} is not installed")
+                self.registry.add_python_module(path, inspect_python(path))
             elif backend == "net":
-                if not any(k.startswith(f"net:{path}.") for k in self.net_registry):
+                if not any(k.startswith(f"net:{path}.") for k in self.registry.symbols):
                     raise BError("E_IMPORT", f"No registered .NET metadata for {path}")
-            else: raise BError("E_IMPORT", f"Unknown backend {backend}")
+            else:
+                raise BError("E_IMPORT", f"Unknown backend {backend}")
             self._new(alias, Symbol(MODULE, foreign=f"{backend}:{path}"))
-            return ast.Assign(targets=[ast.Name(id=alias, ctx=ast.Store())], value=ast.Call(
-                func=ast.Name(id="_b_py" if backend == "py" else "_b_net", ctx=ast.Load()),
-                args=[ast.Constant(path)], keywords=[]))
+            return StmtIR("import", name=alias, backend=backend, target=path)
         if kind == "let":
             name, annotation, expr = p
             value = self.infer(expr)
             wanted = from_syntax(annotation) if annotation is not None else value.type
-            if wanted == NONE: raise BError("E_TYPE", "A variable cannot be annotated None")
+            if wanted == NONE:
+                raise BError("E_TYPE", "A variable cannot be annotated None")
             self._check_type(value, wanted, f"assignment to {name}")
             if wanted.name == "List" and expr.kind == "list":
                 for element in expr.parts:
                     self._check_type(self.infer(element), wanted.args[0], f"element of {name}")
             self._new(name, Symbol(wanted, constant=value.constant))
-            node = self._guard(value.node, wanted) if annotation is not None else value.node
-            return ast.Assign(targets=[ast.Name(id=name, ctx=ast.Store())], value=node)
+            node = self.guard(value.node, wanted) if annotation is not None else value.node
+            return StmtIR("let", name=name, typ=wanted, expr=node)
         if kind == "fn":
             name, parameters, result_annotation, expr = p
-            param_names = [name for name, _ in parameters]
-            if len(param_names) != len(set(param_names)): raise BError("E_NAME", f"Duplicate parameter in {name}")
-            if any(n in self.symbols or n.startswith("_b_") for n in param_names):
-                raise BError("E_NAME", "Parameters cannot shadow existing names or runtime internals in v0.1")
+            names = [name for name, _ in parameters]
+            if len(names) != len(set(names)):
+                raise BError("E_NAME", f"Duplicate parameter in {name}")
+            if any(n in self.symbols or n.startswith("_b_") for n in names):
+                raise BError("E_NAME", "Parameters cannot shadow existing names or runtime internals")
             types = [from_syntax(t) for _, t in parameters]
             result_type = from_syntax(result_annotation)
-            sig = Signature(tuple(types), result_type)
-            self._new(name, Symbol(Type("Function"), signature=sig))
-            local = {**self.symbols, **{n: Symbol(t) for n,t in zip(param_names, types)}}
+            self._new(name, Symbol(Type("Function"), signature=Signature(tuple(types), result_type)))
+            local = {**self.symbols, **{n: Symbol(t) for n, t in zip(names, types)}}
             body = self.infer(expr, local)
             self._check_type(body, result_type, f"return of {name}")
-            pyargs = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in param_names],
-                vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])
-            return ast.FunctionDef(name=name, args=pyargs,
-                body=[ast.Return(value=self._guard(body.node, result_type))],
-                decorator_list=[], returns=None, type_comment=None)
-        if kind == "print": return ast.Expr(value=ast.Call(func=ast.Name(id="print", ctx=ast.Load()), args=[self.infer(p[0]).node], keywords=[]))
+            return StmtIR("fn", name=name, typ=result_type, expr=self.guard(body.node, result_type),
+                          params=tuple(zip(names, types)))
+        if kind == "print":
+            return StmtIR("print", expr=self.infer(p[0]).node)
         if kind == "assert":
-            value = self.infer(p[0]); self._check_type(value, BOOL, "assert")
-            if value.constant is False: raise BError("E_ASSERT", "Assertion is statically false")
-            if value.constant is NOT_CONST: self.warn("W_RUNTIME_ASSERT", "Assertion can only be checked while executing")
-            return ast.If(test=ast.UnaryOp(op=ast.Not(), operand=value.node),
-                body=[ast.Raise(exc=ast.Call(func=ast.Name(id="_b_assertion_error", ctx=ast.Load()),
-                    args=[ast.Constant("B assertion failed")], keywords=[]), cause=None)], orelse=[])
+            value = self.infer(p[0])
+            self._check_type(value, BOOL, "assert")
+            if value.constant is False:
+                raise BError("E_ASSERT", "Assertion is statically false")
+            if value.constant is NOT_CONST:
+                self.warn("W_RUNTIME_ASSERT", "Assertion can only be checked while executing")
+            return StmtIR("assert", expr=value.node)
         raise BError("E_INTERNAL", f"Unrecognized statement {kind}")
 
     def compile(self, source: str) -> Compiled:
-        try: statements = parse(source)
-        except LarkError as ex: raise BError("E_SYNTAX", str(ex)) from ex
-        body = [ast.ImportFrom(module="b_lang.runtime", names=[
-            ast.alias(name="py_module", asname="_b_py"),
-            ast.alias(name="net_module", asname="_b_net"),
-            ast.alias(name="guard", asname="_b_guard"),
-            ast.alias(name="BAssertionError", asname="_b_assertion_error"),
-        ], level=0)]
-        for statement in statements: body.append(self.statement(statement))
-        module = ast.fix_missing_locations(ast.Module(body=body, type_ignores=[]))
-        python_source = ast.unparse(module) + "\n"
-        return Compiled(python_source, compile(module, "<B>", "exec"), self.diagnostics, self.assumptions)
+        try:
+            parsed = parse(source)
+        except LarkError as exc:
+            raise BError("E_SYNTAX", str(exc)) from exc
+        statements = tuple(self.statement(s) for s in parsed)
+        program = ProgramIR(statements, self.registry.export(self.used_foreign), tuple(self.assumptions))
+        optimized = optimize(program)
+        python_module = PythonLowerer().lower(optimized.program)
+        return Compiled(ast.unparse(python_module) + "\n", compile(python_module, "<B>", "exec"),
+                        self.diagnostics, self.assumptions, program, optimized.program, optimized.folds)
+
 
 def compile_b(source: str, strict: bool = False) -> Compiled:
     result = Compiler().compile(source)

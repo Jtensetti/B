@@ -2,7 +2,7 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
-## Implemented through B 0.4
+## Implemented through B 0.5
 
 - [x] B syntax, AST, expression-bodied functions, immutable bindings, operators, lists, conditionals.
 - [x] `Option[T]` and `Dict[Text,T]` with literals/inference and recursive runtime type guards.
@@ -21,8 +21,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 - [ ] Keyword arguments, Python typing overload rules and more of typeshed (`Sequence`, `Iterable`, `Literal`, `Protocol`, selected generics).
 - [ ] .NET generic signatures and permission-scoped metadata adapters for selected real packages.
 - [ ] Versions/lockfiles and explicit dependency/version provenance for metadata; cache signatures by version.
-- [ ] Typed intermediate representation (IR) shared by multiple backends, not merely Python AST.
-- [ ] Measure actual library coverage on pinned NumPy/pandas and .NET packages, including unsupported signatures.
+- [x] Typed BIR v1 as common semantic representation, consumed by Python backend; JSON inspection and conservative native constant optimization.
+- [ ] Additional lowering backends, stable IDs and independently verified BIR loading.
+- [x] Build a reproducible, narrowly defined direct-signature coverage audit, report negative results on NumPy/pandas/SciPy.
+- [ ] Improve real-world library coverage and measure more of the *public API*, including re-exports, classes and methods.
 
 ## Later: guarantees and machine efficiency
 
@@ -39,3 +41,7 @@ B is an independent language with a parser, type checker and Python-AST lowering
 - All Python annotations, overloads, and .NET assemblies are understood by B.
 - Strict checks guarantee the user's intended behavior or side-effect safety.
 - Fewer source characters automatically mean fewer model tokens or lower total cost.
+
+## Research after BIR
+
+See [research directions](research-directions.md) for falsifiable proposals spanning effect systems, machine-checkable contracts, dimensional types and incremental compilation. These are hypotheses, **not implemented language features**.

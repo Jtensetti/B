@@ -1,4 +1,4 @@
-# Cross-language interoperability in B 0.3
+# Cross-language interoperability in B 0.5
 
 B's value proposition is reuse of existing software. It does not translate Python or .NET implementations into B, and imported behavior is not formally verified.
 
@@ -58,3 +58,9 @@ The discovery reader now supports a **small explicit subset** of `@overload` set
 - `@overload` choices are selected by supported argument types; `Any` with ambiguous alternatives is rejected.
 - `b inspect py:b_examples.poly_lib --json` shows all supported variants, and all are **assumed interfaces** rather than proven behavior.
 - Unsupported annotations such as `TypedDict`, complex unions, `TypeVar` and keyword-only signatures remain unknown. B does not silently pretend they are supported.
+
+## BIR and library coverage in v0.5
+
+`b_lang.interop.ForeignCatalog` uses a common `ForeignSymbol` representation for discovered Python functions and .NET host metadata. A typed call retains its adapter (`py` / `net`), full foreign name, assumed signature and provenance; `behavior_proven` remains false. `b ir` displays only the typed external functions actually called. The Python backend then lowers those references to the existing CPython importer or allowlisted .NET host.
+
+`b audit py:MODULE` reports a narrowly defined *direct public function declaration* coverage metric, **not** a package-level completeness claim. The 2026-11-21 observation found almost no support for large scientific libraries' complex public annotations. See [the full audit](library-audit.md). The compiler still allows dynamic Python calls in non-strict mode, but that is not equivalent to statically checked compatibility.
