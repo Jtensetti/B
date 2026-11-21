@@ -11,7 +11,7 @@ from .discovery import inspect_python
 from .netmeta import net_bindings
 from .types import (
     Type, BError, INT, FLOAT, BOOL, TEXT, NONE, ANY, MODULE,
-    BINDINGS, ATTRIBUTES, Signature, assignable, from_syntax, unify, needs_dynamic_guard,
+    BINDINGS, ATTRIBUTES, Signature, Overloads, Binding, assignable, from_syntax, unify, needs_dynamic_guard,
 )
 
 NOT_CONST = object()
@@ -40,7 +40,7 @@ class Compiled:
 class Symbol:
     type: Type
     foreign: str | None = None
-    signature: Signature | None = None
+    signature: Binding | None = None
     constant: Any = NOT_CONST
 
 OPS = {
@@ -60,9 +60,10 @@ class Compiler:
         self.diagnostics: list[Diagnostic] = []
         self.foreign_bindings: dict[str, Signature] = {}
         self.assumptions: list[str] = []
-        self.discovered: dict[str, Signature] = {}
+        self.discovered: dict[str, Binding] = {}
         self.discovery_sources: dict[str, str] = {}
         self.net_registry = net_bindings()
+        self._temp_counter = 0
 
     def warn(self, code: str, message: str):
         entry = Diagnostic("warning", code, message)
@@ -87,9 +88,72 @@ class Compiler:
         except ZeroDivisionError: raise BError("E_DIV_ZERO", "Division by zero is guaranteed")
         except (ValueError, TypeError, OverflowError): return NOT_CONST
 
+    @staticmethod
+    def _resolve_binding(binding: Binding, values: list[Value], target: str) -> Signature:
+        """Resolve only unambiguous fully understood overload sets.
+
+        B does not guess which declaration is intended from context. Dynamic
+        values that could select different overloads are rejected before run.
+        """
+        if isinstance(binding, Signature):
+            return binding
+        arities = [sig for sig in binding.options if sig.required <= len(values) <= len(sig.params)]
+        if not arities:
+            raise BError("E_ARITY", f"No overload of {target} accepts {len(values)} arguments")
+        candidates = [sig for sig in arities if all(
+            assignable(v.type, exp) for v, exp in zip(values, sig.params)
+        )]
+        if not candidates:
+            options = "; ".join("(" + ", ".join(map(str, s.params)) + ")" for s in arities)
+            raise BError("E_TYPE", f"No overload of {target} matches argument types; choices: {options}")
+        if len(candidates) == 1:
+            return candidates[0]
+        exact = [sig for sig in candidates if all(
+            v.type == t for v, t in zip(values, sig.params)
+        )]
+        if len(exact) == 1:
+            return exact[0]
+        # Multiple truly identical signatures can be coalesced without guessing.
+        if len(set(candidates)) == 1:
+            return candidates[0]
+        raise BError("E_OVERLOAD_AMBIGUOUS", f"Ambiguous overload of {target}; annotate or narrow arguments")
+
     def infer(self, ex: Expr, scope: dict[str, Symbol] | None = None) -> Value:
         symbols = self.symbols if scope is None else scope
         kind, p = ex.kind, ex.parts
+        if kind == "coalesce":
+            left = self.infer(p[0], symbols)
+            if left.type.name != "Option":
+                raise BError("E_TYPE", "Left side of ?? must be Option[T]")
+            right = self.infer(p[1], symbols)
+            inner = left.type.args[0]
+            if right.type == NONE:
+                result_type = left.type
+            elif right.type.name == "Option":
+                merged = unify(inner, right.type.args[0])
+                if merged == ANY and inner != ANY and right.type.args[0] != ANY:
+                    raise BError("E_TYPE", f"Incompatible coalesce values: {inner} and {right.type}")
+                result_type = Type("Option", (merged,))
+            elif right.type == ANY and inner != ANY:
+                self._check_type(right, inner, "?? fallback")
+                result_type = inner
+            else:
+                result_type = unify(inner, right.type)
+                if result_type == ANY and inner != ANY and right.type != ANY:
+                    raise BError("E_TYPE", f"Incompatible coalesce values: {inner} and {right.type}")
+            # Evaluate left exactly ONCE: it may be an imported call with side effects.
+            self._temp_counter += 1
+            tmp = f"_b_coalesce_{self._temp_counter}"
+            test = ast.Compare(
+                left=ast.NamedExpr(target=ast.Name(id=tmp, ctx=ast.Store()), value=left.node),
+                ops=[ast.IsNot()], comparators=[ast.Constant(None)],
+            )
+            const = right.constant if left.constant is None else left.constant
+            if left.constant is NOT_CONST:
+                const = NOT_CONST
+            return Value(result_type, ast.IfExp(
+                test=test, body=ast.Name(id=tmp, ctx=ast.Load()), orelse=right.node,
+            ), const)
         if kind == "conditional":
             cond, yes, no = p
             cv = self.infer(cond, symbols)
@@ -122,7 +186,26 @@ class Compiler:
                 element_type = items[0].type
                 for i in items[1:]: element_type = unify(element_type, i.type)
             const = [i.constant for i in items] if all(i.constant is not NOT_CONST for i in items) else NOT_CONST
+            if element_type == ANY and all(i.type != ANY for i in items) and len(items) > 1:
+                raise BError("E_TYPE", "List contains incompatible element types")
             return Value(Type("List", (element_type,)), ast.List(elts=[i.node for i in items], ctx=ast.Load()), const)
+        if kind == "dict":
+            keys: list[ast.expr] = []
+            values: list[ast.expr] = []
+            value_type = None
+            for key_expr, val_expr in p:
+                key, value = self.infer(key_expr, symbols), self.infer(val_expr, symbols)
+                self._check_type(key, TEXT, "dictionary key")
+                keys.append(key.node)
+                values.append(value.node)
+                if value_type is None:
+                    value_type = value.type
+                else:
+                    combined = unify(value_type, value.type)
+                    if combined == ANY and value_type != ANY and value.type != ANY:
+                        raise BError("E_TYPE", f"Dictionary values disagree: {value_type} versus {value.type}")
+                    value_type = combined
+            return Value(Type("Dict", (TEXT, value_type or ANY)), ast.Dict(keys=keys, values=values))
         if kind == "attr":
             base, attr = p
             bv = self.infer(base, symbols)
@@ -142,10 +225,11 @@ class Compiler:
             tv = self.infer(target, symbols)
             values = [self.infer(a, symbols) for a in raw_args]
             path = self._foreign_path(target, symbols)
-            sig = (self.foreign_bindings.get(path) or self.discovered.get(path) or self.net_registry.get(path) or BINDINGS.get(path)) if path else None
-            if sig is None and target.kind == "name":
-                sig = symbols[target.parts[0]].signature
-            if sig:
+            binding = (self.foreign_bindings.get(path) or self.discovered.get(path) or self.net_registry.get(path) or BINDINGS.get(path)) if path else None
+            if binding is None and target.kind == "name":
+                binding = symbols[target.parts[0]].signature
+            if binding:
+                sig = self._resolve_binding(binding, values, path or target.parts[0])
                 if not (sig.required <= len(values) <= len(sig.params)):
                     wanted = str(sig.required) if sig.required == len(sig.params) else f"{sig.required}–{len(sig.params)}"
                     raise BError("E_ARITY", f"{path or target.parts[0]} expects {wanted} arguments, got {len(values)}")

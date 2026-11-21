@@ -1,4 +1,4 @@
-"""Command line interface for B (.bee preferred; .bsrc and .b compatible)."""
+"""Command line interface for B (.bee preferred; .b4 experimental alias)."""
 from __future__ import annotations
 
 import argparse
@@ -11,11 +11,11 @@ from .types import BError
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.3")
+    parser = argparse.ArgumentParser(prog="b", description="B programming language v0.4")
     sub = parser.add_subparsers(dest="command", required=True)
     for cmd in ("check", "run", "build"):
         p = sub.add_parser(cmd)
-        p.add_argument("file", type=Path, help="B source file (.bee preferred; .bsrc and .b supported)")
+        p.add_argument("file", type=Path, help="B source file (.bee preferred; .b4, .bsrc and .b supported)")
         p.add_argument("--strict", action="store_true", help="Reject unresolved static checks")
         if cmd == "check":
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
@@ -34,12 +34,17 @@ def main(argv: list[str] | None = None) -> int:
                     raise BError('E_USAGE', '--live and --verify require a net: target')
                 name = args.target[3:]
                 found = inspect_python(name)
+                from .types import Overloads
+                signatures = []
+                for name, binding in sorted(found.signatures.items()):
+                    options = binding.options if isinstance(binding, Overloads) else (binding,)
+                    for idx, sig in enumerate(options, start=1):
+                        signatures.append(dict(name=name, parameters=[str(t) for t in sig.params],
+                                               result=str(sig.result), min_arity=sig.required,
+                                               overload=len(options) > 1, variant=idx))
                 result = {
                     'target': args.target, 'origin': found.source, 'provenance': found.source_kind,
-                    'signatures': [dict(name=k, parameters=[str(t) for t in v.params],
-                                        result=str(v.result), min_arity=v.required)
-                                   for k,v in sorted(found.signatures.items())],
-                    'skipped': found.skipped,
+                    'signatures': signatures, 'skipped': found.skipped,
                     'behavior_proven': False,
                 }
                 if found.source_kind == 'unavailable':
@@ -75,14 +80,14 @@ def main(argv: list[str] | None = None) -> int:
             return 1
     machine = args.command == "check" and args.json
     try:
-        if args.file.suffix.lower() not in (".bee", ".bsrc", ".b"):
-            raise BError("E_EXTENSION", "Expected .bee (preferred), .bsrc or legacy .b source file")
+        if args.file.suffix.lower() not in (".bee", ".b4", ".bsrc", ".b"):
+            raise BError("E_EXTENSION", "Expected .bee (preferred), .b4, .bsrc or legacy .b source file")
         source = args.file.read_text(encoding="utf-8")
         result = compile_b(source, strict=False)
         if args.strict and result.diagnostics:
             if machine:
                 print(json.dumps({
-                    "status": "rejected", "language": "B", "spec": "0.3", "strict": True,
+                    "status": "rejected", "language": "B", "spec": "0.4", "strict": True,
                     "error": {"code": "E_STRICT", "message": "Unresolved static warnings"},
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -94,7 +99,7 @@ def main(argv: list[str] | None = None) -> int:
         elif args.command == "check":
             if machine:
                 print(json.dumps({
-                    "status": "accepted", "language": "B", "spec": "0.3",
+                    "status": "accepted", "language": "B", "spec": "0.4",
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
                     "assumed_foreign_contracts": result.assumptions,
@@ -114,7 +119,7 @@ def main(argv: list[str] | None = None) -> int:
     except (BError, OSError, RuntimeError, AssertionError, ImportError, ValueError, TypeError, ZeroDivisionError) as exc:
         if machine:
             print(json.dumps({
-                "status": "rejected", "language": "B", "spec": "0.3",
+                "status": "rejected", "language": "B", "spec": "0.4",
                 "error": {"code": getattr(exc, "code", "E_RUNTIME"), "message": str(exc)},
             }, ensure_ascii=False))
         else:

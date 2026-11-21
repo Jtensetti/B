@@ -8,6 +8,8 @@ import shutil
 import subprocess
 from pathlib import Path
 from typing import Any
+from functools import lru_cache
+from .types import Type, INT, FLOAT, BOOL, TEXT, NONE, ANY, parse_descriptor
 
 class BAssertionError(AssertionError):
     pass
@@ -15,16 +17,19 @@ class BAssertionError(AssertionError):
 class BBoundaryError(RuntimeError):
     pass
 
-def guard(value: Any, btype: str) -> Any:
-    """Validate and normalize a value at a declared B boundary.
+@lru_cache(maxsize=256)
+def _descriptor(text: str) -> Type:
+    return parse_descriptor(text)
 
-    Integer inputs to Float are explicitly converted to Python float. A JSON
-    number emitted as `6` from the .NET host therefore becomes a B Float 6.0.
-    Lists are copied when crossing typed boundaries to normalize elements.
-    """
-    if btype == "Any":
+
+def _guard_type(value: Any, typ: Type) -> Any:
+    if typ == ANY:
         return value
-    if btype == "Float":
+    if typ == NONE:
+        if value is None:
+            return None
+        raise BBoundaryError(f"Expected None at boundary, got {type(value).__name__}")
+    if typ == FLOAT:
         if type(value) not in (int, float):
             raise BBoundaryError(f"Expected Float at boundary, got {type(value).__name__}: {value!r}")
         try:
@@ -34,24 +39,32 @@ def guard(value: Any, btype: str) -> Any:
         if not math.isfinite(result):
             raise BBoundaryError("Non-finite Float is forbidden at B boundary")
         return result
-    if btype.startswith("List[") and btype.endswith("]"):
-        if not isinstance(value, list):
-            raise BBoundaryError(f"Expected {btype} at boundary, got {type(value).__name__}: {value!r}")
-        inner = btype[5:-1]
-        # A guarded list is a snapshot. This avoids partially converting source
-        # data and protects the B binding from changes to the external list.
-        return [guard(x, inner) for x in value]
-    if btype == "Int":
-        valid = type(value) is int
-    elif btype == "Bool":
-        valid = type(value) is bool
-    elif btype == "Text":
-        valid = type(value) is str
-    else:
-        raise BBoundaryError(f"Unsupported B boundary type: {btype}")
-    if not valid:
-        raise BBoundaryError(f"Expected {btype} at boundary, got {type(value).__name__}: {value!r}")
+    if typ.name == "Option":
+        return None if value is None else _guard_type(value, typ.args[0])
+    if typ.name == "List":
+        if type(value) is not list:
+            raise BBoundaryError(f"Expected {typ} at boundary, got {type(value).__name__}: {value!r}")
+        # Snapshots prevent mutation of the foreign value through B's binding.
+        return [_guard_type(item, typ.args[0]) for item in value]
+    if typ.name == "Dict":
+        if type(value) is not dict:
+            raise BBoundaryError(f"Expected {typ} at boundary, got {type(value).__name__}: {value!r}")
+        return {_guard_type(key, typ.args[0]): _guard_type(item, typ.args[1])
+                for key, item in value.items()}
+    expected = {INT: int, BOOL: bool, TEXT: str}.get(typ)
+    if expected is None:
+        raise BBoundaryError(f"Unsupported B boundary type: {typ}")
+    if type(value) is not expected:
+        raise BBoundaryError(f"Expected {typ} at boundary, got {type(value).__name__}: {value!r}")
     return value
+
+
+def guard(value: Any, btype: str) -> Any:
+    """Check and snapshot typed values at B's external or annotated boundaries.
+
+    This validates the SHAPE of data, never a dependency's implementation.
+    """
+    return _guard_type(value, _descriptor(btype))
 
 def py_module(path: str):
     return importlib.import_module(path)

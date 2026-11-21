@@ -1,5 +1,13 @@
-"""B's deliberately small and explicit static type lattice."""
+"""B's explicit, conservative types and foreign signature descriptions.
+
+The checker allows limited numeric widening and nullable Option types. Python
+``Any`` is a dynamic boundary, NOT proof of static safety. Containers are
+snapshotted by the runtime guard when crossing typed foreign boundaries.
+"""
+from __future__ import annotations
+
 from dataclasses import dataclass
+
 
 @dataclass(frozen=True)
 class Type:
@@ -8,6 +16,7 @@ class Type:
 
     def __str__(self):
         return self.name + ("[" + ", ".join(map(str, self.args)) + "]" if self.args else "")
+
 
 INT = Type("Int")
 FLOAT = Type("Float")
@@ -18,36 +27,82 @@ ANY = Type("Any")
 MODULE = Type("Module")
 KNOWN = {t.name: t for t in (INT, FLOAT, BOOL, TEXT, NONE, ANY)}
 
+
 class BError(Exception):
     def __init__(self, code: str, message: str):
         self.code, self.message = code, message
         super().__init__(f"{code}: {message}")
 
+
+def option(inner: Type) -> Type:
+    if inner == NONE:
+        return NONE
+    if inner.name == "Option":
+        return inner
+    return Type("Option", (inner,))
+
+
 def from_syntax(node) -> Type:
     name, raw_args = node
-    if name not in KNOWN and name != "List":
-        raise BError("E_TYPE", f"Unknown type {name}")
     args = tuple(from_syntax(n) for n in raw_args)
-    if name == "List":
-        if len(args) != 1: raise BError("E_TYPE", "List requires exactly one element type")
-        return Type("List", args)
-    if args: raise BError("E_TYPE", f"Type {name} has no type arguments")
-    return KNOWN[name]
+    if name in KNOWN:
+        if args:
+            raise BError("E_TYPE", f"Type {name} has no type arguments")
+        return KNOWN[name]
+    if name in ("List", "Option"):
+        if len(args) != 1 or args[0] == NONE:
+            raise BError("E_TYPE", f"{name} requires exactly one non-None element type")
+        return Type(name, args)
+    if name == "Dict":
+        if len(args) != 2 or args[0] not in (TEXT,):
+            raise BError("E_TYPE", "Dict requires exactly two arguments; keys must be Text")
+        return Type(name, args)
+    raise BError("E_TYPE", f"Unknown type {name}")
+
 
 def assignable(actual: Type, expected: Type) -> bool:
-    if expected == ANY or actual == ANY: return True
-    if actual == expected: return True
-    if actual == INT and expected == FLOAT: return True
+    if expected == ANY or actual == ANY:
+        return True
+    if actual == expected:
+        return True
+    if actual == INT and expected == FLOAT:
+        return True
+    if expected.name == "Option":
+        if actual == NONE:
+            return True
+        if actual.name == "Option":
+            return assignable(actual.args[0], expected.args[0])
+        return assignable(actual, expected.args[0])
     if actual.name == expected.name == "List":
         return assignable(actual.args[0], expected.args[0])
+    if actual.name == expected.name == "Dict":
+        return (actual.args[0] == expected.args[0]
+                and assignable(actual.args[1], expected.args[1]))
     return False
 
+
 def unify(left: Type, right: Type) -> Type:
-    if left == right: return left
-    if ANY in (left, right): return ANY
-    if {left, right} == {INT, FLOAT}: return FLOAT
-    if left.name == right.name == "List": return Type("List", (unify(left.args[0], right.args[0]),))
+    if left == right:
+        return left
+    if ANY in (left, right):
+        return ANY
+    if {left, right} == {INT, FLOAT}:
+        return FLOAT
+    if left == NONE:
+        return option(right)
+    if right == NONE:
+        return option(left)
+    if left.name == "Option" or right.name == "Option":
+        a = left.args[0] if left.name == "Option" else left
+        b = right.args[0] if right.name == "Option" else right
+        inner = unify(a, b)
+        return option(inner) if inner != ANY else ANY
+    if left.name == right.name == "List":
+        return Type("List", (unify(left.args[0], right.args[0]),))
+    if left.name == right.name == "Dict" and left.args[0] == right.args[0]:
+        return Type("Dict", (left.args[0], unify(left.args[1], right.args[1])))
     return ANY
+
 
 @dataclass(frozen=True)
 class Signature:
@@ -59,23 +114,71 @@ class Signature:
     def required(self) -> int:
         return len(self.params) if self.min_arity is None else self.min_arity
 
-# Explicit, narrow signatures. Unlisted Python symbols remain dynamically checked.
-# Manifest signatures describe the boundary but do NOT prove library internals.
-BINDINGS: dict[str, Signature] = {
+
+@dataclass(frozen=True)
+class Overloads:
+    """Explicit overload variants, NEVER an unchecked dynamic union."""
+    options: tuple[Signature, ...]
+
+
+Binding = Signature | Overloads
+
+
+# Legacy hand-checked subset; real stdlib stubs may replace these in future.
+BINDINGS: dict[str, Binding] = {
     "py:statistics.mean": Signature((Type("List", (FLOAT,)),), FLOAT),
     "py:math.sqrt": Signature((FLOAT,), FLOAT),
     "py:math.pow": Signature((FLOAT, FLOAT), FLOAT),
-
 }
 ATTRIBUTES: dict[str, Type] = {"py:math.pi": FLOAT, "py:math.e": FLOAT}
 
 
 def needs_dynamic_guard(actual: Type, expected: Type) -> bool:
-    """True when dynamic portions of an otherwise assignable type need a runtime check."""
     if expected == ANY:
         return False
     if actual == ANY:
         return True
-    if actual.name == expected.name == "List" and len(actual.args) == len(expected.args) == 1:
+    if expected.name == "Option":
+        if actual == NONE:
+            return False
+        return needs_dynamic_guard(
+            actual.args[0] if actual.name == "Option" else actual,
+            expected.args[0],
+        )
+    if actual.name == expected.name == "List":
         return needs_dynamic_guard(actual.args[0], expected.args[0])
+    if actual.name == expected.name == "Dict":
+        return needs_dynamic_guard(actual.args[1], expected.args[1])
     return False
+
+
+def parse_descriptor(text: str) -> Type:
+    """Parse trusted compiler-generated type descriptors without eval()."""
+    import re
+    parts = re.findall(r"[A-Za-z][A-Za-z0-9_]*|\[|\]|,", text)
+    if "".join(parts) != text.replace(" ", ""):
+        raise BError("E_TYPE", "Invalid type descriptor")
+    pos = 0
+
+    def parse():
+        nonlocal pos
+        if pos >= len(parts) or not parts[pos][0].isalpha():
+            raise BError("E_TYPE", "Invalid type descriptor")
+        name = parts[pos]
+        pos += 1
+        children = []
+        if pos < len(parts) and parts[pos] == "[":
+            pos += 1
+            children.append(parse())
+            while pos < len(parts) and parts[pos] == ",":
+                pos += 1
+                children.append(parse())
+            if pos >= len(parts) or parts[pos] != "]":
+                raise BError("E_TYPE", "Unclosed type descriptor")
+            pos += 1
+        return (name, tuple(children))
+
+    parsed = parse()
+    if pos != len(parts):
+        raise BError("E_TYPE", "Unexpected type descriptor token")
+    return from_syntax(parsed)

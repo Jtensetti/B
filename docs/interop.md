@@ -48,3 +48,13 @@ The .NET 10 host has a narrow allowlist of static functions. `B.NetHost --descri
 | Python ecosystem at scale | Typeshed and installed typing metadata | Complex annotations, overloads, side effects and version drift |
 
 A safe and useful general B FFI requires explicit capabilities, effect semantics, nullable/variant/record types, a versioned type schema and targeted adapters. These are research tasks, not accomplished by v0.3.
+
+## B 0.4: supported Python overload, Option and Dict signatures
+
+The discovery reader now supports a **small explicit subset** of `@overload` sets and nullable, dictionary annotations. It never calls Python's `eval` or `get_type_hints` on untrusted annotation expressions. A call with ambiguous return contracts is rejected rather than guessed. See [`examples/polytypes.bee`](../examples/polytypes.bee).
+
+- `int | None`, `Optional[int]`, `Union[int, None]` map to `Option[Int]`.
+- `dict[str, float]` maps to `Dict[Text, Float]` and is recursively checked at typed boundaries.
+- `@overload` choices are selected by supported argument types; `Any` with ambiguous alternatives is rejected.
+- `b inspect py:b_examples.poly_lib --json` shows all supported variants, and all are **assumed interfaces** rather than proven behavior.
+- Unsupported annotations such as `TypedDict`, complex unions, `TypeVar` and keyword-only signatures remain unknown. B does not silently pretend they are supported.

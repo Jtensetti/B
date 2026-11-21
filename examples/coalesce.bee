@@ -1,0 +1,10 @@
+# B 0.4: Option is explicit, ?? supplies a typed default without re-evaluation.
+use py:b_examples.poly_lib as lib
+
+let found: Option[Int] = lib.find_code("Ada")
+let missing: Option[Int] = lib.find_code("not found")
+let answer: Int = found ?? 0
+let fallback: Int = missing ?? 0
+
+print answer
+print fallback

@@ -41,3 +41,25 @@ The final test requires .NET 10. CI installs the SDK and builds the host. To tes
 12. **Source filename transition:** `.bee` is the preferred source form, while `.bsrc` and `.b` are accepted for compatibility. `.be` is intentionally rejected due to the existing Berry language.
 
 These experiments do not yet benchmark any language model, the token budget or correctness against independent real-world tasks. Future benchmarks must account for the cost of acquiring metadata and building adapters rather than comparing only source length.
+
+## B v0.4 experiments: polymorphism and boundaries
+
+13. **Python overloads:** parse a pair of real `@overload` variants from `.pyi` as an `Overloads` value. `Int` and `Text` inputs select distinct runtime signatures; an `Any` input that could match both fails in B before execution (`E_OVERLOAD_AMBIGUOUS`). This is intentionally *not* the full Python overload-matching specification.
+14. **Explicit absence:** `Option[T]` is distinct from `T`. A function returning `int | None` or `Optional[int]` produces `Option[Int]` in B; `let value: Int = possible` is rejected at check time.
+15. **Typed dictionaries:** `Dict[Text,T]` and `{ "key": value }` literals are first-class B operations. Dictionary values and keys are recursively validated across typed boundaries. An intentionally dishonest stub returning `dict[str,int]` with string values is rejected at runtime.
+16. **Earlier rejection:** incompatible concrete types in a literal list or dictionary now fail immediately, rather than turning into an accidental dynamic `Any` and failing after execution.
+17. **Bounded trust:** the `.pyi` source is parsed, not imported as executable metadata. This does not validate the *semantic truth* of any stub or the target package's side effects.
+18. **Historical extension checks:** `.bee` stays canonical, `.b4` is a supported, optional alias. `.bi` is already taken by FreeBASIC. Extension collision is not a property the compiler can solve.
+
+Repeat B 0.4 experiments:
+
+```sh
+pytest -q
+b inspect py:b_examples.poly_lib --json
+b check examples/polytypes.bee --strict --json
+b run examples/polytypes.bee
+```
+
+19. **Typed fallback with no duplicated effects:** `optional ?? fallback` requires `Option[T]`, rejects incompatible defaults, evaluates the optional-producing expression once and never evaluates the default unless needed. A stateful foreign function is used as the regression test.
+
+As in earlier versions, these are language and interoperability tests, **not** measurements of independent AI-generated code quality, total cost per correct task, or general proof of imported library behavior.

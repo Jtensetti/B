@@ -2,7 +2,7 @@
   "name": "b-language-syntax",
   "displayName": "B Language Syntax",
   "description": "Basic highlighting for the experimental B language (.bee).",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "publisher": "b-language",
   "license": "MIT",
   "engines": { "vscode": "^1.80.0" },
@@ -11,7 +11,7 @@
     "languages": [{
       "id": "b-language",
       "aliases": ["B (experimental)", "B Source"],
-      "extensions": [".bee", ".bsrc"],
+      "extensions": [".bee", ".b4", ".bsrc"],
       "configuration": "./language-configuration.json"
     }],
     "grammars": [{

@@ -126,12 +126,11 @@ print typed'''
         exec(compiled.code, {})
 
 
-def test_list_dynamic_guard_from_static_mixed_literal():
+def test_static_mixed_list_rejected_earlier_in_v04():
+    # Both element types are already known: no need to defer to runtime.
     source = 'let mixed = [1, "wrong"]\nlet ints: List[Int] = mixed\nprint ints'
-    compiled = compile_b(source)
-    assert 'W_DYNAMIC_TYPE' in [d.code for d in compiled.diagnostics]
-    with pytest.raises(BBoundaryError, match='Expected Int'):
-        exec(compiled.code, {})
+    with pytest.raises(BError, match='E_TYPE'):
+        compile_b(source)
 
 
 def test_if_cannot_hide_wrong_type_in_dead_branch():

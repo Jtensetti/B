@@ -34,6 +34,9 @@ class ToModel(Transformer):
     def identifier(self, xs): return Expr("name", (str(xs[0]),))
     def grouped(self, xs): return xs[0]
     def list_literal(self, xs): return Expr("list", tuple(xs[0]) if xs and xs[0] is not None else ())
+    def pair(self, xs): return (xs[0], xs[1])
+    def pairs(self, xs): return list(xs)
+    def dict_literal(self, xs): return Expr("dict", tuple(xs[0]) if xs and xs[0] is not None else ())
     def attribute(self, xs): return ("attr", str(xs[0]))
     def invoke(self, xs): return ("invoke", tuple(xs[0]) if xs and xs[0] is not None else ())
     def postfix(self, xs):
@@ -41,6 +44,7 @@ class ToModel(Transformer):
         for kind, val in xs[1:]: base = Expr(kind, (base, val))
         return base
     def conditional(self, xs): return Expr("conditional", tuple(xs))
+    def coalesce(self, xs): return Expr("coalesce", tuple(xs))
     def not_op(self, xs): return Expr("not", (xs[0],))
     def neg(self, xs): return Expr("neg", (xs[0],))
     def add(self, xs): return Expr("add", tuple(xs))

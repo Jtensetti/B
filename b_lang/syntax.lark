@@ -15,7 +15,9 @@ param: NAME ":" type_expr
 type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 
 ?expr: "if" expr "then" expr "else" expr -> conditional
-     | or_expr
+     | coalesce_expr
+?coalesce_expr: or_expr "??" coalesce_expr -> coalesce
+              | or_expr
 ?or_expr: or_expr "or" and_expr     -> or_op
         | and_expr
 ?and_expr: and_expr "and" cmp_expr -> and_op
@@ -36,6 +38,8 @@ type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 ?tail: "." NAME                    -> attribute
      | "(" [args] ")"              -> invoke
 args: expr ("," expr)*
+pairs: pair ("," pair)*
+pair: expr ":" expr
 ?atom: NUMBER                        -> number
      | ESCAPED_STRING                -> string
      | "true"                        -> true
@@ -43,6 +47,7 @@ args: expr ("," expr)*
      | "none"                        -> none
      | NAME                          -> identifier
      | "[" [args] "]"                -> list_literal
+     | "{" [pairs] "}"               -> dict_literal
      | "(" expr ")"                  -> grouped
 
 BACKEND: "py" | "net"

@@ -1,0 +1,14 @@
+# B 0.4: Python overloads, Option, Dict, typed runtime boundaries.
+use py:b_examples.poly_lib as lib
+
+let name: Text = lib.describe("b")
+let number: Int = lib.describe(41)
+let possible: Option[Int] = lib.find_code("Ada")
+let missing: Option[Int] = lib.find_code("Nobody")
+let doubled: Dict[Text, Float] = lib.adjust({"a": 2.0, "b": 3.5})
+
+print name
+print number
+print possible
+print missing
+print doubled

@@ -46,3 +46,11 @@ The foreign method's return type is guarded at runtime; its mathematical behavio
 ## Threat model
 
 The codebase is an experimental **trusted-code toolchain**. The .NET host narrows its API surface, but B's Python backend can invoke arbitrary installed Python code. There is no isolation from the user's filesystem, processes, devices or network. Do not run programs from untrusted parties without external isolation.
+
+## Added in B 0.4
+
+- Statically reject ambiguous Python overloads (`E_OVERLOAD_AMBIGUOUS`) instead of treating the result as safely typed.
+- Preserve nullability: `Option[T]` cannot silently be assigned to `T`. `??` permits a checked fallback and does not duplicate side-effecting calls.
+- Recursively check `Dict[Text,T]`, `List[T]` and `Option[T]` at declared/foreign boundaries.
+- Reject statically known heterogeneous list/dictionary literals before attempting execution.
+- Importantly, these extend **type checking**, not behavioral verification of foreign libraries.
