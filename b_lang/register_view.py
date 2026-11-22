@@ -1,21 +1,13 @@
 """Read-only source views checked against the original program's typed BIR."""
-from functools import cache
-from importlib import resources
 from pathlib import Path
 import sys
 
-from lark import Lark, Tree
+from lark import Tree
 from lark.exceptions import LarkError
 
 from .compiler import compile_b
+from .model import parser_input, positioned_parser
 from .types import BError
-
-
-@cache
-def _positioned_parser():
-    # Ordinary compilation needs no source spans. Obtain them only for this view.
-    grammar = resources.files("b_lang").joinpath("syntax.lark").read_text()
-    return Lark(grammar, parser="lalr", maybe_placeholders=True, propagate_positions=True)
 
 
 def _text(source, tree):
@@ -107,7 +99,7 @@ def function_view(source: str, function: str, register: str) -> str:
     if register not in ("ordinary", "cases"):
         raise BError("E_REGISTER_VIEW", f"Unknown register {register!r}")
     original = compile_b(source)
-    tree = _positioned_parser().parse(source if source.endswith("\n") else source + "\n")
+    tree = positioned_parser().parse(parser_input(source))
     fn = next((s for s in tree.children if s.data == "fn_stmt" and s.children[0] == function), None)
     if fn is None:
         raise BError("E_REGISTER_VIEW", f"No source function named {function!r}")

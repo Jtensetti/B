@@ -1,4 +1,3 @@
-# B 0.4: Python overloads, Option, Dict, typed runtime boundaries.
 use py:b_examples.poly_lib as lib
 
 let name: Text = lib.describe("b")

@@ -11,7 +11,7 @@ def test_view_round_trip_in_context():
     body = 'if (x) < -(1) then adjust(1) else if x <= 10 then adjust(2) else 5'
     header = 'fn route(x: Int) -> Int pure requires x >= -5 ensures result > 0 = '
     before = 'fn adjust(n: Int) -> Int pure = n + 1\nfn other(x: Int) -> Int = ' + body + '\n'
-    after = '  # trailing comment\nprint route(3)'
+    after = '  \nprint route(3)'
     source = before + header + body + after
     table = function_view(source, 'route', 'cases')
     assert table == header + 'cases x {\n  < -1 => adjust(1)\n  <= 10 => adjust(2)\n  else => 5\n}'

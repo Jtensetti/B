@@ -36,7 +36,7 @@ def replay():
     with TemporaryDirectory() as temp:
         candidate = Path(temp) / "mentions-cases.bee"
         arithmetic = (ROOT.parent / "submissions" / "sampler-1.bee").read_text()
-        candidate.write_text("# cases inside a comment\n" + arithmetic.replace("pulse", "cases"))
+        candidate.write_text(arithmetic.replace("pulse", "cases"))
         assert ordinary_score(candidate, "sampler")["accepted"]
     print("Register gate rejects a valid decision table and accepts the same word as a name.")
 

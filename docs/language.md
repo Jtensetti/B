@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.13
+# B language reference — implemented experimental v0.14
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -8,7 +8,7 @@ For source adoption and contract analysis across functions, see [source adoption
 
 B source is UTF-8. **`.bee` is the recommended extension**; `.b4` is an optional playful alias, with `.bsrc` and `.b` retained for compatibility. `.bi` is *not* adopted: FreeBASIC already uses it for headers. `.b4` also has a historical non-B use and is not reserved. The CLI validates the file contents regardless of suffix.
 
-A newline separates top-level statements. Inside a `cases` table, rows can occupy separate lines or share a line using semicolons. Blank lines and `#` comments are ignored. Identifiers match `[A-Za-z_][A-Za-z0-9_]*`; `_b_` is reserved for compiler internals. Strings are JSON-compatible double-quoted literals. Integers have decimal notation; floating literals have a decimal point; negative values use unary `-`. No exponent literals or arbitrary Unicode identifiers yet. Whitespace between tokens is ignored.
+A newline separates top-level statements. Inside a `cases` table, rows can occupy separate lines or share a line using semicolons. Blank lines are ignored. A bare `#` introduces a syntax error. A hash inside a string is data. To convert a B 0.13 file, run `b migrate-comments OLD.bee > converted.bee` with a separate output path. Identifiers match `[A-Za-z_][A-Za-z0-9_]*`; `_b_` is reserved for compiler internals. Strings are JSON-compatible double-quoted literals. Integers have decimal notation; floating literals have a decimal point; negative values use unary `-`. No exponent literals or arbitrary Unicode identifiers yet. Whitespace between tokens is ignored.
 
 ## 2. Grammar
 
@@ -16,7 +16,7 @@ The following EBNF captures the implemented constructs; the Lark grammar governs
 
 ```ebnf
 program       = { newline | statement, newline }, [statement] ;
-statement     = permit | use | adopt | foreign | let | fn | print | assert ;
+statement     = permit | use | adopt | foreign | let | fn | print | assert | next_edit ;
 permit        = "permit", "[", [identifier, {",", identifier}], "]" ;
 use           = "use", (("py" | "net"), ":", path | "js", ":", (path | string)), "as", identifier ;
 adopt         = "adopt", "py", ":", path, "as", identifier ;
@@ -24,6 +24,7 @@ foreign       = "foreign", path, "(", [type_list], ")", "->", type ;
 let           = "let", identifier, [":", type], "=", expression ;
 fn            = "fn", identifier, "(", [parameters], ")", "->", type,
                 ["pure"], ["requires", expression], ["ensures", expression], "=", expression ;
+next_edit     = "next", identifier, "when", expression, "=>", expression ;
 print         = "print", expression ;
 assert        = "assert", expression ;
 parameters    = parameter, {",", parameter} ;
@@ -41,6 +42,8 @@ case_table    = "cases", identifier, "{", {newline}, row, {row},
 row           = comparison_operator, scalar_threshold, "=>", expression, separator ;
 separator     = ";", {newline} | newline, {newline} ;
 ```
+
+A top-level `next` declares a pending edit on a source function. The condition and replacement use the target function’s scope. [Listing, applying and checking an edit](handoffs.md).
 
 A case table is an expression. It compares the named value against each scalar literal in order, using the ordinary comparison operators and type rules. The first matching row supplies the result, with a mandatory final fallback. Numeric thresholds can be negative. See [decision tables and source views](registers.md).
 
@@ -106,6 +109,8 @@ For `net:`, the B host has only an explicit set of allowed `System.Math` and `Sy
 | --- | --- |
 | `E_SYNTAX` | Invalid B grammar |
 | `E_REGISTER_VIEW` | The requested source view is unavailable for the declaration or fails its equivalence check |
+| `E_HANDOFF` | The proposed conditional edit cannot be applied to the target |
+| `E_HANDOFF_CHANGED` | The file changed before the checked revision could be written |
 | `E_DEPTH` | Expression nesting exceeds the compiler’s capacity, including long decision chains |
 | `E_NAME` | Unknown, duplicated or reserved identifier |
 | `E_TYPE` | Incompatible types or unsupported type syntax |

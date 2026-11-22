@@ -1,4 +1,3 @@
-# POSIX path rules are consistent across host operating systems.
 use js:"node:path/posix" as path
 
 let first: Text = path.join("translations/sv", "../en/messages.json")

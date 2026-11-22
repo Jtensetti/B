@@ -1,4 +1,3 @@
-# Foreign effects are explicitly permitted; imported behavior is NOT proved.
 permit [foreign, console]
 use py:statistics as stats
 fn mean(xs: List[Float]) -> Float = stats.mean(xs)

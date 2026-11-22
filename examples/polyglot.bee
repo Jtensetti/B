@@ -1,4 +1,3 @@
-# B v0.2: Python + C#/.NET in the same expression, with static type checks.
 use py:statistics as stats
 use net:System.Math as Math
 use net:System.Text.RegularExpressions.Regex as Regex

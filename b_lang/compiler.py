@@ -1,4 +1,4 @@
-"""B 0.13 compiler: parse -> typed BIR -> Python backend.
+"""B 0.14 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -19,6 +19,7 @@ from .contracts import validate_predicate, constant as contract_constant, restri
 from .effects import ALLOWED as ALLOWED_EFFECTS, expression_effects, statement_effects
 from .discovery import inspect_python
 from .adoption import adopt_python
+from .handoff import Handoff, materialize, validate_rewrite
 from .interop import ForeignCatalog
 from . import jsmeta
 from .ir import ExprIR, ProgramIR, StmtIR
@@ -64,6 +65,8 @@ class Compiled:
     optimized_ir: ProgramIR
     folds: int
     analysis: Analysis
+    handoff: Handoff | None = None
+    pending_analysis: Analysis | None = None
 
 
 @dataclass
@@ -540,7 +543,7 @@ class Compiler:
             parsed = parse(source)
         except LarkError as exc:
             raise BError("E_SYNTAX", str(exc)) from exc
-        statements = tuple(self.statement(s) for s in parsed)
+        statements = tuple(self.statement(s) for s in parsed if s.kind != "next")
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
         if self.permitted_effects is not None:
             denied = set(detected) - set(self.permitted_effects)
@@ -570,8 +573,25 @@ class Compiler:
         program = replace(program, statements=statements)
         optimized = optimize(program)
         python_module = PythonLowerer().lower(optimized.program)
-        return Compiled(ast.unparse(python_module) + "\n", compile(python_module, "<B>", "exec"),
-                        self.diagnostics, self.assumptions, program, optimized.program, optimized.folds, analysis)
+        result = Compiled(ast.unparse(python_module) + "\n", compile(python_module, "<B>", "exec"),
+                          self.diagnostics, self.assumptions, program, optimized.program, optimized.folds, analysis)
+        targets = [s.parts[0] for s in parsed if s.kind == "next"]
+        if targets:
+            handoff = materialize(source)
+            try:
+                revised = Compiler().compile(handoff.source, conditional_guarantees=conditional_guarantees)
+            except BError as error:
+                raise BError(error.code, f"Pending handoff: {error.message}") from error
+            validate_rewrite(result.ir, revised.ir, targets)
+            for obligation in revised.analysis.obligations:
+                if obligation.status == "refuted" and obligation not in result.analysis.obligations:
+                    raise BError("E_HANDOFF", f"Pending handoff: {obligation.describe()}")
+            for diagnostic in revised.diagnostics:
+                if diagnostic not in result.diagnostics:
+                    self.warn(diagnostic.code, f"Pending handoff: {diagnostic.message}")
+            result.handoff = handoff
+            result.pending_analysis = revised.analysis
+        return result
 
 
 def compile_b(source: str, strict: bool = False, *, conditional_guarantees: bool = True) -> Compiled:
