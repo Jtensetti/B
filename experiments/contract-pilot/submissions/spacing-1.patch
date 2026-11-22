@@ -1,0 +1,5 @@
+--- a/program.bee
++++ b/program.bee
+@@ -1 +1 @@
+-fn gap(rank: Int) -> Int pure requires rank >= 0 and rank <= 6 = rank + 1
++fn gap(rank: Int) -> Int pure requires rank >= 0 and rank <= 6 ensures (rank > 1 or result >= 1) and (rank > 1 or result <= 3) and (rank <= 1 or result >= 2) and (rank <= 1 or result <= 8) = rank + 1

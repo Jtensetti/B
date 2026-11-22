@@ -42,7 +42,7 @@ A verifier can check this implementation. The choice to return zero for an empty
 
 The analyzer computes integer ranges, with a separate fact for a known nonzero integer. It handles simple comparisons, selected arithmetic and conditional paths. Across native calls it uses the independently checked part of a declared integer result range once it can establish the call's precondition. A wrapper's checked contract can then supply facts to its own callers. A declaration supported only by runtime checking cannot supply such a range. A recursive declaration cannot establish itself. Imported signatures describe types and provide no value guarantee.
 
-These are partial-correctness statements over a restricted domain. A nonzero divisor proof says nothing about floating-point overflow, termination or a contract the application forgot to state. Input/result relationships such as `result == x + 1` generally require more than independent intervals. Repeating a call in a branch condition and in its body is also different from testing a single named value.
+These are partial-correctness statements over a restricted domain. A nonzero divisor proof says nothing about floating-point overflow, termination or a contract the application forgot to state. B 0.10 can also publish [exact affine result equalities](contract-discovery.md) after checking the complete contract. A reported proof method identifies one analysis used. A conjunctive guarantee can depend on several methods. Repeating a call in a branch condition and in its body is also different from testing a single named value.
 
 ## Comparing revisions
 
@@ -50,4 +50,4 @@ These are partial-correctness statements over a restricted domain. A nonzero div
 
 Impact first aligns an obligation at the same site with the same expression, then matches an expression that moves uniquely within its caller. Remaining edits can be paired by site. Moved checks are identified in the report. Duplicates and renames can yield added or removed entries.
 
-Sites identify positions in the checked expression tree. They have no identity outside their function or across arbitrary rewrites. Both source revisions must pass the front end. Comparison recomputes both programs in full. Library resolution uses the local Python environment and can initialize parent packages for dotted `use` imports.
+Sites identify positions in the checked expression tree. They have no identity outside their function or across arbitrary rewrites. Both source revisions must pass the front end. Comparison recomputes both programs in full. Library resolution uses the local Python environment and its trusted import hooks. Dotted `use` lookups inspect filesystem packages without running their initializers.

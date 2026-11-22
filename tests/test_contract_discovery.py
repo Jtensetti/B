@@ -1,6 +1,7 @@
 """An observed rule is a proposal about code, never an implicit requirement."""
 import sys
 
+from b_lang.affine import implementation
 from b_lang.compiler import compile_b
 from b_lang.discovery_contracts import discover
 
@@ -80,6 +81,8 @@ def test_an_input_outside_all_queries_exposes_an_accidental_fit():
     if report["status"] == "candidate":
         assert report["candidate_form"] == {"coefficients": {"x": 1}, "constant": 0}
         assert report["proved"] is False
+        fn = compiled.ir.statements[0]
+        assert implementation(fn, {"f": fn}, {}, expand_bodies=True) is None
     else:
         assert report["status"] == "no-match"
     assert run(compiled)["f"](unseen) == unseen + 1
@@ -138,3 +141,54 @@ fn f(x: Int) -> Int = shrink(x)
     assert report["status"] == "inconclusive" and report["candidate_form"] is None
     assert report["probe_failure"]["inputs"]["x"] <= 1
     assert "postcondition" in report["probe_failure"]["reason"]
+
+
+def test_bounded_domain_can_hold_out_distinct_admissible_inputs():
+    compiled = compile_b("fn f(x: Int) -> Int requires x >= 0 and x <= 6 = x + 1")
+    report = discover(compiled.ir, "f")
+    assert report["status"] == "candidate" and report["candidate_form"]["constant"] == 1
+    points = {phase: {row["inputs"]["x"] for row in report["observations"] if row["phase"] == phase}
+              for phase in ("discovery", "challenge")}
+    assert points["discovery"] and points["challenge"]
+    assert points["discovery"].isdisjoint(points["challenge"])
+    assert points["discovery"] | points["challenge"] <= set(range(7))
+
+
+def test_skipped_existing_predicate_is_distinct_from_an_observed_pass():
+    compiled = compile_b("fn f(x: Int) -> Int ensures result < 0.5 = x")
+    report = discover(compiled.ir, "f")
+    assert report["status"] == "candidate" and report["candidate_form"]["coefficients"] == {"x": 1}
+    assert report["declared_counterexample"] is None and report["declared_audit"] == "unsupported"
+    assert any(row["result"] > 0.5 for row in report["observations"])
+
+
+def test_unrepresentable_observation_and_reserved_parameter_do_not_produce_laws():
+    from b_lang.discovery_contracts import MAX_BITS
+
+    factor = 1 << (MAX_BITS - 1)
+    c = compile_b(f"fn f(x: Int) -> Int = x * {factor}")
+    report = discover(c.ir, "f")
+    assert report["status"] == "inconclusive" and report["candidate_form"] is None
+    case = report["probe_failure"]["inputs"]["x"]
+    assert abs(run(c)["f"](case)).bit_length() > MAX_BITS
+    name = compile_b("fn reserved(result: Int) -> Int = result")
+    rejected = discover(name.ir, "reserved")
+    assert rejected["status"] == "unsupported" and rejected["proposed_contract"] is None
+
+
+def test_closed_function_can_have_an_observed_constant_with_no_inputs():
+    compiled = compile_b("fn f() -> Int = 7")
+    report = discover(compiled.ir, "f")
+    assert report["status"] == "candidate"
+    assert report["candidate_form"] == {"coefficients": {}, "constant": 7}
+    assert report["observations"] == [{"phase": "discovery", "inputs": {}, "result": 7}]
+    assert report["proved"] is False and report["declared_audit"] == "absent"
+
+
+def test_family_can_miss_an_explicitly_provable_double():
+    body = compile_b("fn double(x: Int) -> Int = 2 * x")
+    observed = discover(body.ir, "double")
+    assert observed["status"] == "no-match" and observed["candidate_form"] is None
+    explicit = compile_b("fn double(x: Int) -> Int ensures result == 2 * x = 2 * x")
+    checked = next(o for o in explicit.analysis.obligations if o.kind == "ensures")
+    assert checked.status == "proved" and checked.proof_method == "affine-equality"

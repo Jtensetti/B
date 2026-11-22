@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.9
+# B language reference — implemented experimental v0.10
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -86,7 +86,7 @@ let doubled: Dict[Text, Float] = lib.adjust({"x": 2.0})
 print doubled
 ```
 
-B reads a neighboring `.pyi` stub, else a `.py` source file, via a restricted Python AST interpreter, without evaluating its annotation expressions. It supports typed positional functions with optional trailing default arguments, `list[T]`, `dict[str,T]`, `Optional[T]`, `T | None`, `typing.Union[T,None]`, and sets of supported `@overload` alternatives. It does **not** yet support Python type variables, keyword-only/variadic parameters, complex unions, classes and methods, `TypedDict`, protocol typing or broad generic metadata. Unknown forms are skipped; B never invents a static signature. `find_spec` can still run **parent package** initialization for dotted imports; `b check` is not a sandbox.
+B reads a neighboring `.pyi` stub, else a `.py` source file, via a restricted Python AST interpreter, without evaluating its annotation expressions. It supports typed positional functions with optional trailing default arguments, `list[T]`, `dict[str,T]`, `Optional[T]`, `T | None`, `typing.Union[T,None]`, and sets of supported `@overload` alternatives. It does **not** yet support Python type variables, keyword-only/variadic parameters, complex unions, classes and methods, `TypedDict`, protocol typing or broad generic metadata. Unknown forms are skipped; B never invents a static signature. For dotted names B inspects each package's search locations without running filesystem package initializers. Custom Python import hooks remain trusted.
 
 An overload is selected only if its argument types distinguish it unambiguously. The checker accepts a **single** matching overload, or a **uniquely exact** alternative, and rejects otherwise with `E_OVERLOAD_AMBIGUOUS`. It does **not** implement the complete Python typing specification's overload algorithm. An overloaded function whose argument is `Any` and could select different return types is rejected rather than guessed. `b inspect py:... --json` lists each supported overload separately.
 
@@ -146,3 +146,8 @@ let result: Float = sq(4.0)
 Grammar: `adopt_stmt = "adopt", "py", ":", dotted_module_and_function, "as", local_identifier`. The final segment names a single top-level Python function; the preceding segments identify a `.py` source module. `adopt` is **not** the same as `use`: it statically translates a small safe expression subset into an ordinary `fn` in BIR, never imports the Python module at runtime, and treats the resulting function as B-native. It uses explicit Python `int/float/bool/str` annotations as B types and rejects all unsupported syntax. No fallback to unchecked execution exists. See [source adoption specification](source-adoption.md).
 
 `E_ADOPT` signals unsupported source, missing source, ambiguous definitions, effects or unsupported annotations. `b adopt-audit py:MODULE --json` reports eligibility for that narrow subset. The BIR function carries `backend: py-source` and a `target` containing its original source location and SHA-256. No overall behavioral-correctness proof is implied.
+
+
+## Discovering an integer postcondition
+
+`b discover FILE --function NAME --json` returns an implementation-derived proposal and its evidence. `--expect 'result == ...'` checks a separately supplied equality. `b check` can export an affine result equality to other functions after verifying the declared contract. [Supported expressions, examples and exit codes](contract-discovery.md).

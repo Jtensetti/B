@@ -1,0 +1,434 @@
+[
+  {
+    "task": "ledger",
+    "arm": "ordinary",
+    "replicate": 1,
+    "submitted_patch": "ledger-1.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 1468,
+    "outcome": {
+      "public_fn": "balance",
+      "default_correct": 49,
+      "valid_inputs": 49,
+      "invalid_rejected": 4,
+      "invalid_probes": 4,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 49,
+      "blocked_legal": 0,
+      "illegal_pairs": 1274,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 601,
+        "sha256": "642b20f7a029b6dd919c93dbff3f5894585496501ebd71104c55ce1f442ea55c",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 827,
+        "sha256": "01a566298665dcc59d403eb4ad13c7502e8b831fa2cf15c871a2fbba0c9a703c",
+        "status": "accepted"
+      }
+    ]
+  },
+  {
+    "task": "ledger",
+    "arm": "discovery",
+    "replicate": 1,
+    "submitted_patch": "ledger-2.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "discovery": 1,
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 1936,
+    "outcome": {
+      "public_fn": "balance",
+      "default_correct": 49,
+      "valid_inputs": 49,
+      "invalid_rejected": 4,
+      "invalid_probes": 4,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 49,
+      "blocked_legal": 0,
+      "illegal_pairs": 1274,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "discovery",
+        "bytes": 468,
+        "sha256": "d7311b46494cd501714b9118ac9f5304c0615ca4a70b74ad3b54b9f477cafe98",
+        "candidate": "ensures result == arrivals + departures + 1",
+        "verification": "proved",
+        "observations": 9
+      },
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 601,
+        "sha256": "642b20f7a029b6dd919c93dbff3f5894585496501ebd71104c55ce1f442ea55c",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 827,
+        "sha256": "8e184d7243e8d229da8ecce6357dfa1e38ba06be80f1ab41f8d704acc03f6f0c",
+        "status": "accepted"
+      }
+    ]
+  },
+  {
+    "task": "spacing",
+    "arm": "discovery",
+    "replicate": 1,
+    "submitted_patch": "spacing-1.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "discovery": 1,
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 2008,
+    "outcome": {
+      "public_fn": "gap",
+      "default_correct": 7,
+      "valid_inputs": 7,
+      "invalid_rejected": 2,
+      "invalid_probes": 2,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 41,
+      "blocked_legal": 0,
+      "illegal_pairs": 148,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "discovery",
+        "bytes": 447,
+        "sha256": "96c4924905109b8f161684fecffc6adc2d9a6a8f2c8431eec08e64280c03b8f0",
+        "candidate": "ensures result == rank + 1",
+        "verification": "proved",
+        "observations": 4
+      },
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 597,
+        "sha256": "c2063e341bd009e992b3a3b67e54ab9ba2a84d59295434b0152447212edf8a68",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 924,
+        "sha256": "a88d0417617f43e83daf93481aa5df26ef8f1ccc3e8b2c990774cc6aa27ab983",
+        "status": "accepted"
+      }
+    ]
+  },
+  {
+    "task": "spacing",
+    "arm": "ordinary",
+    "replicate": 1,
+    "submitted_patch": "spacing-2.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 1528,
+    "outcome": {
+      "public_fn": "gap",
+      "default_correct": 7,
+      "valid_inputs": 7,
+      "invalid_rejected": 2,
+      "invalid_probes": 2,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 41,
+      "blocked_legal": 0,
+      "illegal_pairs": 148,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 597,
+        "sha256": "c2063e341bd009e992b3a3b67e54ab9ba2a84d59295434b0152447212edf8a68",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 891,
+        "sha256": "d3e86a4c9403ab8900b02ace97cd6a51af5c43a3befb17baa693635ac0c018b8",
+        "status": "accepted"
+      }
+    ]
+  },
+  {
+    "task": "spacing",
+    "arm": "ordinary",
+    "replicate": 2,
+    "submitted_patch": "spacing-2.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 1528,
+    "outcome": {
+      "public_fn": "gap",
+      "default_correct": 7,
+      "valid_inputs": 7,
+      "invalid_rejected": 2,
+      "invalid_probes": 2,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 41,
+      "blocked_legal": 0,
+      "illegal_pairs": 148,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 597,
+        "sha256": "c2063e341bd009e992b3a3b67e54ab9ba2a84d59295434b0152447212edf8a68",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 891,
+        "sha256": "d3e86a4c9403ab8900b02ace97cd6a51af5c43a3befb17baa693635ac0c018b8",
+        "status": "accepted"
+      }
+    ]
+  },
+  {
+    "task": "spacing",
+    "arm": "discovery",
+    "replicate": 2,
+    "submitted_patch": "spacing-2.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "discovery": 1,
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 1975,
+    "outcome": {
+      "public_fn": "gap",
+      "default_correct": 7,
+      "valid_inputs": 7,
+      "invalid_rejected": 2,
+      "invalid_probes": 2,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 41,
+      "blocked_legal": 0,
+      "illegal_pairs": 148,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "discovery",
+        "bytes": 447,
+        "sha256": "96c4924905109b8f161684fecffc6adc2d9a6a8f2c8431eec08e64280c03b8f0",
+        "candidate": "ensures result == rank + 1",
+        "verification": "proved",
+        "observations": 4
+      },
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 597,
+        "sha256": "c2063e341bd009e992b3a3b67e54ab9ba2a84d59295434b0152447212edf8a68",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 891,
+        "sha256": "d3e86a4c9403ab8900b02ace97cd6a51af5c43a3befb17baa693635ac0c018b8",
+        "status": "accepted"
+      }
+    ]
+  },
+  {
+    "task": "ledger",
+    "arm": "discovery",
+    "replicate": 2,
+    "submitted_patch": "ledger-1.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "discovery": 1,
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 1936,
+    "outcome": {
+      "public_fn": "balance",
+      "default_correct": 49,
+      "valid_inputs": 49,
+      "invalid_rejected": 4,
+      "invalid_probes": 4,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 49,
+      "blocked_legal": 0,
+      "illegal_pairs": 1274,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "discovery",
+        "bytes": 468,
+        "sha256": "d7311b46494cd501714b9118ac9f5304c0615ca4a70b74ad3b54b9f477cafe98",
+        "candidate": "ensures result == arrivals + departures + 1",
+        "verification": "proved",
+        "observations": 9
+      },
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 601,
+        "sha256": "642b20f7a029b6dd919c93dbff3f5894585496501ebd71104c55ce1f442ea55c",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 827,
+        "sha256": "01a566298665dcc59d403eb4ad13c7502e8b831fa2cf15c871a2fbba0c9a703c",
+        "status": "accepted"
+      }
+    ]
+  },
+  {
+    "task": "ledger",
+    "arm": "ordinary",
+    "replicate": 2,
+    "submitted_patch": "ledger-1.patch",
+    "instrument_calls": 2,
+    "report_counts": {
+      "static": 2,
+      "public": 1
+    },
+    "report_bytes": 1468,
+    "outcome": {
+      "public_fn": "balance",
+      "default_correct": 49,
+      "valid_inputs": 49,
+      "invalid_rejected": 4,
+      "invalid_probes": 4,
+      "footer_ok": true,
+      "proved_post": true,
+      "legal_pairs": 49,
+      "blocked_legal": 0,
+      "illegal_pairs": 1274,
+      "admitted_illegal": 0
+    },
+    "events": [
+      {
+        "command": "inspect",
+        "report": "static",
+        "bytes": 601,
+        "sha256": "642b20f7a029b6dd919c93dbff3f5894585496501ebd71104c55ce1f442ea55c",
+        "status": "accepted"
+      },
+      {
+        "command": "check",
+        "report": "public",
+        "bytes": 40,
+        "sha256": "ab4774dbbb1300d5b754e505da5d2806ca0d64e1d882f31344bac0e663d4cb1d",
+        "public_cases": 2,
+        "public_passed": 2
+      },
+      {
+        "command": "check",
+        "report": "static",
+        "bytes": 827,
+        "sha256": "01a566298665dcc59d403eb4ad13c7502e8b831fa2cf15c871a2fbba0c9a703c",
+        "status": "accepted"
+      }
+    ]
+  }
+]

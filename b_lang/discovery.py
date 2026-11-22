@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import ast
 import importlib.util
+import sys
 from dataclasses import dataclass
 from importlib.machinery import ModuleSpec, PathFinder
 from pathlib import Path
@@ -29,6 +30,10 @@ def find_module_spec(module: str) -> ModuleSpec | None:
     if not all(piece.isidentifier() for piece in (root, *children)):
         return None
     try:
+        # An installed module may already be present under an alias (os.path).
+        # Checking the cache directly avoids an import of its apparent parent.
+        if module in sys.modules:
+            return getattr(sys.modules[module], "__spec__", None)
         # The normal top-level lookup honors built-ins and editable installs.
         spec = importlib.util.find_spec(root)
         parent = root

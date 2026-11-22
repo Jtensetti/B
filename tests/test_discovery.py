@@ -89,6 +89,7 @@ def test_lookup_preserves_builtins_and_nested_namespace_locations(tmp_path, monk
         (branch / f"{segment}.py").write_text("def f(x: int) -> int: return x\n")
         monkeypatch.syspath_prepend(str(branch.parents[1]))
     assert inspect_python("sys").source_kind == "binary-or-namespace"
+    assert inspect_python("os.path").source_kind != "unavailable"
     assert inspect_python("b_lookup_namespace.nested").source_kind == "binary-or-namespace"
     for segment in ("left", "right"):
         assert "f" in inspect_python(f"b_lookup_namespace.nested.{segment}").signatures

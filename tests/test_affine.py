@@ -193,3 +193,34 @@ fn difference(x: Int) -> Int ensures result == 0 = ext.tick(x) - ext.tick(x)
     assert obligation(c.analysis, "difference").status != "proved"
     with pytest.raises(BContractError, match="difference"):
         execute(c)["difference"](0)
+
+
+def test_rearranged_equation_requires_exact_integer_coefficients():
+    c = compile_b("""
+fn divisible(x: Int) -> Int ensures 2 * result - x == 5 * x + 2 = 1 + 3 * x
+fn indivisible(x: Int) -> Int ensures 2 * result == x = 0
+""")
+    assert obligation(c.analysis, "divisible").status == "proved"
+    assert obligation(c.analysis, "indivisible").status == "unknown"
+    ns = execute(c)
+    assert ns["divisible"](-3) == -8
+    assert ns["indivisible"](0) == 0
+    with pytest.raises(BContractError):
+        ns["indivisible"](1)
+
+
+def test_budget_bounds_on_coefficients_and_parameter_count_are_conservative():
+    from b_lang.affine import MAX_BITS, MAX_TERMS
+
+    for bits in [MAX_BITS, MAX_BITS + 1]:
+        coefficient = 1 << (bits - 1)
+        c = compile_b(f"fn f(x: Int) -> Int ensures result == {coefficient} * x = x * {coefficient}")
+        expected = "proved" if bits == MAX_BITS else "unknown"
+        assert obligation(c.analysis, "f").status == expected
+        assert execute(c)["f"](2) == 2 * coefficient
+
+    parameters = ", ".join(f"x{i}: Int" for i in range(MAX_TERMS + 1))
+    excessive = compile_b(f"fn f({parameters}) -> Int ensures result == x0 = x0")
+    fns = functions(excessive)
+    assert obligation(excessive.analysis, "f").status == "unknown"
+    assert implementation(fns["f"], fns, {}) is None

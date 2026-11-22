@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.10 contract discovery
+
+[Two independently scored AI tasks](../experiments/contract-pilot/README.md) compare the same compiler with candidate discovery shown or hidden. The [booking example](contract-discovery.md) checks a conservation law across calls. Earlier small AI trials covered [billing revisions](../experiments/change-pilot/README.md) and [conditional guarantees](../experiments/law-pilot/README.md).
+
 ## B v0.3 implemented experiments
 
 1. **Typed foreign Python imports:** real `statistics.median` and `json.dumps` can be used in strict mode after explicit `foreign` declarations without modifying the built-in registry. The checker validates argument types and arity, and runtime guards check returned values. Fake signatures are deliberately tested and can fail at runtime; the declared behavior remains an unproved assumption.
@@ -12,7 +16,7 @@
 
 ## What these tests do not establish
 
-- No AI language model has yet generated B programs for an independent benchmark.
+- The small maintenance pilots have no independently maintained multi-project benchmark.
 - No controlled comparison with Python, C# or other languages for model cost, token count, correctness rate or latency has yet been performed.
 - Foreign declarations are assumed, not proven. The imported libraries can perform side effects and can have behavioral bugs.
 - The compiler has not been formally verified. Native compiler lowering to Python is not equivalent to an ahead-of-time B executable.
@@ -34,7 +38,7 @@ The final test requires .NET 10. CI installs the SDK and builds the host. To tes
 
 ## B v0.3 incremental experiments
 
-8. **Non-executing Python signature extraction:** `b_examples/demo_lib.pyi` is parsed using `ast.parse`, not imported. B uses its supported typed exports with no explicit `foreign` declarations. Tests assert that checking a source with an import-time side effect does not trigger the target module; parent package resolution remains a documented exception.
+8. **Non-executing Python signature extraction:** `b_examples/demo_lib.pyi` is parsed using `ast.parse`, not imported. B uses its supported typed exports with no explicit `foreign` declarations. Tests assert that checking a source with an import-time side effect does not trigger the target module. Since 0.10 this also covers ordinary filesystem parent packages.
 9. **Reject rather than invent signatures:** unknown typing constructs, overloads and nonrepresentable annotations are skipped. Strict checking then refuses the unknown call. Explicitly wrong argument types and positional argument counts fail before execution.
 10. **Foreign contract honesty:** a stub that claims the wrong return type gets caught by a runtime guard, but a correct type with a wrong value would remain undetected. `b check --json` records metadata signatures as assumptions even in strict mode.
 11. **.NET metadata drift gate:** a reflection endpoint lists transport-compatible overloads on the *already permitted* .NET types. `b inspect net:System.Math --verify` compares the host results with the manifest used for checking. This is a metadata consistency test, not general .NET reflection or proof.

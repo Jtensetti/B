@@ -82,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
     discover = sub.add_parser("discover", help="Propose and check an integer result contract from the current implementation")
     discover.add_argument("file", type=Path)
     discover.add_argument("--function", required=True, help="Name of the native B function")
-    discover.add_argument("--expect", help="Independently supplied affine B equality, e.g. 'result == free + booked'")
+    discover.add_argument("--expect", help="Require proof of an independent affine equality, e.g. 'result == free + booked'")
     discover.add_argument("--trace", action="store_true", help="Include the observations and eliminated candidates")
     discover.add_argument("--json", action="store_true", help="Emit a machine-readable report")
     impact = sub.add_parser("impact", help="Compare contract obligations in two revisions")
@@ -108,11 +108,13 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"{data['proposed_contract']} ({data['verification']['status']} for the current implementation)")
             if data["declared_counterexample"]:
                 print("Declared postcondition counterexample:", json.dumps(data["declared_counterexample"]))
+            elif data["declared_audit"] in {"unsupported", "incomplete", "unobserved"}:
+                print("Declared postcondition audit:", data["declared_audit"])
             if "expectation" in data:
                 print("Supplied expectation:", json.dumps(data["expectation"]))
             if args.trace:
                 print(json.dumps(data["trace"], indent=2))
-        return 0
+        return int(args.expect is not None and data["expectation"]["status"] != "proved")
     if args.command == "impact":
         return show_impact(args)
     if args.command == "adopt-audit":

@@ -333,14 +333,6 @@ class _Pass:
                     outcome = True
                     conditional |= used_cases
                     sources |= extra_sources
-                elif actual is not None:
-                    # A nonzero constant difference refutes the conjunction on
-                    # every normal body return, even if the parameters vary.
-                    for expected in claims.values():
-                        if actual.form.terms == expected.terms and actual.form.constant != expected.constant:
-                            outcome = False
-                            sources |= frozenset(actual.contract_dependencies)
-                            break
         else:
             outcome = True if fn.ensures.op == "literal" and fn.ensures.data is True else None
         self.record("ensures", "ensures", fn.name, outcome, _render(fn.ensures), sources,

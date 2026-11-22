@@ -27,9 +27,13 @@ def _source_file(module: str) -> Path:
     spec = find_module_spec(module)
     if spec is None:
         raise BError("E_ADOPT", f"Python source module {module} was not found")
-    if not spec.origin or not spec.origin.endswith(".py"):
+    # CPython can ship both a frozen module and its original .py source.
+    origin = spec.origin
+    if origin == "frozen":
+        origin = getattr(spec.loader_state, "filename", None)
+    if not origin or not origin.endswith(".py"):
         raise BError("E_ADOPT", f"{module} has no Python .py source to adopt")
-    return Path(spec.origin)
+    return Path(origin)
 
 
 def _annotation(expr: ast.expr | None) -> tuple[str, tuple]:

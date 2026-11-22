@@ -97,39 +97,40 @@ class _Evaluator:
             return False
         return True
 
-    def eval(self, e: ExprIR, env: dict):
+    def eval(self, e: ExprIR, env: dict, depth: int = 0):
         self.steps += 1
-        if self.steps > MAX_STEPS:
+        if self.steps > MAX_STEPS or depth > MAX_DEPTH:
             raise ProbeFailure("per-probe evaluation budget exhausted")
+        level = depth + 1
         op, args = e.op, e.operands
         if op == "literal":
             return e.data
         if op == "name":
             return env[e.data]
         if op == "guard":
-            return self.eval(args[0], env)
+            return self.eval(args[0], env, level)
         if op == "call":
             fn = self.functions[args[0].data]
-            actuals = [self.eval(a, env) for a in args[1:]]
+            actuals = [self.eval(a, env, level) for a in args[1:]]
             local = dict(zip((n for n, _ in fn.params), actuals, strict=True))
-            if fn.requires is not None and not self.eval(fn.requires, local):
+            if fn.requires is not None and not self.eval(fn.requires, local, level):
                 raise ProbeFailure(f"nested precondition failed in {fn.name}")
-            value = self.eval(fn.expr, local)
-            if fn.ensures is not None and not self.eval(fn.ensures, {**local, "result": value}):
+            value = self.eval(fn.expr, local, level)
+            if fn.ensures is not None and not self.eval(fn.ensures, {**local, "result": value}, level):
                 raise ProbeFailure(f"nested postcondition failed in {fn.name}")
             return value
-        left = self.eval(args[0], env)
+        left = self.eval(args[0], env, level)
         if op == "neg":
             return -left
         if op == "not":
             return not left
         if op == "and":
-            return left and self.eval(args[1], env)
+            return left and self.eval(args[1], env, level)
         if op == "or":
-            return left or self.eval(args[1], env)
+            return left or self.eval(args[1], env, level)
         if op == "conditional":
-            return self.eval(args[1] if left else args[2], env)
-        right = self.eval(args[1], env)
+            return self.eval(args[1] if left else args[2], env, level)
+        right = self.eval(args[1], env, level)
         if op == "cmp":
             return _COMPARE[e.data](left, right)
         if op == "mod" and right == 0:
@@ -239,6 +240,7 @@ def discover(program: ProgramIR, function: str) -> dict:
               "status": "inconclusive", "reason": None, "proved": False,
               "candidate_form": None, "proposed_contract": None, "survivors": [],
               "observations": [], "counterexamples": [], "declared_counterexample": None,
+              "declared_audit": "unavailable",
               "inadmissible_inputs": 0}
     try:
         interpreter = _Evaluator(program, function)
@@ -249,6 +251,8 @@ def discover(program: ProgramIR, function: str) -> dict:
     if "result" in names:
         return {**report, "status": "unsupported", "reason": "result is reserved in a proposed ensures clause"}
     audit_post = interpreter.can_audit_post(fn)
+    report["declared_audit"] = ("absent" if fn.ensures is None else
+                                "unobserved" if audit_post else "unsupported")
     initial, reserve = _pools(fn, names)
     candidates = None
 
@@ -270,26 +274,39 @@ def discover(program: ProgramIR, function: str) -> dict:
         except ProbeFailure as exc:
             report["probe_failure"] = {"inputs": local, "phase": phase, "reason": str(exc)}
             raise
-        report["observations"].append({"phase": phase, "inputs": local, "result": actual})
+        sample = {"phase": phase, "inputs": local, "result": actual}
+        report["observations"].append(sample)
         if audit_post and report["declared_counterexample"] is None:
             interpreter.steps = 0
             try:
                 holds = interpreter.eval(fn.ensures, {**local, "result": actual})
             except ProbeFailure:
                 holds = None
+                report["declared_audit"] = "incomplete"
             if holds is False:
+                report["declared_audit"] = "counterexample"
                 report["declared_counterexample"] = {"inputs": local, "result": actual,
                                                      "declared": "ensures " + _render(fn.ensures)}
+            elif holds is True and report["declared_audit"] == "unobserved":
+                report["declared_audit"] = "no-observed-violation"
         if candidates is None:
             candidates = list(_candidates(len(names), actual))
+            report["candidate_count"] = len(candidates)
         kept = []
+        eliminated = 0
         for candidate in candidates:
             expected = candidate.predict(point)
             if expected == actual:
                 kept.append(candidate)
             else:
-                report["counterexamples"].append({"contract": candidate.contract(names), "inputs": local,
-                                                  "phase": phase, "expected": expected, "observed": actual})
+                # Count every rejected law. Show one illustrative elimination
+                # per training observation and every surprise on reserved input.
+                if phase == "challenge" or eliminated == 0:
+                    report["counterexamples"].append({"contract": candidate.contract(names), "inputs": local,
+                                                      "phase": phase, "expected": expected, "observed": actual})
+                eliminated += 1
+        if eliminated:
+            sample["eliminated_candidates"] = eliminated
         candidates = kept
 
     try:

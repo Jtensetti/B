@@ -42,13 +42,18 @@ def report(program: ProgramIR, function: str, *, expect: str | None = None, trac
         verification = {"status": "proved", "method": "affine-normalization",
                         "body_dependencies": list(evidence.body_dependencies)}
     samples = observations["observations"]
-    surviving = observations["survivors"]
+    survivors_count = None
+    if observations["survivors"] or observations["status"] == "no-match":
+        survivors_count = len(observations["survivors"])
     result = {
         "schema": "b-contract-discovery", "version": 1, "function": function,
         "status": observations["status"], "reason": observations["reason"],
         "proposed_contract": observations["proposed_contract"], "verification": verification,
         "proposal_origin": "current-implementation", "intent": "unspecified",
-        "observations_count": len(samples), "survivors_count": len(surviving),
+        "observed_value": "body-result-before-target-ensures",
+        "observations_count": len(samples),
+        "survivors_count": survivors_count,
+        "declared_audit": observations["declared_audit"],
         "declared_counterexample": observations["declared_counterexample"],
     }
     if "probe_failure" in observations:
