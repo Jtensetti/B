@@ -8,6 +8,7 @@ _NL: NEWLINE
      | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
      | "let" NAME [":" type_expr] "=" _NL* expr          -> let_stmt
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
+     | "also" NAME "(" [also_args] ")" ["keeping" names]   -> also_stmt
      | "next" NAME "when" expr "=>" expr                   -> next_stmt
      | "print" expr                                       -> print_stmt
      | "assert" expr                                      -> assert_stmt
@@ -61,6 +62,7 @@ pair: expr ":" expr
 number_literal: NUMBER               -> number
 ?case_literal: scalar
              | "-" number_literal    -> neg
+also_args: case_literal ("," case_literal)*
 case_row: COMP case_literal "=>" expr
 _ROW_SEMI: ";"
 _row_sep: _ROW_SEMI _NL* | _NL+

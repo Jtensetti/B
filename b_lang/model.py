@@ -32,10 +32,19 @@ class ToModel(Transformer):
     def param(self, xs): return (str(xs[0]), xs[1])
     def args(self, xs): return list(xs)
     def number(self, xs):
-        s = str(xs[0]); return Expr("literal", (float(s) if "." in s else int(s),))
+        token = xs[0]
+        try:
+            value = float(token) if "." in token else int(token)
+        except ValueError as exc:
+            raise LarkError(f"Invalid numeric literal at line {token.line}, column {token.column}") from exc
+        return Expr("literal", (value,))
     def string(self, xs):
         import json
-        return Expr("literal", (json.loads(str(xs[0])),))
+        token = xs[0]
+        try:
+            return Expr("literal", (json.loads(token),))
+        except json.JSONDecodeError as exc:
+            raise LarkError(f"Invalid string literal at line {token.line}, column {token.column}: {exc.msg}") from exc
     def true(self, _): return Expr("literal", (True,))
     def false(self, _): return Expr("literal", (False,))
     def none(self, _): return Expr("literal", (None,))
@@ -126,6 +135,16 @@ class ToModel(Transformer):
         return Stmt("fn", (str(xs[0]), xs[1] or [], xs[2], xs[-1],
                             bool(flags.get("pure", False)), flags.get("requires"), flags.get("ensures")))
     def next_stmt(self, xs): return Stmt("next", (str(xs[0]), xs[1], xs[2]))
+    def also_args(self, xs):
+        values = []
+        for literal in xs:
+            if literal.kind == "neg":
+                number, = literal.parts
+                values.append(-number.parts[0])
+            else:
+                values.append(literal.parts[0])
+        return tuple(values)
+    def also_stmt(self, xs): return Stmt("also", (str(xs[0]), xs[1] or (), tuple(xs[2] or ())))
     def print_stmt(self, xs): return Stmt("print", (xs[0],))
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 

@@ -75,12 +75,23 @@ def _has_dynamic_values(typ):
     return typ == ANY or any(_has_dynamic_values(item) for item in typ.args)
 
 
-def validate_rewrite(current: ProgramIR, revised: ProgramIR, targets):
+def validate_rewrite(current: ProgramIR, revised: ProgramIR, targets, additional_cases=()):
     """Check the guard's effect boundary and preserve the previous fallback conversions."""
     before = {fn.name: fn for fn in current.statements if fn.op == "fn"}
     after = {fn.name: fn for fn in revised.statements if fn.op == "fn"}
     for name in targets:
+        old_guards, old_value = _guard_chain(before[name].expr)
         new_guards, decision = _guard_chain(after[name].expr)
+        if name in additional_cases:
+            # Persistent facts are already checked for both programs. next
+            # rewrites the original source body beneath that same outer test.
+            if old_value.op != "conditional" or decision.op != "conditional" or (
+                    old_value.operands[:2] != decision.operands[:2]):
+                raise BError("E_HANDOFF", f"next would alter the also cases of {name}")
+            under_old, old_value = _guard_chain(old_value.operands[2])
+            under_new, decision = _guard_chain(decision.operands[2])
+            old_guards += under_old
+            new_guards += under_new
         test, _, fallback = decision.operands
         params = {n for n, typ in after[name].params if not _has_dynamic_values(typ)}
         try:
@@ -91,7 +102,6 @@ def validate_rewrite(current: ProgramIR, revised: ProgramIR, targets):
 
         # Typed conditionals can widen an integer to float or add a dynamic
         # guard even on the old branch. The same return guard twice is idempotent.
-        old_guards, old_value = _guard_chain(before[name].expr)
         fallback_guards, fallback_value = _guard_chain(fallback)
         old_types = [typ for typ, _ in groupby(old_guards)]
         new_types = [typ for typ, _ in groupby(new_guards + fallback_guards)]

@@ -1,10 +1,25 @@
 # B
 
-**B is an experimental programming language designed for programs written by AI.** A model can express a calculation in typed B source, reuse existing Python, .NET and Node.js libraries, and let the compiler check and execute the result. The research goal is working software in fewer attempts at lower total cost.
+**B is an experimental programming language for making small, checked changes to programs.** A declaration can extend an existing rule, execute as part of the new program and constrain which results the change may affect. B also has typed functions, contracts and adapters for Python, .NET and Node.js libraries.
 
-**Version 0.17 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.18 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Extend a rule and protect the rest of a booking
+
+```bee
+also free_entry(true, "sun") keeping seats, recipient
+```
+
+This extends the existing ticket rule to children on Sundays. The ticket price follows the changed rule. The compiler rejects the declaration if seat accounting or receipt routing depends on that rule, including through another function.
+
+```sh
+b run examples/also/booking.bee
+b run examples/also/booking.bee --with examples/also/sunday.bee
+```
+
+The price drops from 100 to 0. Both runs leave seven seats and send the receipt to the buyer. A separate check accepts an independently edited module when it can establish that it implements the same change to the accepted version. [Executable changes and the comparison boundary](docs/executable-changes.md) · [Measured comparison with a Python implementation](experiments/executable-changes/README.md).
 
 ## Count events that depend on history
 

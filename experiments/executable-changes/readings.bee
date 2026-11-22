@@ -1,0 +1,5 @@
+fn discard(sensor: Text, phase: Text) -> Bool pure = sensor == "probe" and phase == "setup"
+fn contribution(sensor: Text, phase: Text, value: Int) -> Int pure = if discard(sensor, phase) then 0 else value
+fn integrated(sensor: Text, phase: Text, value: Int, previous: Int) -> Int pure = previous + contribution(sensor, phase, value)
+fn samples(sensor: Text, phase: Text, previous: Int) -> Int pure = previous + 1
+fn channel(sensor: Text, phase: Text) -> Text pure = sensor

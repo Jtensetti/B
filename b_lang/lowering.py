@@ -22,6 +22,44 @@ _COMPARISONS = {
     "<=": ast.LtE, ">=": ast.GtE,
 }
 _SCALAR_OPS = {"literal", "name", "cmp", "and", "or", "not", "neg", "conditional", *_BINARY}
+_INDEX_MIN_ROWS = 32
+
+
+def _leaves(node: ExprIR, connective: str):
+    if node.op == connective:
+        for child in node.operands:
+            yield from _leaves(child, connective)
+    else:
+        yield node
+
+
+def _indexed_facts(test, params):
+    """Recognize a union of exact tuples of the function's boundary-checked scalar parameters."""
+    if not params or test.op != "or" or any(t not in (BOOL, FLOAT, INT, TEXT) for _, t in params):
+        return None
+    rows = list(_leaves(test, "or"))
+    if len(rows) < _INDEX_MIN_ROWS:
+        return None
+    keys = []
+    for row in rows:
+        terms = list(_leaves(row, "and"))
+        if len(terms) != len(params):
+            return None
+        values = []
+        for term, (name, typ) in zip(terms, params):
+            if term.op != "cmp" or term.data != "==":
+                return None
+            left, right = term.operands
+            if (left.op != "name" or left.data != name or left.typ != typ
+                    or right.op != "literal" or right.typ != typ):
+                return None
+            values.append(right.data)
+        keys.append(ast.Constant(values[0] if len(values) == 1 else tuple(values)))
+    names = [_load(_python_name(name)) for name, _ in params]
+    key = names[0] if len(names) == 1 else ast.Tuple(elts=names, ctx=ast.Load())
+    # The supported Python compilers fold membership in this literal set to
+    # a constant frozenset. The generated .py source has the same property.
+    return ast.Compare(left=key, ops=[ast.In()], comparators=[ast.Set(elts=keys)])
 
 
 def _inert_scalar(e: ExprIR) -> bool:
@@ -217,7 +255,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
         body = [_assign("_b_hits", ast.Constant(0)), *loop, ast.Return(value=_load("_b_hits"))]
         return self._collection_call("history", source_expr, body, {past, current})
 
-    def expr(self, e: ExprIR) -> ast.expr:
+    def expr(self, e: ExprIR, *, rule_params=()) -> ast.expr:
         op, children, data = e.op, e.operands, e.data
         if op == "literal":
             return ast.Constant(data)
@@ -246,9 +284,13 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return ast.Call(func=self.expr(children[0]), args=[self.expr(x) for x in children[1:]], keywords=[])
         if op == "guard":
             return ast.Call(func=ast.Name(id="_b_guard", ctx=ast.Load()),
-                            args=[self.expr(children[0]), ast.Constant(str(e.typ))], keywords=[])
+                            args=[self.expr(children[0], rule_params=rule_params), ast.Constant(str(e.typ))], keywords=[])
         if op == "conditional":
-            return ast.IfExp(test=self.expr(children[0]), body=self.expr(children[1]), orelse=self.expr(children[2]))
+            test = None
+            if rule_params and children[1].op == "literal" and children[1].data is True:
+                test = _indexed_facts(children[0], rule_params)
+            return ast.IfExp(test=test or self.expr(children[0]), body=self.expr(children[1]),
+                             orelse=self.expr(children[2]))
         if op == "coalesce":
             # NamedExpr ensures that potentially impure foreign calls are evaluated ONCE.
             self._tmp += 1
@@ -300,7 +342,8 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                                   args=[ast.Constant(f"Precondition of {s.name} failed")], keywords=[]),
                                     cause=None)], orelse=[]))
             with self._bind(names):
-                body.append(_assign("_b_result", self.expr(s.expr)))
+                params = s.params if s.declared_pure and s.typ == BOOL else ()
+                body.append(_assign("_b_result", self.expr(s.expr, rule_params=params)))
             if s.ensures is not None:
                 # `result` is an expression-scope pseudo-variable, not a mutable B binding.
                 with self._bind([*names, "result"]):

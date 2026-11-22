@@ -12,6 +12,7 @@ from functools import lru_cache
 from .types import Type, INT, FLOAT, BOOL, TEXT, NONE, ANY, parse_descriptor
 
 _EXACT_SCALARS = {INT: int, BOOL: bool, TEXT: str}
+_EXACT_BY_DESCRIPTOR = {typ.name: native for typ, native in _EXACT_SCALARS.items()}
 
 class BAssertionError(AssertionError):
     pass
@@ -84,6 +85,8 @@ def guard(value: Any, btype: str) -> Any:
 
     This validates the SHAPE of data, never a dependency's implementation.
     """
+    if type(value) is _EXACT_BY_DESCRIPTOR.get(btype):
+        return value
     return _guard_type(value, _descriptor(btype))
 
 def py_module(path: str):

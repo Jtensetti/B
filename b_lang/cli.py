@@ -22,8 +22,33 @@ def read_source(path: Path, *, newline: str | None = None) -> str:
         return stream.read()
 
 
-def compile_file(path: Path, *, conditional_guarantees: bool = True):
-    return compile_b(read_source(path), conditional_guarantees=conditional_guarantees)
+def compile_file(path: Path, *, conditional_guarantees: bool = True, delta_path: Path | None = None):
+    source = read_source(path)
+    if delta_path is not None:
+        from .revisions import attach_delta
+        source = attach_delta(source, read_source(delta_path))
+    return compile_b(source, conditional_guarantees=conditional_guarantees)
+
+
+def show_revision(args) -> int:
+    from .revisions import check_revision
+    try:
+        delta = read_source(args.delta) if args.delta else None
+        report = check_revision(read_source(args.before), read_source(args.after), delta=delta)
+    except (BError, OSError, UnicodeError) as exc:
+        report = {"status": "invalid", "reason": str(exc)}
+    if args.json:
+        print(json.dumps(report, ensure_ascii=False))
+    else:
+        print(f"{report['status']}: {report.get('reason') or report.get('method', '')}")
+        if report['status'] == 'counterexample' and 'function' in report:
+            args_text = json.dumps(report.get('arguments'), ensure_ascii=False)
+            print(f"{report['function']} {args_text}: expected {report.get('expected')!r}, "
+                  f"got {report.get('actual')!r}")
+        elif 'output_index' in report:
+            print(f"print {report['output_index']}: expected {report['expected']!r}, "
+                  f"got {report['actual']!r}")
+    return int(report["status"] != "proved")
 
 
 def show_impact(args) -> int:
@@ -62,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
         p = sub.add_parser(cmd)
         p.add_argument("file", type=Path, help="B source file (.bee preferred; .b4, .bsrc and .b supported)")
         p.add_argument("--strict", action="store_true", help="Reject unresolved static checks")
+        p.add_argument("--with", dest="delta", type=Path, metavar="DELTA.bee",
+                       help="Compile with a file of executable also declarations")
         if cmd == "check":
             p.add_argument("--joint", action="append", default=[], type=Path, metavar="REQUEST",
                            help="Check a relation on pairs of native calls in an explicit grid (repeatable)")
@@ -100,7 +127,14 @@ def main(argv: list[str] | None = None) -> int:
     impact.add_argument("before", type=Path)
     impact.add_argument("after", type=Path)
     impact.add_argument("--json", action="store_true")
+    revision = sub.add_parser("revision", help="Check a candidate against the accepted program plus its declared change")
+    revision.add_argument("before", type=Path)
+    revision.add_argument("after", type=Path)
+    revision.add_argument("--delta", type=Path, help="Pin the authorized change from a separate .bee file")
+    revision.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "revision":
+        return show_revision(args)
     if args.command == "next":
         return handoff_cli.run(args, read_source)
     if args.command == "migrate-comments":
@@ -238,7 +272,8 @@ def main(argv: list[str] | None = None) -> int:
     machine = args.command == "check" and args.json
     try:
         use_rules = args.command != "check" or not args.no_conditional_guarantees
-        result = compile_file(args.file, conditional_guarantees=use_rules)
+        result = compile_file(args.file, conditional_guarantees=use_rules,
+                              delta_path=getattr(args, "delta", None))
         hints = []
         if args.command == "check" and args.explain:
             from .guidance import guidance

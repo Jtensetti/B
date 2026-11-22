@@ -1,4 +1,4 @@
-"""B 0.17 compiler: parse -> typed BIR -> Python backend.
+"""B 0.18 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -14,6 +14,7 @@ from typing import Any
 
 from lark.exceptions import LarkError
 
+from .also import additional_cases, extend_predicate
 from .composition import Analysis, analyze
 from .contracts import validate_predicate, constant as contract_constant, restrict as contract_restrict, verify as verify_post
 from .effects import ALLOWED as ALLOWED_EFFECTS, expression_effects, statement_effects
@@ -91,6 +92,7 @@ class Compiler:
         self.used_foreign: set[str] = set()
         self.permitted_effects: tuple[str, ...] | None = None
         self.started_statements = False
+        self.additional_cases: dict[str, list[tuple]] = {}
 
     def warn(self, code: str, message: str):
         d = Diagnostic("warning", code, message)
@@ -579,14 +581,18 @@ class Compiler:
                 self._pure_captures(body.node, set(names))
             self.symbols[name].effects = effects
             self.symbols[name].requires = pre
-            body_node = self.guard(body.node, result_type)
             proof = None
             post = None
             if raw_post is not None:
                 post_scope = {**local, "result": Symbol(result_type)}
                 post = self._contract(raw_post, post_scope, set(names) | {"result"}, "ensures")
+            if cases := self.additional_cases.get(name):
+                if not declared_pure or result_type != BOOL:
+                    raise BError("E_ALSO", f"also requires {name} to declare a pure Bool result")
+                body.node = extend_predicate(name, dict(zip(names, types)), cases, pre, post, body.node)
+            if post is not None:
                 proof = verify_post(pre, body.node, post, dict(zip(names, types)), result_type)
-            return StmtIR("fn", name=name, typ=result_type, expr=body_node,
+            return StmtIR("fn", name=name, typ=result_type, expr=self.guard(body.node, result_type),
                           params=tuple(zip(names, types)), effects=tuple(sorted(effects)),
                           requires=pre, ensures=post, verification=proof, declared_pure=declared_pure)
         if kind == "print":
@@ -609,7 +615,8 @@ class Compiler:
             parsed = parse(source)
         except LarkError as exc:
             raise BError("E_SYNTAX", str(exc)) from exc
-        statements = tuple(self.statement(s) for s in parsed if s.kind != "next")
+        self.additional_cases = additional_cases(parsed)
+        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
         if self.permitted_effects is not None:
             denied = set(detected) - set(self.permitted_effects)
@@ -618,6 +625,9 @@ class Compiler:
         program = ProgramIR(statements, self.registry.export(self.used_foreign),
                             tuple(self.assumptions), permitted_effects=self.permitted_effects,
                             detected_effects=detected)
+        if self.additional_cases:
+            from .preservation import validate_preservation
+            validate_preservation(program, [s for s in parsed if s.kind == "also"])
         analysis = analyze(program, conditional_guarantees=conditional_guarantees)
         upgraded = {}
         for item in analysis.obligations:
@@ -648,7 +658,7 @@ class Compiler:
                 revised = Compiler().compile(handoff.source, conditional_guarantees=conditional_guarantees)
             except BError as error:
                 raise BError(error.code, f"Pending handoff: {error.message}") from error
-            validate_rewrite(result.ir, revised.ir, targets)
+            validate_rewrite(result.ir, revised.ir, targets, self.additional_cases)
             for obligation in revised.analysis.obligations:
                 if obligation.status == "refuted" and obligation not in result.analysis.obligations:
                     raise BError("E_HANDOFF", f"Pending handoff: {obligation.describe()}")
