@@ -1,0 +1,7 @@
+fn billable(extra: Int) -> Int pure requires extra >= 0 ensures result >= 0 = if extra == 0 then 0 else extra + 1
+fn rate_for_count(total: Int, count: Int) -> Float pure = if count == 0 then 0.0 else total / count
+fn carry_for_count(total: Int, count: Int) -> Int pure = if count == 0 then total else total % count
+fn rate(total: Int, extra: Int) -> Float pure requires extra >= 0 = rate_for_count(total, billable(extra))
+fn carry(total: Int, extra: Int) -> Int pure requires extra >= 0 = carry_for_count(total, billable(extra))
+fn label(extra: Int) -> Int pure requires extra >= 0 = 1000 + billable(extra)
+fn fee(net: Int) -> Int pure = net * 3 + 2

@@ -6,6 +6,7 @@ once its semantics and supported operations are specified.
 """
 from __future__ import annotations
 import ast
+import keyword
 
 from .ir import ExprIR, ProgramIR, StmtIR
 from .types import BError
@@ -20,6 +21,13 @@ _COMPARISONS = {
 }
 
 
+def _python_name(name: str) -> str:
+    # The B grammar permits Python keywords. B reserves _b_ for the backend.
+    if keyword.iskeyword(name) or name in ("__debug__", "__builtins__"):
+        return "_b_name_" + name
+    return name
+
+
 class PythonLowerer:
     def __init__(self):
         self._tmp = 0
@@ -29,7 +37,7 @@ class PythonLowerer:
         if op == "literal":
             return ast.Constant(data)
         if op == "name":
-            return ast.Name(id=data, ctx=ast.Load())
+            return ast.Name(id=_python_name(data), ctx=ast.Load())
         if op == "list":
             return ast.List(elts=[self.expr(x) for x in children], ctx=ast.Load())
         if op == "dict":
@@ -37,6 +45,9 @@ class PythonLowerer:
                 raise BError("E_INTERNAL", "Odd number of dictionary children in BIR")
             return ast.Dict(keys=[self.expr(x) for x in children[::2]], values=[self.expr(x) for x in children[1::2]])
         if op == "attr":
+            if keyword.iskeyword(data):
+                return ast.Call(func=ast.Name(id="_b_getattr", ctx=ast.Load()),
+                                args=[self.expr(children[0]), ast.Constant(data)], keywords=[])
             return ast.Attribute(value=self.expr(children[0]), attr=data, ctx=ast.Load())
         if op == "call":
             return ast.Call(func=self.expr(children[0]), args=[self.expr(x) for x in children[1:]], keywords=[])
@@ -68,20 +79,21 @@ class PythonLowerer:
         if s.op == "import":
             if s.backend not in ("py", "net") or not s.target or not s.name:
                 raise BError("E_INTERNAL", "Invalid import BIR")
-            return ast.Assign(targets=[ast.Name(id=s.name, ctx=ast.Store())], value=ast.Call(
+            return ast.Assign(targets=[ast.Name(id=_python_name(s.name), ctx=ast.Store())], value=ast.Call(
                 func=ast.Name(id="_b_py" if s.backend == "py" else "_b_net", ctx=ast.Load()),
                 args=[ast.Constant(s.target)], keywords=[]))
         if s.op in ("foreign", "permit"):
             return ast.Pass()
         if s.op == "let":
-            return ast.Assign(targets=[ast.Name(id=s.name, ctx=ast.Store())], value=self.expr(s.expr))
+            return ast.Assign(targets=[ast.Name(id=_python_name(s.name), ctx=ast.Store())], value=self.expr(s.expr))
         if s.op == "fn":
-            names = [n for n, _ in s.params]
+            names = [_python_name(n) for n, _ in s.params]
             args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in names],
                                  vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])
             body: list[ast.stmt] = []
             # B arguments are B values even if invoked from Python or via Any.
             for name, typ in s.params:
+                name = _python_name(name)
                 body.append(ast.Assign(targets=[ast.Name(id=name, ctx=ast.Store())],
                                        value=ast.Call(func=ast.Name(id="_b_guard", ctx=ast.Load()),
                                                       args=[ast.Name(id=name, ctx=ast.Load()), ast.Constant(str(typ))],
@@ -106,10 +118,10 @@ class PythonLowerer:
                                   args=[ast.Constant(f"Postcondition of {s.name} failed")], keywords=[]),
                                     cause=None)], orelse=[]))
             body.append(ast.Return(value=ast.Name(id="_b_result", ctx=ast.Load())))
-            return ast.FunctionDef(name=s.name, args=args, body=body,
+            return ast.FunctionDef(name=_python_name(s.name), args=args, body=body,
                                    decorator_list=[], returns=None, type_comment=None)
         if s.op == "print":
-            return ast.Expr(value=ast.Call(func=ast.Name(id="print", ctx=ast.Load()),
+            return ast.Expr(value=ast.Call(func=ast.Name(id="_b_print", ctx=ast.Load()),
                                            args=[self.expr(s.expr)], keywords=[]))
         if s.op == "assert":
             return ast.If(test=ast.UnaryOp(op=ast.Not(), operand=self.expr(s.expr)),
@@ -118,7 +130,11 @@ class PythonLowerer:
         raise BError("E_INTERNAL", f"Unknown BIR statement: {s.op}")
 
     def lower(self, program: ProgramIR) -> ast.Module:
-        body = [ast.ImportFrom(module="b_lang.runtime", names=[
+        builtins = ast.ImportFrom(module="builtins", names=[
+            ast.alias(name="print", asname="_b_print"),
+            ast.alias(name="getattr", asname="_b_getattr"),
+        ], level=0)
+        body = [builtins, ast.ImportFrom(module="b_lang.runtime", names=[
             ast.alias(name="py_module", asname="_b_py"),
             ast.alias(name="net_module", asname="_b_net"),
             ast.alias(name="guard", asname="_b_guard"),

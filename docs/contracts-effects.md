@@ -1,5 +1,7 @@
 # B 0.6: native contracts, proofs and effect preflight
 
+For cross-function analysis in 0.8, see [contract analysis and revision comparison](composition.md).
+
 **Implemented experimental subset.** This document specifies the new v0.6 features as they actually run. B remains a research language and its checking is not a general verification or security system.
 
 ## 1. Why these features exist

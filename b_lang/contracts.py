@@ -72,37 +72,64 @@ class Interval:
     lo: int | None = None  # None means negative infinity
     hi: int | None = None  # None means positive infinity
 
+    excludes_zero: bool = False  # An integer disequality that a single range cannot express.
+
+    @property
+    def nonzero(self) -> bool:
+        return self.excludes_zero or (self.lo is not None and self.lo > 0) or (self.hi is not None and self.hi < 0)
+
     def intersect(self, other: "Interval") -> "Interval":
         lo = max(x for x in (self.lo, other.lo) if x is not None) if (self.lo is not None or other.lo is not None) else None
         hi = min(x for x in (self.hi, other.hi) if x is not None) if (self.hi is not None or other.hi is not None) else None
+        excludes_zero = self.excludes_zero or other.excludes_zero
+        if excludes_zero and lo == 0:
+            lo = 1
+        if excludes_zero and hi == 0:
+            hi = -1
         if lo is not None and hi is not None and lo > hi:
             raise BError("E_PRECONDITION_EMPTY", "Integer requirements have no possible input")
-        return Interval(lo, hi)
+        return Interval(lo, hi, excludes_zero)
 
 
 def restrict(pre: ExprIR | None, names: set[str]) -> dict[str, Interval]:
     bounds = {name: Interval() for name in names}
-    def apply(node: ExprIR) -> None:
-        if node.op == "and":
-            apply(node.operands[0]); apply(node.operands[1]); return
-        if node.op != "cmp":
-            return
-        left, right = node.operands
-        op = node.data
-        if right.op == "name" and left.op == "literal":
-            op = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "==": "==", "!=": "!="}[op]
-            left, right = right, left
-        if left.op != "name" or left.data not in bounds or right.op != "literal" or type(right.data) is not int:
-            return
-        k = right.data
-        limit = {">": Interval(k+1, None), ">=": Interval(k, None),
-                 "<": Interval(None, k-1), "<=": Interval(None, k),
-                 "==": Interval(k, k)}.get(op)
-        if limit is not None:
-            bounds[left.data] = bounds[left.data].intersect(limit)
-    if pre:
-        apply(pre)
+    if pre is not None:
+        narrow(pre, bounds, extended=False)
     return bounds
+
+
+def narrow(node: ExprIR, bounds: dict[str, Interval], when: bool = True, *, extended: bool = True) -> None:
+    """Intersect simple named Int constraints in place. Empty paths raise BError."""
+    if node.op == "not" and extended:
+        narrow(node.operands[0], bounds, not when)
+        return
+    if (when and node.op == "and") or (not when and node.op == "or"):
+        for operand in node.operands:
+            narrow(operand, bounds, when, extended=extended)
+        return
+    if node.op != "cmp":
+        return
+    left, right = node.operands
+    op = node.data
+    if right.op == "name":
+        op = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "==": "==", "!=": "!="}[op]
+        left, right = right, left
+    if left.op != "name" or left.typ != INT or left.data not in bounds:
+        return
+    if right.op == "literal" and type(right.data) is int:
+        k = right.data
+    elif extended and right.op == "neg" and right.operands[0].op == "literal" and type(right.operands[0].data) is int:
+        k = -right.operands[0].data
+    else:
+        return
+    if not when:
+        op = {"<": ">=", "<=": ">", ">": "<=", ">=": "<", "==": "!=", "!=": "=="}[op]
+    limit = {">": Interval(k+1, None), ">=": Interval(k, None),
+             "<": Interval(None, k-1), "<=": Interval(None, k), "==": Interval(k, k)}.get(op)
+    if extended and op == "!=" and k == 0:
+        limit = Interval(excludes_zero=True)
+    if limit is not None:
+        bounds[left.data] = bounds[left.data].intersect(limit)
 
 
 def _sum_bound(a: int | None, b: int | None) -> int | None:
@@ -119,19 +146,26 @@ def value_interval(node: ExprIR, env: dict[str, Interval]) -> Interval | None:
         return env.get(node.data)
     if op == "guard":
         return value_interval(args[0], env)
+    if op in ("neg", "add", "sub", "mul"):
+        values = tuple(value_interval(arg, env) for arg in args)
+        return arithmetic_interval(op, *values)
+    return None
+
+
+def arithmetic_interval(op: str, a: Interval | None, b: Interval | None = None) -> Interval | None:
+    if a is None:
+        return None
     if op == "neg":
-        v = value_interval(args[0], env)
-        return Interval(-v.hi if v.hi is not None else None, -v.lo if v.lo is not None else None) if v else None
-    if op in ("add", "sub", "mul"):
-        a, b = value_interval(args[0], env), value_interval(args[1], env)
-        if a is None or b is None:
-            return None
-        if op == "add":
-            return Interval(_sum_bound(a.lo, b.lo), _sum_bound(a.hi, b.hi))
-        if op == "sub":
-            return Interval(_sum_bound(a.lo, -b.hi if b.hi is not None else None),
-                            _sum_bound(a.hi, -b.lo if b.lo is not None else None))
-        # Arbitrary unbounded multiplication is unknown; zero is safe.
+        return Interval(-a.hi if a.hi is not None else None, -a.lo if a.lo is not None else None,
+                        a.excludes_zero)
+    if b is None:
+        return None
+    if op == "add":
+        return Interval(_sum_bound(a.lo, b.lo), _sum_bound(a.hi, b.hi))
+    if op == "sub":
+        return Interval(_sum_bound(a.lo, -b.hi if b.hi is not None else None),
+                        _sum_bound(a.hi, -b.lo if b.lo is not None else None))
+    if op == "mul":
         if (a.lo == a.hi == 0) or (b.lo == b.hi == 0):
             return Interval(0, 0)
         if None in (a.lo, a.hi, b.lo, b.hi):
@@ -149,16 +183,21 @@ def truth(node: ExprIR, env: dict[str, Interval]) -> bool | None:
         v = truth(args[0], env)
         return not v if v is not None else None
     if op in ("and", "or"):
-        a, b = truth(args[0], env), truth(args[1], env)
-        if op == "and":
-            return False if False in (a, b) else True if a is True and b is True else None
-        return True if True in (a, b) else False if a is False and b is False else None
+        left = truth(args[0], env)
+        # An unsupported first operand can fail before the right operand runs.
+        # A tautology on the right supplies no evidence that evaluation finishes.
+        if left is None or (op == "and" and not left) or (op == "or" and left):
+            return left
+        return truth(args[1], env)
     if op != "cmp":
         return None
     a, b = value_interval(args[0], env), value_interval(args[1], env)
+    return compare_intervals(node.data, a, b)
+
+
+def compare_intervals(which: str, a: Interval | None, b: Interval | None) -> bool | None:
     if a is None or b is None:
         return None
-    which = node.data
     if which == ">=":
         if a.lo is not None and b.hi is not None and a.lo >= b.hi: return True
         if a.hi is not None and b.lo is not None and a.hi < b.lo: return False
@@ -176,7 +215,8 @@ def truth(node: ExprIR, env: dict[str, Interval]) -> bool | None:
         disjoint = ((a.hi is not None and b.lo is not None and a.hi < b.lo)
                     or (b.hi is not None and a.lo is not None and b.hi < a.lo))
         if equality: return which == "=="
-        if disjoint: return which == "!="
+        if disjoint or (a.lo == a.hi == 0 and b.nonzero) or (b.lo == b.hi == 0 and a.nonzero):
+            return which == "!="
     return None
 
 

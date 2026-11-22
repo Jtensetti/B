@@ -1,4 +1,4 @@
-"""B 0.7 compiler: parse -> typed BIR -> Python backend.
+"""B 0.8 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -10,11 +10,12 @@ import ast
 import importlib.util
 import math
 import operator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 from lark.exceptions import LarkError
 
+from .composition import Analysis, analyze
 from .contracts import validate_predicate, constant as contract_constant, restrict as contract_restrict, verify as verify_post
 from .effects import ALLOWED as ALLOWED_EFFECTS, expression_effects, statement_effects
 from .discovery import inspect_python
@@ -28,7 +29,7 @@ from .netmeta import net_bindings
 from .types import (
     Type, BError, INT, FLOAT, BOOL, TEXT, NONE, ANY, MODULE,
     ATTRIBUTES, Signature, Overloads, Binding, assignable,
-    from_syntax, unify, needs_dynamic_guard,
+    from_syntax, unify, needs_dynamic_guard, needs_numeric_widening, option, supports_ordering,
 )
 
 NOT_CONST = object()
@@ -62,6 +63,7 @@ class Compiled:
     ir: ProgramIR
     optimized_ir: ProgramIR
     folds: int
+    analysis: Analysis
 
 
 @dataclass
@@ -99,6 +101,16 @@ class Compiler:
     @staticmethod
     def guard(node: ExprIR, typ: Type) -> ExprIR:
         return ExprIR("guard", typ, (node,))
+
+    def _widen(self, value: Value, wanted: Type) -> Value:
+        if not needs_numeric_widening(value.type, wanted):
+            return value
+        # An Int and its closest representable Float can compare unequal.
+        # Record the same conversion in the BIR and in constant evaluation.
+        scalar = wanted.args[0] if wanted.name == "Option" else wanted
+        known = (None if value.constant is None and wanted.name == "Option"
+                 else self._at_runtime_constant(value.constant, scalar))
+        return Value(wanted, self.guard(value.node, wanted), known)
 
     def _check_type(self, value: Value, expected: Type, context: str):
         if not assignable(value.type, expected):
@@ -202,6 +214,8 @@ class Compiler:
                 typ = unify(inner, right.type)
                 if typ == ANY and inner != ANY and right.type != ANY:
                     raise BError("E_TYPE", f"Incompatible coalesce values: {inner} and {right.type}")
+            left = self._widen(left, option(typ))
+            right = self._widen(right, typ)
             const = right.constant if left.constant is None else left.constant
             if left.constant is NOT_CONST:
                 const = NOT_CONST
@@ -217,6 +231,8 @@ class Compiler:
                 self._check_type(yv, typ, "if then branch")
             if needs_dynamic_guard(nv.type, typ):
                 self._check_type(nv, typ, "if else branch")
+            yv = self._widen(yv, typ)
+            nv = self._widen(nv, typ)
             const = NOT_CONST
             if type(cv.constant) is bool:
                 const = yv.constant if cv.constant else nv.constant
@@ -240,15 +256,16 @@ class Compiler:
                     element_type = unify(element_type, i.type)
             if element_type == ANY and all(i.type != ANY for i in items) and len(items) > 1:
                 raise BError("E_TYPE", "List contains incompatible element types")
+            items = [self._widen(item, element_type) for item in items]
             const = [i.constant for i in items] if all(i.constant is not NOT_CONST for i in items) else NOT_CONST
             return self.val(Type("List", (element_type,)), "list", *(v.node for v in items), constant=const)
         if kind == "dict":
-            flattened: list[ExprIR] = []
+            pairs: list[tuple[Value, Value]] = []
             value_type = None
             for key_expr, value_expr in p:
                 key, val = self.infer(key_expr, symbols), self.infer(value_expr, symbols)
                 self._check_type(key, TEXT, "dictionary key")
-                flattened.extend((key.node, val.node))
+                pairs.append((key, val))
                 if value_type is None:
                     value_type = val.type
                 else:
@@ -256,7 +273,10 @@ class Compiler:
                     if merged == ANY and value_type != ANY and val.type != ANY:
                         raise BError("E_TYPE", f"Dictionary values disagree: {value_type} versus {val.type}")
                     value_type = merged
-            return self.val(Type("Dict", (TEXT, value_type or ANY)), "dict", *flattened)
+            value_type = value_type or ANY
+            flattened = [node for key, val in pairs
+                         for node in (key.node, self._widen(val, value_type).node)]
+            return self.val(Type("Dict", (TEXT, value_type)), "dict", *flattened)
         if kind == "attr":
             base, name = p
             bv = self.infer(base, symbols)
@@ -291,6 +311,7 @@ class Compiler:
                     raise BError("E_ARITY", f"{label} expects {wanted} arguments, got {len(values)}")
                 for idx, (v, expected) in enumerate(zip(values, sig.params), start=1):
                     self._check_type(v, expected, f"argument {idx} to {label}")
+                precondition_proved = False
                 if not path and target.kind == "name":
                     native = symbols[target.parts[0]]
                     if native.requires is not None:
@@ -303,8 +324,7 @@ class Compiler:
                         })
                         if known is False:
                             raise BError("E_PRECONDITION", f"Call to {label} violates its requires clause")
-                        if known is not True:
-                            self.warn("W_RUNTIME_PRECONDITION", f"Call to {label}: requires checked at runtime")
+                        precondition_proved = known is True
                 children = [tv.node] + [self.guard(v.node, t) if path else v.node
                                        for v, t in zip(values, sig.params)]
                 if ref is not None:
@@ -314,6 +334,8 @@ class Compiler:
                         if assumed not in self.assumptions:
                             self.assumptions.append(assumed)
                 result = self.val(sig.result, "call", *children, foreign=path)
+                if precondition_proved:
+                    result.node = replace(result.node, precondition_proved=True)
                 if path:
                     result.node = self.guard(result.node, sig.result)
                 return result
@@ -331,6 +353,7 @@ class Compiler:
                 typ = TEXT
             elif kind == "add" and lhs.type.name == rhs.type.name == "List":
                 typ = unify(lhs.type, rhs.type)
+                lhs, rhs = self._widen(lhs, typ), self._widen(rhs, typ)
             elif not (lhs.type in NUMERIC + (ANY,) and rhs.type in NUMERIC + (ANY,)):
                 raise BError("E_TYPE", f"{kind} requires numbers, got {lhs.type} and {rhs.type}")
             if kind in ("div", "mod") and rhs.constant == 0:
@@ -340,6 +363,8 @@ class Compiler:
         if kind == "cmp":
             lhs, op, rhs = p
             lv, rv = self.infer(lhs, symbols), self.infer(rhs, symbols)
+            if op not in ("==", "!=") and not (supports_ordering(lv.type) and supports_ordering(rv.type)):
+                raise BError("E_TYPE", f"Operator {op} cannot order {lv.type} and {rv.type}")
             if lv.type != ANY and rv.type != ANY and not (assignable(lv.type, rv.type) or assignable(rv.type, lv.type)):
                 raise BError("E_TYPE", f"Cannot compare {lv.type} and {rv.type}")
             return self.val(BOOL, "cmp", lv.node, rv.node, data=op,
@@ -393,7 +418,6 @@ class Compiler:
             native = self.statement(adopted.statement)
             if native.effects or not native.declared_pure:
                 raise BError("E_ADOPT", "Adopted code must be a pure B function")
-            from dataclasses import replace
             return replace(native, backend="py-source", target=(
                 f"py:{fullname}@sha256:{adopted.sha256}"))
         if kind == "foreign":
@@ -482,8 +506,6 @@ class Compiler:
                 post_scope = {**local, "result": Symbol(result_type)}
                 post = self._contract(raw_post, post_scope, set(names) | {"result"}, "ensures")
                 proof = verify_post(pre, body.node, post, dict(zip(names, types)), result_type)
-                if proof == "runtime-check":
-                    self.warn("W_RUNTIME_POSTCONDITION", f"Function {name}: ensures is not statically proved")
             return StmtIR("fn", name=name, typ=result_type, expr=body_node,
                           params=tuple(zip(names, types)), effects=tuple(sorted(effects)),
                           requires=pre, ensures=post, verification=proof, declared_pure=declared_pure)
@@ -516,10 +538,24 @@ class Compiler:
         program = ProgramIR(statements, self.registry.export(self.used_foreign),
                             tuple(self.assumptions), permitted_effects=self.permitted_effects,
                             detected_effects=detected)
+        analysis = analyze(program)
+        upgraded = {}
+        for item in analysis.obligations:
+            if item.kind == "ensures" and item.status == "proved":
+                upgraded[item.caller] = "proved-composition" if item.dependencies else "proved-interval"
+            elif item.kind in ("ensures", "requires") and item.status != "proved":
+                code = "W_RUNTIME_POSTCONDITION" if item.kind == "ensures" else "W_RUNTIME_PRECONDITION"
+                self.warn(code, item.describe())
+        statements = tuple(
+            replace(s, verification=upgraded[s.name])
+            if s.op == "fn" and s.name in upgraded and s.verification == "runtime-check" else s
+            for s in statements
+        )
+        program = replace(program, statements=statements)
         optimized = optimize(program)
         python_module = PythonLowerer().lower(optimized.program)
         return Compiled(ast.unparse(python_module) + "\n", compile(python_module, "<B>", "exec"),
-                        self.diagnostics, self.assumptions, program, optimized.program, optimized.folds)
+                        self.diagnostics, self.assumptions, program, optimized.program, optimized.folds, analysis)
 
 
 def compile_b(source: str, strict: bool = False) -> Compiled:

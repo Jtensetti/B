@@ -1,0 +1,3 @@
+fn count(raw: Int) -> Int pure requires raw >= 0 ensures result >= 0 = raw
+fn total_with_reserve(raw: Int) -> Int pure requires raw >= 0 ensures result >= 10 = count(raw) + 10
+fn cost_per_item(raw: Int) -> Float pure requires raw >= 0 = 100 / count(raw)

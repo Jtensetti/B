@@ -1,0 +1,5 @@
+fn billable(extra: Int) -> Int pure requires extra >= 0 ensures result > 0 = extra + 1
+fn rate(total: Int, extra: Int) -> Float pure requires extra >= 0 = total / billable(extra)
+fn carry(total: Int, extra: Int) -> Int pure requires extra >= 0 = total % billable(extra)
+fn label(extra: Int) -> Int pure requires extra >= 0 = 1000 + billable(extra)
+fn fee(net: Int) -> Int pure = net * 3 + 2

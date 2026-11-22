@@ -1,4 +1,4 @@
-"""BIR 1: typed, backend-neutral semantic operations.
+"""BIR v2: typed, backend-neutral semantic operations.
 
 No Python AST, Python bytecode, CLR-specific object, or executable input is
 stored in BIR. Both the interpreter's lowered Python AST and tooling views are
@@ -53,6 +53,7 @@ class ExprIR:
     operands: tuple["ExprIR", ...] = ()
     data: Any = None
     foreign_path: str | None = None
+    precondition_proved: bool = False  # exact scalar check at this call site
 
     def to_dict(self) -> dict[str, Any]:
         result: dict[str, Any] = {"op": self.op, "type": str(self.typ)}
@@ -60,6 +61,8 @@ class ExprIR:
             result["operands"] = [v.to_dict() for v in self.operands]
         if self.data is not None or self.op == "literal":
             result["value"] = self.data
+        if self.precondition_proved:
+            result["constant_precondition_proved"] = True
         if self.foreign_path:
             result["foreign"] = self.foreign_path
         return result

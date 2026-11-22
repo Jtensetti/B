@@ -1,6 +1,8 @@
-# B language reference — implemented experimental v0.6
+# B language reference — implemented experimental v0.8
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
+
+For source adoption and contract analysis across functions, see [source adoption](source-adoption.md) and [contract analysis](composition.md).
 
 ## 1. Source form and tokens
 
@@ -14,9 +16,10 @@ The following EBNF captures the implemented constructs; the Lark grammar governs
 
 ```ebnf
 program       = { newline | statement, newline }, [statement] ;
-statement     = permit | use | foreign | let | fn | print | assert ;
+statement     = permit | use | adopt | foreign | let | fn | print | assert ;
 permit        = "permit", "[", [identifier, {",", identifier}], "]" ;
 use           = "use", ("py" | "net"), ":", path, "as", identifier ;
+adopt         = "adopt", "py", ":", path, "as", identifier ;
 foreign       = "foreign", path, "(", [type_list], ")", "->", type ;
 let           = "let", identifier, [":", type], "=", expression ;
 fn            = "fn", identifier, "(", [parameters], ")", "->", type,
@@ -52,6 +55,10 @@ Expressions also allow literals (`true`, `false`, `none`, numbers, strings), ref
 | `Any` | Dynamic Python value | Explicit loss of static type information; narrowing needs runtime guards |
 
 Subtyping/assignability is limited to identity, `Int -> Float`, `T -> Option[T]`, `None -> Option[T]`, recursive container compatibility and `Any` with guarded narrowing. A `Dict` key type must be `Text`. `if ... then Int else None` infers `Option[Int]`. `optional ?? default` safely extracts a value or uses the fallback; it requires `Option[T]` on the left and a compatible value on the right. The left operand is evaluated exactly once and the fallback is lazy. Incompatible *fully known* element types in a list or dictionary are rejected before running; unknown dynamic values produce boundary warnings/guards where they are narrowed. Empty lists and dicts infer an `Any` value type until context narrows them.
+
+In 0.8, a common `Float` type converts the selected integer value at the join. For example, `if true then 9007199254740993 else 0.0` evaluates to `9007199254740992.0`. The same conversion applies to `??`, mixed numeric elements of list and dictionary literals, and list concatenation. The checker uses the rounded value when evaluating constant comparisons.
+
+Ordering operators accept compatible numbers, text, booleans and lists of orderable elements. Lists compare lexicographically. For dictionaries and nullable values, use equality or inequality. Use `??` to supply a default before ordering a nullable value. An operand typed `Any` can still fail its comparison at runtime.
 
 Example:
 
