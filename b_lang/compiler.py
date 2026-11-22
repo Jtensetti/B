@@ -1,4 +1,4 @@
-"""B 0.8 compiler: parse -> typed BIR -> Python backend.
+"""B 0.9 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -524,7 +524,7 @@ class Compiler:
                           effects=tuple(sorted(expression_effects(value.node, self.symbols))))
         raise BError("E_INTERNAL", f"Unrecognized statement {kind}")
 
-    def compile(self, source: str) -> Compiled:
+    def compile(self, source: str, *, conditional_guarantees: bool = True) -> Compiled:
         try:
             parsed = parse(source)
         except LarkError as exc:
@@ -538,11 +538,14 @@ class Compiler:
         program = ProgramIR(statements, self.registry.export(self.used_foreign),
                             tuple(self.assumptions), permitted_effects=self.permitted_effects,
                             detected_effects=detected)
-        analysis = analyze(program)
+        analysis = analyze(program, conditional_guarantees=conditional_guarantees)
         upgraded = {}
         for item in analysis.obligations:
             if item.kind == "ensures" and item.status == "proved":
-                upgraded[item.caller] = "proved-composition" if item.dependencies else "proved-interval"
+                if item.proof_method == "conditional-guarantee":
+                    upgraded[item.caller] = "proved-conditional"
+                else:
+                    upgraded[item.caller] = "proved-composition" if item.dependencies else "proved-interval"
             elif item.kind in ("ensures", "requires") and item.status != "proved":
                 code = "W_RUNTIME_POSTCONDITION" if item.kind == "ensures" else "W_RUNTIME_PRECONDITION"
                 self.warn(code, item.describe())
@@ -558,8 +561,8 @@ class Compiler:
                         self.diagnostics, self.assumptions, program, optimized.program, optimized.folds, analysis)
 
 
-def compile_b(source: str, strict: bool = False) -> Compiled:
-    result = Compiler().compile(source)
+def compile_b(source: str, strict: bool = False, *, conditional_guarantees: bool = True) -> Compiled:
+    result = Compiler().compile(source, conditional_guarantees=conditional_guarantees)
     if strict and result.diagnostics:
         raise BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
     return result

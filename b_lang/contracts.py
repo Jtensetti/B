@@ -107,20 +107,11 @@ def narrow(node: ExprIR, bounds: dict[str, Interval], when: bool = True, *, exte
         for operand in node.operands:
             narrow(operand, bounds, when, extended=extended)
         return
-    if node.op != "cmp":
+    comparison = int_comparison(node, extended=extended)
+    if comparison is None:
         return
-    left, right = node.operands
-    op = node.data
-    if right.op == "name":
-        op = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "==": "==", "!=": "!="}[op]
-        left, right = right, left
-    if left.op != "name" or left.typ != INT or left.data not in bounds:
-        return
-    if right.op == "literal" and type(right.data) is int:
-        k = right.data
-    elif extended and right.op == "neg" and right.operands[0].op == "literal" and type(right.operands[0].data) is int:
-        k = -right.operands[0].data
-    else:
+    name, op, k = comparison
+    if name not in bounds:
         return
     if not when:
         op = {"<": ">=", "<=": ">", ">": "<=", ">=": "<", "==": "!=", "!=": "=="}[op]
@@ -129,7 +120,27 @@ def narrow(node: ExprIR, bounds: dict[str, Interval], when: bool = True, *, exte
     if extended and op == "!=" and k == 0:
         limit = Interval(excludes_zero=True)
     if limit is not None:
-        bounds[left.data] = bounds[left.data].intersect(limit)
+        bounds[name] = bounds[name].intersect(limit)
+
+
+def int_comparison(node: ExprIR, *, extended: bool = True) -> tuple[str, str, int] | None:
+    """Recognize a named Int compared with a (possibly signed) integer literal."""
+    if node.op != "cmp":
+        return None
+    left, right = node.operands
+    op = node.data
+    if right.op == "name":
+        op = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "==": "==", "!=": "!="}[op]
+        left, right = right, left
+    if left.op != "name" or left.typ != INT:
+        return None
+    if right.op == "literal" and type(right.data) is int:
+        k = right.data
+    elif extended and right.op == "neg" and right.operands[0].op == "literal" and type(right.operands[0].data) is int:
+        k = -right.operands[0].data
+    else:
+        return None
+    return left.data, op, k
 
 
 def _sum_bound(a: int | None, b: int | None) -> int | None:

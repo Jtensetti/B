@@ -1,0 +1,6 @@
+--- a/sequencer.bee
++++ b/sequencer.bee
+@@ -4 +4,2 @@
+-fn event(step: Int) -> Int pure requires step >= -12 and step <= 12 = if step == 0 then 0 else 255
++fn encode_pitch(pitch: Int) -> Int pure = if pitch > 0 then raise_event(pitch) else if pitch < 0 then lower_event(pitch) else 0
++fn event(step: Int) -> Int pure requires step >= -12 and step <= 12 = encode_pitch(calibrated(step))

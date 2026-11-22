@@ -11,6 +11,7 @@ import json
 
 from .contracts import Interval, arithmetic_interval, compare_intervals, constant, narrow, truth
 from .ir import ExprIR, ProgramIR, StmtIR
+from .relations import Contract, read_contract
 from .types import BError, BOOL, INT
 
 
@@ -24,6 +25,7 @@ class Obligation:
     requirement: str
     dependencies: tuple[str, ...]
     expression: str | None = None
+    proof_method: str | None = None
 
     def to_dict(self) -> dict:
         return {key: value for key, value in {**vars(self), "dependencies": list(self.dependencies)}.items()
@@ -48,6 +50,13 @@ class Fact:
     interval: Interval | None = None
     boolean: bool | None = None
     sources: frozenset[str] = frozenset()
+    conditional: bool = False
+
+
+@dataclass(frozen=True)
+class _Summary:
+    interval: Interval
+    conditional: bool
 
 
 _UNKNOWN = Fact()
@@ -80,13 +89,14 @@ def _join(left: Fact, right: Fact) -> Fact:
         hi = max(a.hi, b.hi) if a.hi is not None and b.hi is not None else None
         result = Interval(lo, hi, a.nonzero and b.nonzero)
     boolean = left.boolean if left.boolean == right.boolean else None
-    return Fact(result, boolean, left.sources | right.sources)
+    return Fact(result, boolean, left.sources | right.sources, left.conditional or right.conditional)
 
 
-def _contract_sources(node: ExprIR, env: dict[str, Fact]) -> frozenset[str]:
+def _contract_inputs(node: ExprIR, env: dict[str, Fact]):
     if node.op == "name":
-        return env.get(node.data, _UNKNOWN).sources
-    return frozenset().union(*(_contract_sources(c, env) for c in node.operands))
+        yield env.get(node.data, _UNKNOWN)
+    for child in node.operands:
+        yield from _contract_inputs(child, env)
 
 
 _INFIX = {"add": "+", "sub": "-", "mul": "*", "div": "/", "mod": "%", "and": "and",
@@ -121,16 +131,20 @@ def _render(node: ExprIR) -> str:
 
 
 class _Pass:
-    def __init__(self, functions: dict[str, StmtIR], summaries: dict[str, Interval]):
+    def __init__(self, functions: dict[str, StmtIR], summaries: dict[str, _Summary],
+                 contracts: dict[str, Contract], *, collect: bool = True):
         self.functions = functions
+        self.contracts = contracts
+        self.collect = collect
         self.summaries = summaries
         self.obligations: list[Obligation] = []
         self.caller = "<module>"
 
-    def record(self, site, kind, target, outcome, requirement, sources, expression=None):
+    def record(self, site, kind, target, outcome, requirement, sources, expression=None, *, conditional=False):
         status = "proved" if outcome is True else "refuted" if outcome is False else "unknown"
         self.obligations.append(Obligation(self.caller, site, kind, target, status, requirement,
-                                           tuple(sorted(sources)), expression))
+                                           tuple(sorted(sources)), expression,
+                                           "conditional-guarantee" if conditional and outcome is True else None))
 
     def call(self, node: ExprIR, args: list[Fact], site: str) -> Fact:
         target = node.operands[0]
@@ -143,16 +157,35 @@ class _Pass:
         actuals = {name: fact if typ == INT else Fact(sources=fact.sources)
                    for (name, typ), fact in zip(function.params, args)}
         ok = True
+        conditional = False
         sources = frozenset({function.name})
         if function.requires is not None:
             ok = True if node.precondition_proved else truth(function.requires, _bounds(actuals))
-            inputs = _contract_sources(function.requires, actuals)
-            self.record(site, "requires", function.name, ok, _render(function.requires), inputs, _render(node))
-            sources |= inputs
+            inputs = tuple(_contract_inputs(function.requires, actuals))
+            input_sources = _sources(inputs)
+            conditional = any(f.conditional for f in inputs)
+            if self.collect:
+                self.record(site, "requires", function.name, ok, _render(function.requires), input_sources,
+                            _render(node), conditional=conditional)
+            sources |= input_sources
         # Keep the provider visible even if the declared guarantee no longer proves
         # the obligation. Sources describe dependencies, not a certificate by themselves.
-        interval = self.summaries.get(function.name) if ok is True else None
-        return Fact(interval, sources=sources)
+        summary = self.summaries.get(function.name) if ok is True else None
+        if summary is None:
+            return Fact(sources=sources)
+        interval = summary.interval
+        conditional |= summary.conditional
+        contract = self.contracts.get(function.name)
+        if contract is not None:
+            bounds = _bounds(actuals)
+            for rule in contract.rules:
+                if truth(rule.guard, bounds) is False:
+                    narrowed = interval.intersect(rule.bound)
+                    if (narrowed.lo, narrowed.hi, narrowed.nonzero) != (interval.lo, interval.hi, interval.nonzero):
+                        conditional = True
+                        sources |= actuals[rule.parameter].sources
+                    interval = narrowed
+        return Fact(interval, sources=sources, conditional=conditional)
 
     def expr(self, node: ExprIR, env: dict[str, Fact], site: str) -> Fact:
         op, args = node.op, node.operands
@@ -177,7 +210,8 @@ class _Pass:
                 return _UNKNOWN
             value = branches[0] if len(branches) == 1 else _join(*branches)
             return replace(value, interval=value.interval if node.typ == INT else None,
-                           sources=value.sources | condition.sources)
+                           sources=value.sources | condition.sources,
+                           conditional=value.conditional or condition.conditional)
         if op in ("and", "or"):
             left = self.expr(args[0], env, site + ".0")
             evaluate_right = op == "and"
@@ -185,10 +219,10 @@ class _Pass:
                 return left
             right_env = _refine(args[0], env, evaluate_right)
             if right_env is None:
-                return Fact(boolean=not evaluate_right, sources=left.sources)
+                return Fact(boolean=not evaluate_right, sources=left.sources, conditional=left.conditional)
             right = self.expr(args[1], right_env, site + ".1")
             known = right.boolean if left.boolean is not None else None
-            return Fact(boolean=known, sources=left.sources | right.sources)
+            return Fact(boolean=known, sources=left.sources | right.sources, conditional=left.conditional or right.conditional)
         if op == "guard":
             child = self.expr(args[0], env, site)
             if node.typ == args[0].typ:
@@ -196,9 +230,10 @@ class _Pass:
             return Fact(sources=child.sources)
         children = [self.expr(child, env, f"{site}.{i}") for i, child in enumerate(args)]
         sources = _sources(children)
+        conditional = any(f.conditional for f in children)
         if op == "call":
             return self.call(node, children[1:], site)
-        if op in ("div", "mod"):
+        if self.collect and op in ("div", "mod"):
             denominator = children[1].interval
             nonzero = compare_intervals("!=", denominator, Interval(0, 0))
             if nonzero is None:
@@ -207,17 +242,39 @@ class _Pass:
                 value = constant(args[1], {})
                 if type(value) in (float, int):
                     nonzero = value != 0
-            self.record(site, "nonzero", op, nonzero, f"{_render(args[1])} != 0", children[1].sources)
+            self.record(site, "nonzero", op, nonzero, f"{_render(args[1])} != 0", children[1].sources,
+                        conditional=children[1].conditional)
         if node.typ == INT and op in ("add", "sub", "mul", "neg"):
             interval = arithmetic_interval(op, *(child.interval for child in children))
-            return Fact(interval, sources=sources)
+            return Fact(interval, sources=sources, conditional=conditional)
         if op == "cmp":
             outcome = compare_intervals(node.data, children[0].interval, children[1].interval)
-            return Fact(boolean=outcome, sources=sources)
+            return Fact(boolean=outcome, sources=sources, conditional=conditional)
         if op == "not":
             b = children[0].boolean
-            return Fact(boolean=None if b is None else not b, sources=sources)
+            return Fact(boolean=None if b is None else not b, sources=sources, conditional=conditional)
         return Fact(sources=sources)
+
+    def case_evidence(self, fn: StmtIR, contract: Contract, env: dict[str, Fact], result: Fact) -> frozenset[str] | None:
+        # Each rule gets one independent run of this body's interval analysis.
+        # Calls read established summaries; they never recursively analyze a callee.
+        # Speculative paths do not become duplicate obligations in the public report.
+        evaluator = _Pass(self.functions, self.summaries, self.contracts, collect=False)
+        bounds = _bounds({**env, "result": result})
+        sources = set()
+        for clause, rule in contract.clauses:
+            if truth(clause, bounds) is True:
+                continue
+            if rule is None:
+                return None
+            restricted = _refine(rule.guard, env, False)
+            if restricted is None:
+                continue  # The guard is necessarily true on this entry domain.
+            case_result = evaluator.expr(fn.expr, restricted, "body")
+            if truth(rule.conclusion, _bounds({**restricted, "result": case_result})) is not True:
+                return None
+            sources.update(case_result.sources)
+        return frozenset(sources)
 
     def function(self, fn: StmtIR) -> None:
         # Prove bodies in a fresh parameter environment, including when callers
@@ -234,28 +291,44 @@ class _Pass:
         result = self.expr(fn.expr, env, "body")
         if fn.ensures is None:
             return
-        env["result"] = result
+        post_env = {**env, "result": result}
+        inputs = tuple(_contract_inputs(fn.ensures, post_env))
+        conditional = any(f.conditional for f in inputs)
+        sources = _sources(inputs)
         if fn.typ == INT:
-            outcome = truth(fn.ensures, _bounds(env))
+            outcome = truth(fn.ensures, _bounds(post_env))
+            contract = self.contracts.get(fn.name)
+            if outcome is None and contract is not None:
+                evidence = self.case_evidence(fn, contract, env, result)
+                if evidence is not None:
+                    outcome = True
+                    conditional = True
+                    sources |= evidence
         else:
             outcome = True if fn.ensures.op == "literal" and fn.ensures.data is True else None
-        self.record("ensures", "ensures", fn.name, outcome, _render(fn.ensures),
-                    _contract_sources(fn.ensures, env))
+        self.record("ensures", "ensures", fn.name, outcome, _render(fn.ensures), sources,
+                    conditional=conditional)
         if outcome is True and fn.typ == INT and fn.name not in self.summaries:
             published = {"result": Interval()}
             narrow(fn.ensures, published)
-            self.summaries[fn.name] = published["result"]
+            self.summaries[fn.name] = _Summary(published["result"], conditional)
 
 
-def analyze(program: ProgramIR) -> Analysis:
+def analyze(program: ProgramIR, *, conditional_guarantees: bool = True) -> Analysis:
     """Analyze unoptimized, type-checked BIR without executing the program."""
     functions = {s.name: s for s in program.statements if s.op == "fn"}
-    summaries: dict[str, Interval] = {}
+    contracts = {}
+    if conditional_guarantees:
+        for name, fn in functions.items():
+            contract = read_contract(fn)
+            if contract is not None:
+                contracts[name] = contract
+    summaries: dict[str, _Summary] = {}
     # Monotone fixed point: an export is the declared interval, independent of
     # caller or iteration. Each function can become certified at most once.
     while True:
         count = len(summaries)
-        check = _Pass(functions, summaries)
+        check = _Pass(functions, summaries, contracts)
         for fn in functions.values():
             check.function(fn)
         if len(summaries) == count:

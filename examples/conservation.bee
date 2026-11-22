@@ -1,0 +1,4 @@
+# One reservation transfers a place from free to booked.
+fn free_after(free: Int) -> Int pure requires free > 0 ensures result >= 0 = free - 1
+fn booked_after(booked: Int) -> Int pure requires booked >= 0 ensures result > 0 = booked + 1
+fn accounted(free: Int, booked: Int) -> Int pure requires free > 0 and booked >= 0 ensures result == free + booked = free_after(free) + booked_after(booked)
