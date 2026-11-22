@@ -98,6 +98,10 @@ class ToModel(Transformer):
         binder, source, *fields = xs
         return Expr("summarize", (str(binder), source, tuple(fields)))
 
+    def history_count(self, xs):
+        mode, past, current, source, predicate = xs
+        return Expr("history_count", (str(mode), str(past), str(current), source, predicate))
+
     def coalesce(self, xs): return Expr("coalesce", tuple(xs))
     def not_op(self, xs): return Expr("not", (xs[0],))
     def neg(self, xs): return Expr("neg", (xs[0],))

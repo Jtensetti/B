@@ -2,7 +2,13 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
-## B 0.16 and the next language experiment
+## B 0.17 and the next language experiment
+
+[Ordered counts](language.md#ordered-counts) infer the previous test or the necessary prefix extremum for common pair predicates. A two-sided interval rule also works on data in arbitrary order through direct search. On the [disjoint interval benchmark](../experiments/ordered-history/README.md), an indexed Python algorithm performed substantially less work for that last rule. The B example also demonstrates how validating record shape and checking start order let a caller select the simple rule safely.
+
+Test whether the compiler can derive an index for the two-sided rule from the predicate alone. Compare its setup time, work per event, memory and correctness with direct search and the existing independent indexed implementation. Include tiny inputs, dense overlaps, missing fields and reverse-ordered disjoint intervals. A derived index should justify its construction cost on a measured workload.
+
+## B 0.16
 
 B can now compute several named measurements of a list in one native expression. The compiler emits one loop and the result can feed another B expression. The [timing study](../experiments/collection-reductions/README.md) compares a validated public B call with two Python implementations. The [executable audit](../examples/cue-duration-audit.bee) accepts real input through the standard library.
 

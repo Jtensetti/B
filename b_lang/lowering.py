@@ -9,6 +9,7 @@ import ast
 import keyword
 from contextlib import contextmanager
 
+from .history import order_comparison
 from .ir import ExprIR, ProgramIR, StmtIR
 from .types import BOOL, FLOAT, INT, NONE, TEXT, BError
 
@@ -42,6 +43,18 @@ def _load(name: str) -> ast.Name:
 
 def _assign(name: str, value: ast.expr) -> ast.Assign:
     return ast.Assign(targets=[ast.Name(id=name, ctx=ast.Store())], value=value)
+
+
+class _FillNames(ast.NodeTransformer):
+    """Substitute expression nodes into compiler-owned ASTs."""
+
+    def __init__(self, replacements: dict[str, ast.expr]):
+        self.replacements = replacements
+
+    def visit_Name(self, node):
+        if isinstance(node.ctx, ast.Load):
+            return self.replacements.get(node.id, node)
+        return node
 
 
 class PythonLowerer:
@@ -114,17 +127,95 @@ class PythonLowerer:
             body.append(ast.For(target=ast.Name(id=binder, ctx=ast.Store()), iter=_load("_b_source"),
                                 body=loop_body, orelse=[]))
         body.append(ast.Return(value=ast.Dict(keys=keys, values=values)))
+        return self._collection_call("summary", source, body, {binder})
+
+    def _collection_call(self, kind: str, source: ast.expr, body: list[ast.stmt], binders: set[str]) -> ast.Call:
         # A nested helper call already exposes its captures as ordinary loads.
         # Global names stay global, preserving B's usual point of lookup.
-        reads = {n.id for stmt in loop_body for n in ast.walk(stmt)
+        reads = {n.id for stmt in body for n in ast.walk(stmt)
                  if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
-        captures = sorted(self._locals.intersection(reads) - {binder})
-        helper_name = f"_b_summary_{len(self._helpers)}"
+        captures = sorted(self._locals.intersection(reads) - binders)
+        helper_name = f"_b_{kind}_{len(self._helpers)}"
         args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in ["_b_source", *captures]],
                              vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])
         self._helpers.append(ast.FunctionDef(name=helper_name, args=args, body=body,
             decorator_list=[], returns=None, type_comment=None))
         return ast.Call(func=_load(helper_name), args=[source, *map(_load, captures)], keywords=[])
+
+    def _history_count(self, e: ExprIR) -> ast.Call:
+        source, predicate = e.operands
+        source_expr = self.expr(source)
+        past = _python_name(e.data["past"])
+        current = _python_name(e.data["current"])
+        plan = e.data["plan"]
+        # The predicate fragment has no nested binders or side effects. A past
+        # projection computed on this item is valid when it becomes history.
+        def on_item(term: ExprIR, past_name: str) -> ast.expr:
+            return _FillNames({past: _load(past_name), current: _load("_b_item")}).visit(self.expr(term))
+
+        slots = {}
+        if plan in ("previous-test", "prefix-min", "prefix-max"):
+            side = e.data["past_side"]
+            paired = predicate if plan == "previous-test" else order_comparison(predicate)
+            if paired is None:
+                raise BError("E_INTERNAL", "An extrema history plan requires an ordered comparison")
+            previous_test = on_item(paired.operands[side], "_b_item")
+            current_test = on_item(paired.operands[1 - side], "_b_item")
+            if plan == "previous-test":
+                # Identical projected tests (e.g. two late ticks) need one evaluation.
+                same_test = ast.dump(previous_test) == ast.dump(current_test)
+                slots = {"CURRENT": current_test, "PAST": _load("_b_now") if same_test else previous_test}
+                template = """
+_b_previous = False
+for _b_item in _b_source:
+    _b_now = CURRENT
+    if _b_previous and _b_now:
+        _b_hits += 1
+    _b_previous = PAST
+"""
+            else:
+                compare = _COMPARISONS[e.data["comparison"]]
+                improve = ast.Lt if plan == "prefix-min" else ast.Gt
+                slots = {"PAST": previous_test,
+                         "MATCH": ast.Compare(left=_load("_b_best"), ops=[compare()], comparators=[current_test]),
+                         "IMPROVES": ast.Compare(left=_load("_b_candidate"), ops=[improve()],
+                                                 comparators=[_load("_b_best")])}
+                template = """
+_b_best = None
+for _b_item in _b_source:
+    if _b_best is not None and MATCH:
+        _b_hits += 1
+    _b_candidate = PAST
+    if _b_best is None or IMPROVES:
+        _b_best = _b_candidate
+"""
+        elif plan == "previous-item":
+            slots["MATCH"] = on_item(predicate, "_b_past")
+            template = """
+_b_seen = False
+for _b_item in _b_source:
+    if _b_seen and MATCH:
+        _b_hits += 1
+    _b_past = _b_item
+    _b_seen = True
+"""
+        elif plan == "prefix-search":
+            slots["MATCH"] = on_item(predicate, "_b_past")
+            template = """
+for _b_pos, _b_item in _b_enumerate(_b_source):
+    for _b_index in _b_range(_b_pos):
+        _b_past = _b_source[_b_index]
+        if MATCH:
+            _b_hits += 1
+            break
+"""
+        else:
+            raise BError("E_INTERNAL", f"Unknown history plan: {plan}")
+        # Only fixed compiler templates are parsed. All B expressions arrive
+        # as typed AST nodes, never as interpolated program text.
+        loop = _FillNames(slots).visit(ast.parse(template)).body
+        body = [_assign("_b_hits", ast.Constant(0)), *loop, ast.Return(value=_load("_b_hits"))]
+        return self._collection_call("history", source_expr, body, {past, current})
 
     def expr(self, e: ExprIR) -> ast.expr:
         op, children, data = e.op, e.operands, e.data
@@ -138,6 +229,8 @@ class PythonLowerer:
             if len(children) % 2:
                 raise BError("E_INTERNAL", "Odd number of dictionary children in BIR")
             return ast.Dict(keys=[self.expr(x) for x in children[::2]], values=[self.expr(x) for x in children[1::2]])
+        if op == "history_count":
+            return self._history_count(e)
         if op == "summarize":
             return self._summarize(e)
         if op == "lookup":
@@ -240,6 +333,8 @@ class PythonLowerer:
             ast.alias(name="print", asname="_b_print"),
             ast.alias(name="getattr", asname="_b_getattr"),
             ast.alias(name="len", asname="_b_len"),
+            ast.alias(name="enumerate", asname="_b_enumerate"),
+            ast.alias(name="range", asname="_b_range"),
         ], level=0)
         body = [builtins, ast.ImportFrom(module="b_lang.runtime", names=[
             ast.alias(name="py_module", asname="_b_py"),

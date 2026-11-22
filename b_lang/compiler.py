@@ -1,4 +1,4 @@
-"""B 0.16 compiler: parse -> typed BIR -> Python backend.
+"""B 0.17 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -20,6 +20,7 @@ from .effects import ALLOWED as ALLOWED_EFFECTS, expression_effects, statement_e
 from .discovery import inspect_python
 from .adoption import adopt_python
 from .handoff import Handoff, materialize, validate_rewrite
+from .history import history_plan
 from .interop import ForeignCatalog
 from . import jsmeta
 from .ir import ExprIR, ProgramIR, StmtIR
@@ -194,14 +195,21 @@ class Compiler:
             return f"{base}.{ex.parts[1]}" if base else None
         return None
 
-    def _summarize(self, ex: Expr, scope: dict[str, Symbol]) -> Value:
-        binder, source, fields = ex.parts
-        if binder in scope or binder.startswith("_b_") or binder in {"true", "false", "none", "if", "not"}:
-            raise BError("E_NAME", f"summarize cannot bind {binder}: name is already in scope or reserved")
+    def _list_scope(self, operation: str, source: Expr, scope: dict[str, Symbol],
+                    *binders: str) -> tuple[Value, dict[str, Symbol]]:
         collection = self.infer(source, scope)
         if collection.type.name != "List":
-            raise BError("E_TYPE", f"summarize needs a List[T] source, got {collection.type}")
-        elements = {**scope, binder: Symbol(collection.type.args[0])}
+            raise BError("E_TYPE", f"{operation} needs a List[T] source, got {collection.type}")
+        elements = scope.copy()
+        for name in binders:
+            if name in elements or name.startswith("_b_") or name in {"true", "false", "none", "if", "not"}:
+                raise BError("E_NAME", f"{operation} cannot bind {name}: name is already in scope or reserved")
+            elements[name] = Symbol(collection.type.args[0])
+        return collection, elements
+
+    def _summarize(self, ex: Expr, scope: dict[str, Symbol]) -> Value:
+        binder, source, fields = ex.parts
+        collection, elements = self._list_scope("summarize", source, scope, binder)
         operands = [collection.node]
         reductions = []
         labels = set()
@@ -227,6 +235,15 @@ class Compiler:
     def infer(self, ex: Expr, scope: dict[str, Symbol] | None = None) -> Value:
         symbols = self.symbols if scope is None else scope
         kind, p = ex.kind, ex.parts
+        if kind == "history_count":
+            mode, past, current, source, raw_predicate = p
+            collection, elements = self._list_scope(f"count {mode}", source, symbols, past, current)
+            predicate = self.infer(raw_predicate, elements)
+            if predicate.type != BOOL:
+                raise BError("E_TYPE", f"count {mode} predicate needs Bool, got {predicate.type}")
+            plan = history_plan(predicate.node, past, current, mode)
+            return self.val(INT, "history_count", collection.node, predicate.node,
+                            data={"mode": mode, "past": past, "current": current, **plan})
         if kind == "summarize":
             return self._summarize(ex, symbols)
         if kind == "lookup":
@@ -437,6 +454,10 @@ class Compiler:
         return node.node
 
     def _pure_captures(self, node: ExprIR, locals_: set[str]) -> None:
+        if node.op == "history_count":
+            self._pure_captures(node.operands[0], locals_)
+            self._pure_captures(node.operands[1], locals_ | {node.data["past"], node.data["current"]})
+            return
         if node.op == "summarize":
             self._pure_captures(node.operands[0], locals_)
             bound = locals_ | {node.data["binder"]}

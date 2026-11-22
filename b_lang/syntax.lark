@@ -25,7 +25,9 @@ param: NAME ":" type_expr
 type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 
 ?expr: "if" expr "then" expr "else" expr -> conditional
+     | history_count
      | coalesce_expr
+history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL* "where" _NL* expr
 ?coalesce_expr: or_expr "??" coalesce_expr -> coalesce
               | or_expr
 ?or_expr: or_expr "or" and_expr     -> or_op
@@ -86,6 +88,8 @@ summary_field: NAME ":" summary_reduction
 // summary only at its binder; "summarize and in" is still a Bool expression.
 CASES: "cases"
 _SUMMARY_START.2: /summarize(?=[ \t]+(?!(?:and|or|then|else)\b)[A-Za-z_][A-Za-z0-9_]*[ \t]+in\b)/
+_HISTORY_START.2: /count(?=[ \t]+(?:adjacent|earlier)\b)/
+HISTORY_MODE: "adjacent" | "earlier"
 EXTREMUM: "min" | "max"
 SUMMARY_INT: /0|[1-9][0-9]*/
 BACKEND: "py" | "net"

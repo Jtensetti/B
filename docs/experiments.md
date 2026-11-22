@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.17 ordered histories
+
+[Ordered counts](../experiments/ordered-history/README.md) compare consecutive late ticks and overlapping subtitle intervals against independent definitions. A [translation check](../experiments/ordered-history/loop-proof.md) confirms that the loop emitted for one Boolean pair counter has the same structure as an inductively justified reference.
+
 ## B 0.16 collection reductions
 
 [Pulse timing study](../experiments/collection-reductions/README.md). One B expression computes five values from a stream of offsets supplied as a list. The experiment compares actual results with an independent oracle, splits the lists to test composition, and times public calls separately from the compiled loop. A [paired first-use task](../experiments/collection-reductions/first-use/README.md) records the parser rejection that led to allowing newlines after a declaration’s equals sign.

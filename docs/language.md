@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.16
+# B language reference — implemented experimental v0.17
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -32,7 +32,9 @@ parameter     = identifier, ":", type ;
 type_list     = type, {",", type} ;
 type          = identifier, ["[", type, {",", type}, "]"] ;
 expression    = "if", expression, "then", expression, "else", expression
-              | coalesce_expression ;
+              | history_count | coalesce_expression ;
+history_count = "count", ("adjacent" | "earlier"), identifier, ",", identifier,
+                "in", expression, "where", expression ;
 coalesce_expression = logical_expression, ["??", coalesce_expression] ;
 list          = "[", [expression, {",", expression}], "]" ;
 dictionary    = "{", [pair, {",", pair}], "}" ;
@@ -63,6 +65,21 @@ Expressions also allow literals (`true`, `false`, `none`, numbers, strings), ref
 `summarize item in source { fields }` evaluates a list source once. It visits items in order and updates each named field in declaration order. The item name is local to the fields. Each optional `where` takes a Boolean and runs before the associated value expression. Counts and integer sums start at zero. `min` and `max` take an integer expression and require an explicit signed integer default for an empty source. With any items present, their extrema come entirely from those items. Each field name occurs once. Repeated expressions in separate fields can each execute a call. Existing purity and effect rules apply to the entire expression. The iteration uses the original list membership even when a field calls an opaque function that changes the list. A shallow snapshot protects that case. A count with no filter uses the list length directly.
 
 The result is a `Dict[Text,Int]` in field order. A dictionary accepts a postfix text key, for example `report["early"]`. The result of a lookup is optional. A missing key and a key whose value is `none` both give `none`. Use `??` for a fallback. Dictionary lookup accepts computed keys, so a typo at a lookup site can select its fallback.
+
+### Ordered counts
+
+`count adjacent p, q in source where predicate` evaluates the list source once. For each position after the first, `q` is its item and `p` is its immediate predecessor. A true predicate adds one to the result. Changing `adjacent` to `earlier` counts each current position with at least one matching earlier item, even when many earlier items qualify. Empty lists and singletons return zero. Consecutive matches can share an item. The result has type `Int`. For a source of length n it lies between zero and max(0, n−1).
+
+Both names are local to the predicate and must be distinct from each other and names already in scope. The predicate must have type `Bool`. It admits integer arithmetic with `+`, `-` and `*`, Boolean expressions, conditionals, scalar comparisons, typed dictionary lookup, optional values and `??`. Opaque calls, dynamic guards, division and floating-point calculations fall outside this fragment. These restrictions allow the compiler to cache an earlier projection or evaluate it when an item arrives. The source can itself be a normal B expression with effects. Wrap the count in parentheses when comparing or doing arithmetic with its result.
+
+| Pattern | State during counting | Work in predicate evaluations |
+| --- | --- | --- |
+| Adjacent, conjunction of separate previous and current tests | Previous test result | Linear |
+| Other adjacent predicate | Previous item and a presence flag | Linear |
+| Earlier, ordered integer comparison of separate projections | Least or greatest earlier projection | Linear |
+| Other earlier predicate | Searches the already supplied list | Up to n(n−1)/2 pair tests |
+
+`b ir FILE --optimized` displays the selected plan. A negated integer order such as `not (p >= q)` has the same plan as `p < q`. The public function still receives a list and checks its declared parameter type. Interpreting an interval rule as an overlap check also depends on the input convention. The [runnable example](../experiments/ordered-history/README.md) handles both ordered and unordered starts.
 
 ## 3. B types
 
@@ -130,6 +147,7 @@ For `net:`, the B host has only an explicit set of allowed `System.Math` and `Sy
 | `E_HANDOFF_CHANGED` | The file changed before the checked revision could be written |
 | `E_DEPTH` | Expression nesting exceeds the compiler’s capacity, including long decision chains |
 | `E_NAME` | Unknown, duplicated or reserved identifier |
+| `E_HISTORY_PREDICATE` | Unsupported operation or type in an ordered predicate |
 | `E_TYPE` | Incompatible types or unsupported type syntax |
 | `E_ARITY` | Wrong argument count for known function / available overloads |
 | `E_OVERLOAD_AMBIGUOUS` | Multiple overloads remain possible with incompatible contracts |

@@ -10,6 +10,7 @@ import math
 import operator
 from dataclasses import dataclass, replace
 
+from .history import history_plan
 from .ir import ExprIR, ProgramIR, StmtIR
 from .types import BOOL, INT, FLOAT, TEXT
 
@@ -47,6 +48,11 @@ def optimize(program: ProgramIR) -> Optimization:
             return e
         children = tuple(simplify(x) for x in e.operands)
         e = replace(e, operands=children)
+        if e.op == "history_count":
+            # Constant folding can erase a binder or reveal a separable predicate.
+            past, current, mode = (e.data[k] for k in ("past", "current", "mode"))
+            plan = history_plan(children[1], past, current, mode)
+            return replace(e, data={"past": past, "current": current, "mode": mode, **plan})
         # Code at unknown foreign boundaries must never be evaluated while
         # compiling (including `guard` and imported functions).
         if e.op in ("call", "attr", "name", "guard", "list", "dict"):
