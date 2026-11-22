@@ -1,10 +1,24 @@
 # B
 
-**B is an experimental programming language for AI-assisted changes.** Its primary goal is to reach working behavior on the first submitted implementation, and to reduce repair attempts when that fails. Programs can reuse libraries from Python, .NET and Node.js. An independent behavior check determines whether a submitted change actually works.
+**B is an experimental programming language designed for programs written by AI.** A model can express a calculation in typed B source, reuse existing Python, .NET and Node.js libraries, and let the compiler check and execute the result. The research goal is working software in fewer attempts at lower total cost.
 
-**Version 0.15 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.16 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Compute several results in one traversal
+
+```bee
+fn audit(ms: List[Int], floor: Int) -> Dict[Text,Int] pure = summarize t in ms {
+    cues: count
+    short: count where t < floor
+    missing_ms: sum (floor - t) where t < floor
+}
+let report = audit([1000, 480, 550], 550)
+print report["missing_ms"] ?? 0
+```
+
+This prints `70`. B compiles the three fields into one loop. The function chooses which measurements matter. The compiler supplies the counters, initial values, and iteration order. A [runnable subtitle-duration audit](examples/cue-duration-audit.bee) reads a JSON array on standard input. The [collection experiment](experiments/collection-reductions/README.md) compares a five-field report with Python built-ins and a hand-written loop, including the cost of validation at the function boundary.
 
 ## Apply a small change from a compact row
 
@@ -213,7 +227,7 @@ This limitation matters more than adding new punctuation or another file extensi
 
 | Layer | Working today | Not yet provided |
 | --- | --- | --- |
-| B language | Own grammar, immutable names, typed functions, conditions, ordered decision tables, collections, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | Loops, records, pattern matching, user generics |
+| B language | Own grammar, immutable names, typed functions, conditions, ordered decision tables, named list reductions, optional dictionary lookups, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | General loops, records, pattern matching, user generics |
 | BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
 | Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
 | Node.js libraries | Typed POSIX path and semver functions, plus explicit declarations for synchronous named npm exports | Automatic TypeScript signature discovery, promises, callbacks and object handles |

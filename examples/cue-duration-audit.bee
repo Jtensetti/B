@@ -1,0 +1,14 @@
+use py:builtins as io
+use py:json as json
+foreign io.input() -> Text
+foreign json.loads(Text) -> List[Int]
+foreign json.dumps(Dict[Text,Int]) -> Text
+
+fn audit(ms: List[Int], floor: Int) -> Dict[Text,Int] pure = summarize t in ms {
+    cues: count
+    short: count where t < floor
+    missing_ms: sum (floor - t) where t < floor
+}
+
+let durations = json.loads(io.input())
+print json.dumps(audit(durations, 550))

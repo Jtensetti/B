@@ -6,8 +6,8 @@ _NL: NEWLINE
      | "use" "js" ":" path "as" NAME                     -> js_use
      | "use" BACKEND ":" path "as" NAME                   -> use_stmt
      | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
-     | "let" NAME [":" type_expr] "=" expr               -> let_stmt
-     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" expr -> fn_stmt
+     | "let" NAME [":" type_expr] "=" _NL* expr          -> let_stmt
+     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
      | "next" NAME "when" expr "=>" expr                   -> next_stmt
      | "print" expr                                       -> print_stmt
      | "assert" expr                                      -> assert_stmt
@@ -47,6 +47,7 @@ type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 ?postfix: atom tail*                -> postfix
 ?tail: "." NAME                    -> attribute
      | "(" [args] ")"              -> invoke
+     | "[" expr "]"                -> lookup
 args: expr ("," expr)*
 pairs: pair ("," pair)*
 pair: expr ":" expr
@@ -63,16 +64,30 @@ _ROW_SEMI: ";"
 _row_sep: _ROW_SEMI _NL* | _NL+
 case_table: CASES NAME "{" _NL* (case_row _row_sep)+ "else" "=>" expr _ROW_SEMI? _NL* "}"
 
+summary: _SUMMARY_START NAME "in" expr "{" _NL* summary_field (_row_sep summary_field)* _row_sep? "}"
+summary_field: NAME ":" summary_reduction
+?summary_reduction: "count" ["where" expr]                  -> summary_count
+                  | "sum" expr ["where" expr]               -> summary_sum
+                  | EXTREMUM expr "default" summary_default -> summary_extremum
+?summary_default: SUMMARY_INT     -> default_int
+                | "+" SUMMARY_INT -> default_int
+                | "-" SUMMARY_INT -> default_negative_int
+
 ?atom: case_table
      | CASES                         -> identifier
+     | summary
      | scalar
      | NAME                          -> identifier
      | "[" [args] "]"                -> list_literal
      | "{" [pairs] "}"               -> dict_literal
      | "(" expr ")"                  -> grouped
 
-// At expression position CASES may also be an ordinary name or call.
+// Both words can also be ordinary variables and functions. Recognize a
+// summary only at its binder; "summarize and in" is still a Bool expression.
 CASES: "cases"
+_SUMMARY_START.2: /summarize(?=[ \t]+(?!(?:and|or|then|else)\b)[A-Za-z_][A-Za-z0-9_]*[ \t]+in\b)/
+EXTREMUM: "min" | "max"
+SUMMARY_INT: /0|[1-9][0-9]*/
 BACKEND: "py" | "net"
 COMP: "==" | "!=" | "<=" | ">=" | "<" | ">"
 NAME: /[A-Za-z_][A-Za-z0-9_]*/

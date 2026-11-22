@@ -11,6 +11,8 @@ from typing import Any
 from functools import lru_cache
 from .types import Type, INT, FLOAT, BOOL, TEXT, NONE, ANY, parse_descriptor
 
+_EXACT_SCALARS = {INT: int, BOOL: bool, TEXT: str}
+
 class BAssertionError(AssertionError):
     pass
 
@@ -26,6 +28,10 @@ def _descriptor(text: str) -> Type:
     return parse_descriptor(text)
 
 
+def _type_mismatch(value: Any, typ: Type) -> BBoundaryError:
+    return BBoundaryError(f"Expected {typ} at boundary, got {type(value).__name__}: {value!r}")
+
+
 def _guard_type(value: Any, typ: Type) -> Any:
     if typ == ANY:
         return value
@@ -35,7 +41,7 @@ def _guard_type(value: Any, typ: Type) -> Any:
         raise BBoundaryError(f"Expected None at boundary, got {type(value).__name__}")
     if typ == FLOAT:
         if type(value) not in (int, float):
-            raise BBoundaryError(f"Expected Float at boundary, got {type(value).__name__}: {value!r}")
+            raise _type_mismatch(value, typ)
         try:
             result = float(value)
         except (OverflowError, ValueError) as exc:
@@ -47,19 +53,29 @@ def _guard_type(value: Any, typ: Type) -> Any:
         return None if value is None else _guard_type(value, typ.args[0])
     if typ.name == "List":
         if type(value) is not list:
-            raise BBoundaryError(f"Expected {typ} at boundary, got {type(value).__name__}: {value!r}")
+            raise _type_mismatch(value, typ)
         # Snapshots prevent mutation of the foreign value through B's binding.
-        return [_guard_type(item, typ.args[0]) for item in value]
+        if not value:
+            return []
+        element_type = typ.args[0]
+        expected = _EXACT_SCALARS.get(element_type)
+        if expected is not None:
+            snapshot = value.copy()
+            for item in snapshot:
+                if type(item) is not expected:
+                    raise _type_mismatch(item, element_type)
+            return snapshot
+        return [_guard_type(item, element_type) for item in value]
     if typ.name == "Dict":
         if type(value) is not dict:
-            raise BBoundaryError(f"Expected {typ} at boundary, got {type(value).__name__}: {value!r}")
+            raise _type_mismatch(value, typ)
         return {_guard_type(key, typ.args[0]): _guard_type(item, typ.args[1])
                 for key, item in value.items()}
-    expected = {INT: int, BOOL: bool, TEXT: str}.get(typ)
+    expected = _EXACT_SCALARS.get(typ)
     if expected is None:
         raise BBoundaryError(f"Unsupported B boundary type: {typ}")
     if type(value) is not expected:
-        raise BBoundaryError(f"Expected {typ} at boundary, got {type(value).__name__}: {value!r}")
+        raise _type_mismatch(value, typ)
     return value
 
 

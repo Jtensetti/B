@@ -2,7 +2,13 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
-## B 0.15 and the next decision
+## B 0.16 and the next language experiment
+
+B can now compute several named measurements of a list in one native expression. The compiler emits one loop and the result can feed another B expression. The [timing study](../experiments/collection-reductions/README.md) compares a validated public B call with two Python implementations. The [executable audit](../examples/cue-duration-audit.bee) accepts real input through the standard library.
+
+The next question is whether B can express a rule that depends on earlier items. In the subtitle checker a cue may overlap any preceding cue. Remembering the greatest end time so far deals with nested cues where the immediately preceding cue ends earlier. Prototype a typed operation that exposes that running value to each cue. Try it on both subtitle intervals and a second ordered stream. Compare a native B implementation with the current Python host and a direct Python loop. Score emitted findings against independently constructed cases and measure first correct implementation, later edits, memory and elapsed time. Keep the current reduction available for order-independent reports.
+
+## B 0.15
 
 The [compact edit register](handoffs.md#compact-input) uses type-checked equality overrides with a recoverable parameter name. It can be selected independently for each batch. In a [three-change sequence](../experiments/shorthand-pilot/sequence/README.md), the compact rows saved five counted tokens after allowing for one extra syntax guide and comparing equivalent directives. The [first-pass pilot](../experiments/shorthand-pilot/README.md) also includes a task that needs an ordinary condition. The [subtitle checker](../experiments/subtitle-maintenance/README.md) brings policy edits into a file-processing tool with a typed Python comparison. Its common host keeps the comparison of the two policies focused.
 

@@ -47,6 +47,7 @@ class ToModel(Transformer):
     def dict_literal(self, xs): return Expr("dict", tuple(xs[0]) if xs and xs[0] is not None else ())
     def attribute(self, xs): return ("attr", str(xs[0]))
     def invoke(self, xs): return ("invoke", tuple(xs[0]) if xs and xs[0] is not None else ())
+    def lookup(self, xs): return ("lookup", xs[0])
     def postfix(self, xs):
         base = xs[0]
         for kind, val in xs[1:]: base = Expr(kind, (base, val))
@@ -68,6 +69,34 @@ class ToModel(Transformer):
             test = Expr("cmp", (pivot, operator, threshold))
             fallback = Expr("conditional", (test, value, fallback))
         return fallback
+
+    def summary_count(self, xs):
+        return "count", None, xs[0], None
+
+    def summary_sum(self, xs):
+        value, guard = xs
+        return "sum", value, guard, None
+
+    def summary_extremum(self, xs):
+        reducer, value, default = xs
+        return str(reducer), value, None, default
+
+    def default_int(self, xs):
+        try:
+            return int(xs[0])
+        except ValueError as exc:
+            raise LarkError("summarize default exceeds the supported integer literal size") from exc
+
+    def default_negative_int(self, xs):
+        return -self.default_int(xs)
+
+    def summary_field(self, xs):
+        label, reduction = xs
+        return (str(label), *reduction)
+
+    def summary(self, xs):
+        binder, source, *fields = xs
+        return Expr("summarize", (str(binder), source, tuple(fields)))
 
     def coalesce(self, xs): return Expr("coalesce", tuple(xs))
     def not_op(self, xs): return Expr("not", (xs[0],))

@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.15
+# B language reference — implemented experimental v0.16
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -8,7 +8,7 @@ For source adoption and contract analysis across functions, see [source adoption
 
 B source is UTF-8. **`.bee` is the recommended extension**; `.b4` is an optional playful alias, with `.bsrc` and `.b` retained for compatibility. `.bi` is *not* adopted: FreeBASIC already uses it for headers. `.b4` also has a historical non-B use and is not reserved. The CLI validates the file contents regardless of suffix.
 
-A newline separates top-level statements. Inside a `cases` table, rows can occupy separate lines or share a line using semicolons. Blank lines are ignored. A bare `#` introduces a syntax error. A hash inside a string is data. To convert a B 0.13 file, run `b migrate-comments OLD.bee > converted.bee` with a separate output path. Identifiers match `[A-Za-z_][A-Za-z0-9_]*`; `_b_` is reserved for compiler internals. Strings are JSON-compatible double-quoted literals. Integers have decimal notation; floating literals have a decimal point; negative values use unary `-`. No exponent literals or arbitrary Unicode identifiers yet. Whitespace between tokens is ignored.
+A newline separates complete top-level statements. After the assignment `=` in a function or a let declaration, its expression can begin on the following line. Inside a `cases` table or `summarize` expression, rows can occupy separate lines or share a line using semicolons. Blank lines are ignored. A bare `#` introduces a syntax error. A hash inside a string is data. To convert a B 0.13 file, run `b migrate-comments OLD.bee > converted.bee` with a separate output path. Identifiers match `[A-Za-z_][A-Za-z0-9_]*`; `_b_` is reserved for compiler internals. Strings are JSON-compatible double-quoted literals. Integers have decimal notation; floating literals have a decimal point; negative values use unary `-`. No exponent literals or arbitrary Unicode identifiers yet. Whitespace between tokens is ignored.
 
 ## 2. Grammar
 
@@ -21,9 +21,9 @@ permit        = "permit", "[", [identifier, {",", identifier}], "]" ;
 use           = "use", (("py" | "net"), ":", path | "js", ":", (path | string)), "as", identifier ;
 adopt         = "adopt", "py", ":", path, "as", identifier ;
 foreign       = "foreign", path, "(", [type_list], ")", "->", type ;
-let           = "let", identifier, [":", type], "=", expression ;
+let           = "let", identifier, [":", type], "=", {newline}, expression ;
 fn            = "fn", identifier, "(", [parameters], ")", "->", type,
-                ["pure"], ["requires", expression], ["ensures", expression], "=", expression ;
+                ["pure"], ["requires", expression], ["ensures", expression], "=", {newline}, expression ;
 next_edit     = "next", identifier, "when", expression, "=>", expression ;
 print         = "print", expression ;
 assert        = "assert", expression ;
@@ -40,6 +40,13 @@ pair          = expression, ":", expression ;
 case_table    = "cases", identifier, "{", {newline}, row, {row},
                 "else", "=>", expression, [";"], {newline}, "}" ;
 row           = comparison_operator, scalar_threshold, "=>", expression, separator ;
+summary       = "summarize", identifier, "in", expression, "{", {newline},
+                field, {separator, field}, [";"], {newline}, "}" ;
+field         = identifier, ":", ("count", ["where", expression]
+              | "sum", expression, ["where", expression]
+              | ("min" | "max"), expression, "default", signed_integer) ;
+signed_integer = ["+" | "-"], decimal_integer ;
+lookup_tail   = "[", expression, "]" ;
 separator     = ";", {newline} | newline, {newline} ;
 ```
 
@@ -49,7 +56,13 @@ A top-level `next` declares a pending edit on a source function. The condition a
 
 A case table is an expression. It compares the named value against each scalar literal in order, using the ordinary comparison operators and type rules. The first matching row supplies the result, with a mandatory final fallback. Numeric thresholds can be negative. See [decision tables and source views](registers.md).
 
-Expressions also allow literals (`true`, `false`, `none`, numbers, strings), references, calls, attribute access and grouping. Precedence (highest to lowest): postfix attribute/call, unary `not`/`-`, multiplication/division/modulo, addition/subtraction, comparison, `and`, `or`, `??` (right associative), conditional. Both conditional branches are statically type-checked, even if the condition is constant.
+Expressions also allow literals (`true`, `false`, `none`, numbers, strings), references, calls, attribute access and grouping. Precedence (highest to lowest): postfix attribute/call/key lookup, unary `not`/`-`, multiplication/division/modulo, addition/subtraction, comparison, `and`, `or`, `??` (right associative), conditional. Both conditional branches are statically type-checked, even if the condition is constant.
+
+### Collection expressions
+
+`summarize item in source { fields }` evaluates a list source once. It visits items in order and updates each named field in declaration order. The item name is local to the fields. Each optional `where` takes a Boolean and runs before the associated value expression. Counts and integer sums start at zero. `min` and `max` take an integer expression and require an explicit signed integer default for an empty source. With any items present, their extrema come entirely from those items. Each field name occurs once. Repeated expressions in separate fields can each execute a call. Existing purity and effect rules apply to the entire expression. The iteration uses the original list membership even when a field calls an opaque function that changes the list. A shallow snapshot protects that case. A count with no filter uses the list length directly.
+
+The result is a `Dict[Text,Int]` in field order. A dictionary accepts a postfix text key, for example `report["early"]`. The result of a lookup is optional. A missing key and a key whose value is `none` both give `none`. Use `??` for a fallback. Dictionary lookup accepts computed keys, so a typo at a lookup site can select its fallback.
 
 ## 3. B types
 
