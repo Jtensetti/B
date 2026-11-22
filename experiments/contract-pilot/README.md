@@ -34,6 +34,16 @@ For spacing, four observations yielded `result == rank + 1`, also proved against
 A preflight uncovered a sampling issue on small bounded input domains. The initial picker kept every unused point in its discovery pool out of its challenge pool. Both starters consequently produced a single survivor without a held-out challenge. The implementation now sets aside admissible challenges before observing outputs. The experiment used the corrected compiler for all arms ([frozen compiler and pre-trial protocol](https://github.com/Jtensetti/B/tree/01af14f6b7676f84a15ecb0d0fb8dd5a65b19441), `b_lang` tree `fda8a047da7527cb3c38e49229a60630fcc5df69`). The wrapper exposed the standard checker and candidate discovery only; explicit expected-law and trace options were outside this trial.
 
 
+## Does the compiler need to sample an affine function?
+
+A separate engineering comparison asks the symbolic checker to return its normalized body formula directly, with no observations. On the booking example and both pilot starters it returns the same three verified formulas. The observation-first path spends 14, 9 and 4 observations respectively. For `2*x` the direct path also derives the formula, while discovery eliminates every member of its template family.
+
+Two piecewise controls show where the approaches differ. An exceptional result at 10007 leaves the symbolic path without a single affine formula. The observational path proposes identity after ten samples, and verification correctly stays unknown. Moving the exception to 17 produces a counterexample to a declared identity at input 17, where the body returns 18. The direct path still has no single formula. These six selected cases isolate mechanism differences. They measure neither real-world incidence nor model impact.
+
+```sh
+python experiments/contract-pilot/compare_inference.py
+```
+
 ## Replay
 
 With the revision installed, run from the repository root:
