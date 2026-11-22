@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, replace
 import json
 
+from . import affine
 from .contracts import Interval, arithmetic_interval, compare_intervals, constant, narrow, truth
 from .ir import ExprIR, ProgramIR, StmtIR
 from .relations import Contract, read_contract
@@ -130,21 +131,39 @@ def _render(node: ExprIR) -> str:
     return f"<{op}>"
 
 
+def _conjuncts(node: ExprIR):
+    pending = [node]
+    while pending:
+        part = pending.pop()
+        if part.op == "and":
+            pending.extend(reversed(part.operands))
+        else:
+            yield part
+
+
 class _Pass:
     def __init__(self, functions: dict[str, StmtIR], summaries: dict[str, _Summary],
-                 contracts: dict[str, Contract], *, collect: bool = True):
+                 contracts: dict[str, Contract], exact_claims: dict[str, dict[int, affine.Form]],
+                 exact_summaries: dict[str, affine.Form], *, collect: bool = True):
         self.functions = functions
         self.contracts = contracts
+        self.exact_claims = exact_claims
+        self.exact_summaries = exact_summaries
         self.collect = collect
         self.summaries = summaries
         self.obligations: list[Obligation] = []
         self.caller = "<module>"
 
-    def record(self, site, kind, target, outcome, requirement, sources, expression=None, *, conditional=False):
+    def record(self, site, kind, target, outcome, requirement, sources, expression=None, *, conditional=False, used_affine=False):
         status = "proved" if outcome is True else "refuted" if outcome is False else "unknown"
+        method = None
+        if outcome is True:
+            if used_affine:
+                method = "affine-equality"
+            elif conditional:
+                method = "conditional-guarantee"
         self.obligations.append(Obligation(self.caller, site, kind, target, status, requirement,
-                                           tuple(sorted(sources)), expression,
-                                           "conditional-guarantee" if conditional and outcome is True else None))
+                                           tuple(sorted(sources)), expression, method))
 
     def call(self, node: ExprIR, args: list[Fact], site: str) -> Fact:
         target = node.operands[0]
@@ -255,26 +274,32 @@ class _Pass:
             return Fact(boolean=None if b is None else not b, sources=sources, conditional=conditional)
         return Fact(sources=sources)
 
-    def case_evidence(self, fn: StmtIR, contract: Contract, env: dict[str, Fact], result: Fact) -> frozenset[str] | None:
-        # Each rule gets one independent run of this body's interval analysis.
-        # Calls read established summaries; they never recursively analyze a callee.
-        # Speculative paths do not become duplicate obligations in the public report.
-        evaluator = _Pass(self.functions, self.summaries, self.contracts, collect=False)
+    def clause_evidence(self, fn, env, result, contract, claims, actual):
+        # Check every conjunct before publishing any part of a function's contract.
+        evaluator = _Pass(self.functions, self.summaries, self.contracts, self.exact_claims,
+                          self.exact_summaries, collect=False)
         bounds = _bounds({**env, "result": result})
+        clauses = contract.clauses if contract else ((part, None) for part in _conjuncts(fn.ensures))
         sources = set()
-        for clause, rule in contract.clauses:
+        used_cases = used_affine = False
+        for clause, rule in clauses:
             if truth(clause, bounds) is True:
+                continue
+            if actual is not None and claims.get(id(clause)) == actual.form:
+                sources.update(actual.contract_dependencies)
+                used_affine = True
                 continue
             if rule is None:
                 return None
+            used_cases = True
             restricted = _refine(rule.guard, env, False)
             if restricted is None:
-                continue  # The guard is necessarily true on this entry domain.
+                continue
             case_result = evaluator.expr(fn.expr, restricted, "body")
             if truth(rule.conclusion, _bounds({**restricted, "result": case_result})) is not True:
                 return None
             sources.update(case_result.sources)
-        return frozenset(sources)
+        return sources, used_cases, used_affine
 
     def function(self, fn: StmtIR) -> None:
         # Prove bodies in a fresh parameter environment, including when callers
@@ -295,26 +320,33 @@ class _Pass:
         inputs = tuple(_contract_inputs(fn.ensures, post_env))
         conditional = any(f.conditional for f in inputs)
         sources = _sources(inputs)
+        claims = self.exact_claims.get(fn.name, {})
+        used_affine = False
         if fn.typ == INT:
             outcome = truth(fn.ensures, _bounds(post_env))
             contract = self.contracts.get(fn.name)
-            if outcome is None and contract is not None:
-                evidence = self.case_evidence(fn, contract, env, result)
+            if outcome is None and (contract or claims):
+                actual = affine.implementation(fn, self.functions, self.exact_summaries) if claims else None
+                evidence = self.clause_evidence(fn, env, result, contract, claims, actual)
                 if evidence is not None:
+                    extra_sources, used_cases, used_affine = evidence
                     outcome = True
-                    conditional = True
-                    sources |= evidence
+                    conditional |= used_cases
+                    sources |= extra_sources
         else:
             outcome = True if fn.ensures.op == "literal" and fn.ensures.data is True else None
         self.record("ensures", "ensures", fn.name, outcome, _render(fn.ensures), sources,
-                    conditional=conditional)
+                    conditional=conditional, used_affine=used_affine)
+        if outcome is True and claims and fn.name not in self.exact_summaries:
+            self.exact_summaries[fn.name] = next(iter(claims.values()))
         if outcome is True and fn.typ == INT and fn.name not in self.summaries:
             published = {"result": Interval()}
             narrow(fn.ensures, published)
             self.summaries[fn.name] = _Summary(published["result"], conditional)
 
 
-def analyze(program: ProgramIR, *, conditional_guarantees: bool = True) -> Analysis:
+def analyze(program: ProgramIR, *, conditional_guarantees: bool = True,
+            affine_guarantees: bool = True) -> Analysis:
     """Analyze unoptimized, type-checked BIR without executing the program."""
     functions = {s.name: s for s in program.statements if s.op == "fn"}
     contracts = {}
@@ -323,15 +355,26 @@ def analyze(program: ProgramIR, *, conditional_guarantees: bool = True) -> Analy
             contract = read_contract(fn)
             if contract is not None:
                 contracts[name] = contract
+    exact_claims = {}
+    if affine_guarantees:
+        for name, fn in functions.items():
+            if fn.typ != INT or fn.ensures is None:
+                continue
+            params = [param for param, typ in fn.params if typ == INT]
+            claims = {id(part): form for part in _conjuncts(fn.ensures)
+                      if (form := affine.declared(part, params)) is not None}
+            if claims:
+                exact_claims[name] = claims
+    exact_summaries = {}
     summaries: dict[str, _Summary] = {}
     # Monotone fixed point: an export is the declared interval, independent of
     # caller or iteration. Each function can become certified at most once.
     while True:
-        count = len(summaries)
-        check = _Pass(functions, summaries, contracts)
+        count = len(summaries) + len(exact_summaries)
+        check = _Pass(functions, summaries, contracts, exact_claims, exact_summaries)
         for fn in functions.values():
             check.function(fn)
-        if len(summaries) == count:
+        if len(summaries) + len(exact_summaries) == count:
             break
     check.caller = "<module>"
     env = {}

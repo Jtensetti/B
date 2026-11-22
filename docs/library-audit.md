@@ -4,7 +4,7 @@
 
 `b audit py:module.name --json` reports how many **directly declared, public top-level function names in one source or `.pyi` stub** B can turn into usable typed signatures. This is a deliberately narrow metric. It is not the percentage of a package's public API or the percentage of code B can run. It excludes re-exported names, functions introduced dynamically, class methods, binary extensions and nested submodules. An API without directly declared `def` statements has an **undefined** direct-coverage fraction, not 100%.
 
-For each target it reports named re-exports, star re-exports, classes, skipped annotations and metadata origin. Python's `find_spec` can execute package parent initializers, so it is **not a hostile-code security boundary**.
+For each target it reports named re-exports, star re-exports, classes, skipped annotations and metadata origin. The historical audit below used a lookup that could initialize parent packages. Since B 0.10, dotted lookups walk package search locations without running ordinary filesystem package initializers. The audit trusts custom import hooks.
 
 ## Local observation
 

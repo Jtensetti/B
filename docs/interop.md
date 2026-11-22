@@ -15,7 +15,7 @@ let score: Float = tools.clamp(12.0, 0.0, 10.0)
 
 `b inspect py:b_examples.demo_lib --json` shows each discovered function, its signature and the source (`pyi` or `py`). When a typed function is called, `b check --json` records an assumed foreign signature. A known function that receives a wrong B type fails before execution; actual arguments and return values are also checked at the boundary.
 
-**Threat and correctness model:** extracting signatures does not execute the target module or evaluate annotation expressions. However, Python's `find_spec` can import *parent packages* for dotted names. `b run` imports and runs library code, which can perform arbitrary I/O. The Python parser, filesystem and package installation are trusted in this prototype; no sandbox is provided. Stubs can be inaccurate or malicious. Type guards cannot detect incorrect results with the correct types. Signature discovery is not behavioral verification.
+**Threat and correctness model:** extracting signatures does not execute the target module or evaluate annotation expressions. B follows package search locations without running filesystem package initializers. The Python environment's import finders and path hooks remain trusted. `b run` imports and runs library code, which can perform arbitrary I/O. The Python parser, filesystem and package installation are trusted in this prototype; no sandbox is provided. Stubs can be inaccurate or malicious. Type guards cannot detect incorrect results with the correct types. Signature discovery is not behavioral verification.
 
 ## Explicit foreign declarations
 

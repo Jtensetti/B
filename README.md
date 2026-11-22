@@ -2,9 +2,22 @@
 
 **B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
 
-**Version 0.9 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.10 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Ask B what a function does
+
+`b discover` uses a finite set of candidate contracts and chooses inputs that separate competing rules. A second analysis can prove a surviving integer equality symbolically. Supply an independent expectation to check it against the same code.
+
+```sh
+b discover examples/conservation.bee --function accounted --expect 'result == free + booked' --json
+b check examples/conservation-modular.bee --strict --require-proofs
+```
+
+The first command finds that a reservation preserves the total, checks the two helper bodies and reports both dependencies. The second checks a version whose helpers publish their exact changes. Callers can then rely on the declared conservation law.
+
+In an eight-run AI pilot, all four solvers with discovery and all four without it met the same product requirements. Discovery added a compiler call per run. On one starter, copying a proved formula into the interface would exclude 34 of 41 allowed alternatives. [Command and proof limits](docs/contract-discovery.md) · [Tasks, submissions and independent scoring](experiments/contract-pilot/README.md).
 
 ## When a result depends on the input
 
@@ -139,11 +152,12 @@ This limitation matters more than adding new punctuation or another file extensi
 | BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
 | Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
 | .NET libraries | Restricted `System.Math` and `Regex` host, metadata verified in CI | Arbitrary assemblies, object models, reflection-based adapters |
-| Correctness | Static types/errors, local and cross-function integer interval proofs, revision comparison, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
+| Correctness | Static types/errors, integer bounds, conditional guarantees, affine equalities, revision comparison, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
 | AI advantage | Explicit machine-readable IR and diagnostics | Any measured improvement in AI's correctness or tokens |
 
 ## Project references
 
+- [Discovering and checking contracts (0.10)](docs/contract-discovery.md)
 - [Contract analysis and revision comparison (0.8)](docs/composition.md)
 - [Language and grammar](docs/language.md)
 - [Source adoption (0.7): rules, measured limits and BIR provenance](docs/source-adoption.md)

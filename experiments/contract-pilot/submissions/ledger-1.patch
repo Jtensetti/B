@@ -1,0 +1,5 @@
+--- a/program.bee
++++ b/program.bee
+@@ -1 +1 @@
+-fn balance(arrivals: Int, departures: Int) -> Int pure requires arrivals >= 0 and arrivals <= 6 and departures >= 0 and departures <= 6 = (departures + 1) + arrivals
++fn balance(arrivals: Int, departures: Int) -> Int pure requires arrivals >= 0 and arrivals <= 6 and departures >= 0 and departures <= 6 ensures result == 1 + arrivals - departures = 1 + arrivals - departures

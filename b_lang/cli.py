@@ -79,11 +79,42 @@ def main(argv: list[str] | None = None) -> int:
     adopt_audit = sub.add_parser("adopt-audit", help="List Python leaf functions B can compile as checked native functions")
     adopt_audit.add_argument("target", help="py:module.name")
     adopt_audit.add_argument("--json", action="store_true")
+    discover = sub.add_parser("discover", help="Propose and check an integer result contract from the current implementation")
+    discover.add_argument("file", type=Path)
+    discover.add_argument("--function", required=True, help="Name of the native B function")
+    discover.add_argument("--expect", help="Require proof of an independent affine equality, e.g. 'result == free + booked'")
+    discover.add_argument("--trace", action="store_true", help="Include the observations and eliminated candidates")
+    discover.add_argument("--json", action="store_true", help="Emit a machine-readable report")
     impact = sub.add_parser("impact", help="Compare contract obligations in two revisions")
     impact.add_argument("before", type=Path)
     impact.add_argument("after", type=Path)
     impact.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "discover":
+        from .proposals import report
+        try:
+            data = report(compile_file(args.file).ir, args.function, expect=args.expect, trace=args.trace)
+        except (BError, OSError, ValueError, RuntimeError) as exc:
+            if args.json:
+                print(json.dumps({"status": "rejected", "error": {"code": getattr(exc, "code", "E_INPUT"), "message": str(exc)}}))
+            else:
+                print(f"B discover: {exc}", file=sys.stderr)
+            return 1
+        if args.json:
+            print(json.dumps(data, ensure_ascii=False))
+        else:
+            print(f"{data['function']}: {data['status']}. {data['reason']}")
+            if data['proposed_contract']:
+                print(f"{data['proposed_contract']} ({data['verification']['status']} for the current implementation)")
+            if data["declared_counterexample"]:
+                print("Declared postcondition counterexample:", json.dumps(data["declared_counterexample"]))
+            elif data["declared_audit"] in {"unsupported", "incomplete", "unobserved"}:
+                print("Declared postcondition audit:", data["declared_audit"])
+            if "expectation" in data:
+                print("Supplied expectation:", json.dumps(data["expectation"]))
+            if args.trace:
+                print(json.dumps(data["trace"], indent=2))
+        return int(args.expect is not None and data["expectation"]["status"] != "proved")
     if args.command == "impact":
         return show_impact(args)
     if args.command == "adopt-audit":

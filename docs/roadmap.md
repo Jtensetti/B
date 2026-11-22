@@ -2,6 +2,14 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## B 0.10
+
+B can [discover and independently check a candidate equality](contract-discovery.md). The [contract pilot](../experiments/contract-pilot/README.md) found that eight AI solvers on two explicit maintenance tasks reached the same correctness ceiling with and without discovery. Copying a verified current default into a contract can still reject legitimate future implementations.
+
+A direct symbolic read derived the three pilot/example identities without observations and also handled `2*x`. Reserve the cost of probing for concrete disagreements or properties the symbolic pass cannot decide.
+
+The next proposed experiment gives the model two plausible policies that accept the current program. Let it ask about a single alternative output on which those policies disagree. Compare that intervention with a plain-language clarification, a passive list of facts, and a typed Python tool with the same information. Score the downstream edits each contract admits or blocks, the cost of the extra interaction, and outcomes on unseen tasks. If a matched Python tool yields the same results at lower total cost, put the next implementation effort there.
+
 ## B 0.9
 
 The compiler supports a [bounded fragment of conditional integer guarantees](conditional-guarantees.md). On the same checker a rule can be switched off, and optional repair guidance switched on. The [maintenance pilot](../experiments/law-pilot/README.md) exercises both interventions. A [separate correspondence experiment](../experiments/operator-correspondence/README.md) asks which input is most informative when several interpretations of an operation agree on familiar examples.

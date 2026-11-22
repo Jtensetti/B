@@ -1,6 +1,7 @@
 """Automated foreign signatures are explicit *assumptions*, not proofs."""
 import io
 import json
+import sys
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -58,6 +59,52 @@ def test_static_stub_check_never_imports_target(tmp_path: Path, monkeypatch):
     result = compile_b('use py:b_temp_mod as m\nprint m.safe(2.0)', strict=True)
     assert result.assumptions
     assert not Path('will-not-run.txt').exists()
+
+
+def test_check_and_discover_do_not_initialize_dotted_python_packages(tmp_path, monkeypatch, capsys):
+    root = tmp_path / "b_lookup_fixture"
+    nested = root / "nested"
+    nested.mkdir(parents=True)
+    marker = tmp_path / "package-executed"
+    side_effect = f"from pathlib import Path\nPath({str(marker)!r}).touch()\n"
+    for path in (root / "__init__.py", nested / "__init__.py", nested / "leaf.py"):
+        path.write_text(side_effect, encoding="utf-8")
+    (nested / "leaf.pyi").write_text("def step(x: int) -> int: ...\n", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    path = tmp_path / "lookup.bee"
+    path.write_text(
+        "use py:b_lookup_fixture.nested.leaf as lib\n"
+        "fn native(x: Int) -> Int = x + 1\nprint lib.step(1)\n", encoding="utf-8")
+    assert main(["check", str(path), "--strict"]) == 0
+    capsys.readouterr()
+    assert main(["discover", str(path), "--function", "native", "--json"]) == 0
+    assert not marker.exists()
+    assert not any(name.startswith("b_lookup_fixture") for name in sys.modules)
+
+
+def test_lookup_preserves_builtins_and_nested_namespace_locations(tmp_path, monkeypatch):
+    for segment in ("left", "right"):
+        branch = tmp_path / segment / "b_lookup_namespace" / "nested"
+        branch.mkdir(parents=True)
+        (branch / f"{segment}.py").write_text("def f(x: int) -> int: return x\n")
+        monkeypatch.syspath_prepend(str(branch.parents[1]))
+    assert inspect_python("sys").source_kind == "binary-or-namespace"
+    assert inspect_python("os.path").source_kind != "unavailable"
+    assert inspect_python("b_lookup_namespace.nested").source_kind == "binary-or-namespace"
+    for segment in ("left", "right"):
+        assert "f" in inspect_python(f"b_lookup_namespace.nested.{segment}").signatures
+    assert "b_lookup_namespace" not in sys.modules
+
+
+def test_lookup_stops_at_a_nonpackage(tmp_path, monkeypatch):
+    (tmp_path / "b_lookup_leaf.py").write_text("pass\n")
+    (tmp_path / "coincidental_name.py").write_text("def f(x: int) -> int: return x\n")
+    monkeypatch.syspath_prepend(str(tmp_path))
+    assert inspect_python("b_lookup_leaf.coincidental_name").source_kind == "unavailable"
+    with pytest.raises(BError, match="E_IMPORT"):
+        compile_b("use py:b_lookup_leaf.coincidental_name as lib")
+    with pytest.raises(BError, match="E_ADOPT"):
+        compile_b("adopt py:b_lookup_leaf.coincidental_name.f as f")
 
 
 def test_an_untrusted_annotation_is_not_evaluated(tmp_path, monkeypatch):

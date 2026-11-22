@@ -32,11 +32,11 @@ Suppose an identity function explicitly promises that positive inputs yield posi
 
 `b check --explain` offers site-specific advice on open divisor checks and simple integer argument bounds. It distinguishes testing the producer's input from validating the actual value passed to the consumer. Applications supply the behavior outside the allowed range. Advice has no effect on the proof status.
 
-## A conservation law the checker cannot establish
+## A conservation law the 0.9 checker cannot establish
 
 Booking one place reduces the number of free places by one and increases the booked count by one. We encoded the proposed accounting invariant, `result == free + booked`, in [a runnable example](../examples/conservation.bee). Both functions satisfy their local sign contracts even in a faulty revision which adds two bookings for every place removed. The conservation requirement remains statically open in both programs. Across 100 starting states the correct transfer conserved the total in every case; the faulty transfer created one extra place each time and its runtime postcondition failed. Run `pytest -q tests/test_conditional_guarantees.py -k conservation` to reproduce both observations.
 
-This example would require a relationship between several quantities across function boundaries. Knowing their separate signs is insufficient.
+This example would require a relationship between several quantities across function boundaries. Knowing their separate signs is insufficient. [B 0.10](contract-discovery.md) checks the original helper bodies directly in discovery mode and proves the total modularly when each helper publishes its exact change.
 
 ## Experiments
 

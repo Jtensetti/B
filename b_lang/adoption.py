@@ -10,12 +10,10 @@ from __future__ import annotations
 import ast
 import hashlib
 import math
-import sys
 from dataclasses import dataclass
-from importlib.machinery import PathFinder
-from importlib.util import find_spec as meta_find_spec
 from pathlib import Path
 
+from .discovery import find_module_spec
 from .model import Expr, Stmt
 from .types import BError
 
@@ -26,32 +24,16 @@ COMPARATORS = {ast.Eq: "==", ast.NotEq: "!=", ast.Lt: "<", ast.LtE: "<=", ast.Gt
 
 
 def _source_file(module: str) -> Path:
-    """Locate standard filesystem modules without importing their parents.
-
-    PathFinder still consults Python import configuration. This is not safe
-    against hostile custom path hooks; source provenance is not attestation.
-    """
-    pieces = module.split(".")
-    if not pieces or any(not p.isidentifier() for p in pieces):
-        raise BError("E_ADOPT", "Expected a dotted Python module name")
-    search = None
-    spec = None
-    qualified = ""
-    for piece in pieces:
-        qualified = f"{qualified}.{piece}" if qualified else piece
-        spec = PathFinder.find_spec(qualified, search)
-        # PEP 660 editable installations may be exposed by a MetaPathFinder
-        # instead of a sys.path entry. Resolve ONLY the top-level package via
-        # find_spec: never invoke find_spec on a dotted name (which could import
-        # parent __init__.py). Ordinary compiler import hooks remain trusted.
-        if spec is None and "." not in qualified:
-            spec = meta_find_spec(qualified)
-        if spec is None:
-            raise BError("E_ADOPT", f"Python source module {qualified} was not found")
-        search = spec.submodule_search_locations
-    if not spec or not spec.origin or not spec.origin.endswith(".py"):
+    spec = find_module_spec(module)
+    if spec is None:
+        raise BError("E_ADOPT", f"Python source module {module} was not found")
+    # CPython can ship both a frozen module and its original .py source.
+    origin = spec.origin
+    if origin == "frozen":
+        origin = getattr(spec.loader_state, "filename", None)
+    if not origin or not origin.endswith(".py"):
         raise BError("E_ADOPT", f"{module} has no Python .py source to adopt")
-    return Path(spec.origin)
+    return Path(origin)
 
 
 def _annotation(expr: ast.expr | None) -> tuple[str, tuple]:

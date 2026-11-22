@@ -45,7 +45,8 @@ def audit_python(module: str) -> Audit:
         "unsupported_names": dict(sorted(discovery.skipped.items())),
         "external_implementations_verified": False,
         "target_module_body_evaluated_by_audit": False,
-        "parent_package_initializers_may_execute": True,
+        "parent_package_initializers_may_execute": False,
+        "custom_import_hooks_trusted": True,
         "analysis_complete_for_public_api": False,
     }
     if not discovery.source:

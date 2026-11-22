@@ -1,4 +1,4 @@
-"""B 0.9 compiler: parse -> typed BIR -> Python backend.
+"""B 0.10 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -7,7 +7,6 @@ BIR rather than reconstructing B semantics directly from surface syntax.
 from __future__ import annotations
 
 import ast
-import importlib.util
 import math
 import operator
 from dataclasses import dataclass, replace
@@ -442,13 +441,10 @@ class Compiler:
         if kind == "use":
             backend, path, alias = p
             if backend == "py":
-                try:
-                    found = importlib.util.find_spec(path)
-                except (ImportError, ValueError, ModuleNotFoundError):
-                    found = None
-                if found is None:
+                found = inspect_python(path)
+                if found.source_kind == "unavailable":
                     raise BError("E_IMPORT", f"Python module {path} is not installed")
-                self.registry.add_python_module(path, inspect_python(path))
+                self.registry.add_python_module(path, found)
             elif backend == "net":
                 if not any(k.startswith(f"net:{path}.") for k in self.registry.symbols):
                     raise BError("E_IMPORT", f"No registered .NET metadata for {path}")
@@ -542,7 +538,9 @@ class Compiler:
         upgraded = {}
         for item in analysis.obligations:
             if item.kind == "ensures" and item.status == "proved":
-                if item.proof_method == "conditional-guarantee":
+                if item.proof_method == "affine-equality":
+                    upgraded[item.caller] = "proved-affine"
+                elif item.proof_method == "conditional-guarantee":
                     upgraded[item.caller] = "proved-conditional"
                 else:
                     upgraded[item.caller] = "proved-composition" if item.dependencies else "proved-interval"
@@ -566,3 +564,18 @@ def compile_b(source: str, strict: bool = False, *, conditional_guarantees: bool
     if strict and result.diagnostics:
         raise BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
     return result
+
+
+def parse_postcondition(text: str, fn: StmtIR) -> ExprIR:
+    """Type-check an independently supplied assertion in this function's result scope."""
+    if any(name == "result" for name, _ in fn.params):
+        raise BError("E_EXPECT", "A parameter named result conflicts with the return value")
+    try:
+        statements = parse("assert " + text)
+    except LarkError as exc:
+        raise BError("E_EXPECT", "Expected one B postcondition expression") from exc
+    if len(statements) != 1 or statements[0].kind != "assert":
+        raise BError("E_EXPECT", "Expected one B postcondition expression")
+    scope = {name: Symbol(typ) for name, typ in fn.params}
+    scope["result"] = Symbol(fn.typ)
+    return Compiler()._contract(statements[0].parts[0], scope, set(scope), "expected postcondition")
