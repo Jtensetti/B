@@ -2,14 +2,14 @@
 
 This reads a module's adjacent .pyi when present, otherwise its .py source.
 Only functions whose entire relevant signatures B understands are registered;
-no annotations are executed. Importlib.find_spec() can execute parent package
-initializers for dotted names, so this is NOT a hostile-code sandbox.
+no annotations are executed. Python's configured import finders are trusted.
 """
 from __future__ import annotations
 
 import ast
 import importlib.util
 from dataclasses import dataclass
+from importlib.machinery import ModuleSpec, PathFinder
 from pathlib import Path
 
 from .types import ANY, BOOL, FLOAT, INT, TEXT, NONE, Type, Signature, Overloads, Binding, option
@@ -21,6 +21,35 @@ class Discovery:
     source: str | None
     source_kind: str
     skipped: dict[str, str]
+
+
+def find_module_spec(module: str) -> ModuleSpec | None:
+    """Locate installed modules without importing a target or any parent."""
+    root, *children = module.split(".")
+    if not all(piece.isidentifier() for piece in (root, *children)):
+        return None
+    try:
+        # The normal top-level lookup honors built-ins and editable installs.
+        spec = importlib.util.find_spec(root)
+        parent = root
+        for child in children:
+            if spec is None or spec.submodule_search_locations is None:
+                return None
+            locations = spec.submodule_search_locations
+            qualified = f"{parent}.{child}"
+            try:
+                spec = PathFinder.find_spec(qualified, locations)
+            except KeyError as error:
+                # CPython's nested namespace path expects an imported parent
+                # in sys.modules. Inspect the same explicit locations using the
+                # leaf name. Only its origin and search locations are consumed.
+                if error.args != (parent,):
+                    raise
+                spec = PathFinder.find_spec(child, locations)
+            parent = qualified
+        return spec
+    except (ValueError, ImportError, AttributeError):
+        return None
 
 
 def _dotted(node: ast.expr) -> str | None:
@@ -100,14 +129,8 @@ def _is_overload(node: ast.FunctionDef | ast.AsyncFunctionDef) -> bool:
 
 
 def inspect_python(module_path: str) -> Discovery:
-    """Extract static declarations from installed module text, without importing it.
-
-    find_spec() can execute parent-package initializers; this is NOT a sandbox.
-    """
-    try:
-        spec = importlib.util.find_spec(module_path)
-    except (ValueError, ImportError, ModuleNotFoundError, AttributeError):
-        spec = None
+    """Extract static declarations without running package initializers."""
+    spec = find_module_spec(module_path)
     if spec is None:
         return Discovery({}, None, "unavailable", {})
     origin = spec.origin

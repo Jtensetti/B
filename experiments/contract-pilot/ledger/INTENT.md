@@ -1,0 +1,3 @@
+The ledger belongs to a tabletop game. A round opens with one marker. Each arrival puts one marker on the ledger. Each departure removes one, even if the corresponding arrival has not happened yet; a balance may be negative. Both inputs are independent counts from 0 through 6 inclusive. For example, two arrivals and no departures must leave three markers. These rules have exactly one legal balance for each valid pair.
+
+Publish this rule as the proved postcondition of balance and correct its implementation wherever it disagrees with the rule. Keep the public input domain, return type and other functions.

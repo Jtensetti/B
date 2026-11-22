@@ -1,0 +1,3 @@
+Two layout engines share this interface. Rank is an integer from 0 through 6 inclusive. In compact layouts (ranks 0 and 1), any integral gap from 1 through 3 inclusive is a conforming choice. All other ranks allow any integral gap from 2 through 8 inclusive. Each engine may choose independently anywhere in its applicable band. Preserve the current engine's default wherever it conforms. The public contract must accept every conforming alternative and reject gaps outside the applicable band.
+
+Publish this rule as the proved postcondition of gap and correct its implementation wherever it disagrees with the rule. Keep the public input domain, return type and other functions.
