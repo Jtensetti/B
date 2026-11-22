@@ -6,8 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import __version__
-from . import clarify_cli
+from . import __version__, clarify_cli, register_view
 from .compiler import compile_b
 from .impact import compare
 from .types import BError
@@ -16,10 +15,14 @@ from .types import BError
 SPEC_VERSION = __version__.rsplit(".", 1)[0]
 
 
-def compile_file(path: Path, *, conditional_guarantees: bool = True):
+def read_source(path: Path) -> str:
     if path.suffix.lower() not in (".bee", ".b4", ".bsrc", ".b"):
         raise BError("E_EXTENSION", "Expected .bee (preferred), .b4, .bsrc or legacy .b source file")
-    return compile_b(path.read_text(encoding="utf-8"), conditional_guarantees=conditional_guarantees)
+    return path.read_text(encoding="utf-8")
+
+
+def compile_file(path: Path, *, conditional_guarantees: bool = True):
+    return compile_b(read_source(path), conditional_guarantees=conditional_guarantees)
 
 
 def show_impact(args) -> int:
@@ -88,12 +91,15 @@ def main(argv: list[str] | None = None) -> int:
     discover.add_argument("--expect", help="Require proof of an independent affine equality, e.g. 'result == free + booked'")
     discover.add_argument("--trace", action="store_true", help="Include the observations and eliminated candidates")
     discover.add_argument("--json", action="store_true", help="Emit a machine-readable report")
+    register_view.add_command(sub)
     clarify_cli.add_command(sub)
     impact = sub.add_parser("impact", help="Compare contract obligations in two revisions")
     impact.add_argument("before", type=Path)
     impact.add_argument("after", type=Path)
     impact.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "view":
+        return register_view.run(args, read_source)
     if args.command == "clarify":
         return clarify_cli.run(args, compile_file)
     if args.command == "discover":

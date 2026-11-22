@@ -1,0 +1,6 @@
+# Coordinates use half-pixel ticks. Mode 0 is exact; mode 1 snaps to a whole pixel.
+fn coordinate(tick: Int, mode: Int) -> Int pure requires mode >= 0 and mode <= 1 = cases mode {
+    == 0 => tick
+    else => tick - tick % 2
+}
+fn displacement(a: Int, b: Int, mode: Int) -> Int pure requires mode >= 0 and mode <= 1 = coordinate(b, mode) - coordinate(a, mode)

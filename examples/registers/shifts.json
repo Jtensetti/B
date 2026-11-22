@@ -1,0 +1,8 @@
+{
+  "left": {
+    "function": "displacement",
+    "axes": {"a": [-2, -1, 0, 1, 2], "b": [-2, -1, 0, 1, 2], "mode": [0, 1]}
+  },
+  "where": "left_mode == right_mode and ((left_mode == 0 and right_a == left_a + 1 and right_b == left_b + 1) or (left_mode == 1 and right_a == left_a + 2 and right_b == left_b + 2))",
+  "ensures": "left_result == right_result"
+}

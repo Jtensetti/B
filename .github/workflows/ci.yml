@@ -24,6 +24,10 @@ jobs:
       - run: python -m pip install -e '.[dev]'
       - run: dotnet build dotnet/B.NetHost/B.NetHost.csproj -c Release --nologo
       - run: pytest -q
+      - name: Check decision-register pilot submissions
+        run: |
+          python experiments/register-pilot/replay.py
+          python experiments/register-pilot/availability/replay.py
       - run: python experiments/node-interop/measure.py
       - run: b check experiments/node-interop/channel.bee --strict
       - name: Run one B program across Python, .NET and Node

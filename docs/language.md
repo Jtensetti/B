@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.12
+# B language reference — implemented experimental v0.13
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -8,7 +8,7 @@ For source adoption and contract analysis across functions, see [source adoption
 
 B source is UTF-8. **`.bee` is the recommended extension**; `.b4` is an optional playful alias, with `.bsrc` and `.b` retained for compatibility. `.bi` is *not* adopted: FreeBASIC already uses it for headers. `.b4` also has a historical non-B use and is not reserved. The CLI validates the file contents regardless of suffix.
 
-One statement per line; blank lines and `#` comments are ignored. Semicolons are not statement terminators. Identifiers match `[A-Za-z_][A-Za-z0-9_]*`; `_b_` is reserved for compiler internals. Strings are JSON-compatible double-quoted literals. Integers have decimal notation; floating literals have a decimal point; negative values use unary `-`. No exponent literals or arbitrary Unicode identifiers yet. Whitespace between tokens is ignored.
+A newline separates top-level statements. Inside a `cases` table, rows can occupy separate lines or share a line using semicolons. Blank lines and `#` comments are ignored. Identifiers match `[A-Za-z_][A-Za-z0-9_]*`; `_b_` is reserved for compiler internals. Strings are JSON-compatible double-quoted literals. Integers have decimal notation; floating literals have a decimal point; negative values use unary `-`. No exponent literals or arbitrary Unicode identifiers yet. Whitespace between tokens is ignored.
 
 ## 2. Grammar
 
@@ -36,7 +36,13 @@ coalesce_expression = logical_expression, ["??", coalesce_expression] ;
 list          = "[", [expression, {",", expression}], "]" ;
 dictionary    = "{", [pair, {",", pair}], "}" ;
 pair          = expression, ":", expression ;
+case_table    = "cases", identifier, "{", {newline}, row, {row},
+                "else", "=>", expression, [";"], {newline}, "}" ;
+row           = comparison_operator, scalar_threshold, "=>", expression, separator ;
+separator     = ";", {newline} | newline, {newline} ;
 ```
+
+A case table is an expression. It compares the named value against each scalar literal in order, using the ordinary comparison operators and type rules. The first matching row supplies the result, with a mandatory final fallback. Numeric thresholds can be negative. See [decision tables and source views](registers.md).
 
 Expressions also allow literals (`true`, `false`, `none`, numbers, strings), references, calls, attribute access and grouping. Precedence (highest to lowest): postfix attribute/call, unary `not`/`-`, multiplication/division/modulo, addition/subtraction, comparison, `and`, `or`, `??` (right associative), conditional. Both conditional branches are statically type-checked, even if the condition is constant.
 
@@ -99,6 +105,8 @@ For `net:`, the B host has only an explicit set of allowed `System.Math` and `Sy
 | Code | Interpretation |
 | --- | --- |
 | `E_SYNTAX` | Invalid B grammar |
+| `E_REGISTER_VIEW` | The requested source view is unavailable for the declaration or fails its equivalence check |
+| `E_DEPTH` | Expression nesting exceeds the compiler’s capacity, including long decision chains |
 | `E_NAME` | Unknown, duplicated or reserved identifier |
 | `E_TYPE` | Incompatible types or unsupported type syntax |
 | `E_ARITY` | Wrong argument count for known function / available overloads |
@@ -122,7 +130,7 @@ No B-authored module imports; generic B functions; loops; reassignment; records;
 
 ## 8. Versioning
 
-This document describes **B 0.7**. Changes to the grammar, types, interop and accepted code must carry tests. The compiler is an experimental, unverified implementation; runtime guard success is not a proof of full functional correctness.
+Changes to the grammar, types, interop and accepted code must carry tests. The compiler is an experimental, unverified implementation; runtime guard success is not a proof of full functional correctness.
 
 ## 9. Typed BIR compilation
 

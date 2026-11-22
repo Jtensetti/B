@@ -1,0 +1,74 @@
+[
+  {
+    "run": "birch",
+    "task": "sampler",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "../submissions/sampler-1.bee",
+        "notation_used": "arithmetic",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 79,
+        "independent_cases": 79,
+        "source_bytes": 253
+      }
+    ]
+  },
+  {
+    "run": "frost",
+    "task": "routing",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "submissions/routing-1.bee",
+        "notation_used": "conditional",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 44,
+        "independent_cases": 44,
+        "source_bytes": 372
+      }
+    ]
+  },
+  {
+    "run": "elm",
+    "task": "routing",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "submissions/routing-1.bee",
+        "notation_used": "conditional",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 44,
+        "independent_cases": 44,
+        "source_bytes": 372
+      }
+    ]
+  },
+  {
+    "run": "rain",
+    "task": "sampler",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "../submissions/sampler-1.bee",
+        "notation_used": "arithmetic",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 79,
+        "independent_cases": 79,
+        "source_bytes": 253
+      }
+    ]
+  }
+]

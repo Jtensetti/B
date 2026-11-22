@@ -2,9 +2,22 @@
 
 **B is an experimental programming language for AI-assisted changes.** Its primary goal is to reach working behavior on the first submitted implementation, and to reduce repair attempts when that fails. Programs can reuse libraries from Python, .NET and Node.js. An independent behavior check determines whether a submitted change actually works.
 
-**Version 0.12 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.13 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Edit a decision as a table
+
+```bee
+fn route(days: Int) -> Text pure = cases days {
+    < 0 => "overdue"
+    == 0 => "today"
+    <= 3 => "priority"
+    else => "standard"
+}
+```
+
+`b view examples/registers/dispatch.bee --function route --register ordinary` displays the same function as nested `if` expressions. B checks that the full program has identical typed BIR before emitting the declaration. You can mix tables and formulas in one function. [Syntax, examples and limits](docs/registers.md) · [AI editing pilot](experiments/register-pilot/README.md).
 
 ## Use an existing npm function
 
@@ -181,7 +194,7 @@ This limitation matters more than adding new punctuation or another file extensi
 
 | Layer | Working today | Not yet provided |
 | --- | --- | --- |
-| B language | Own grammar, immutable names, typed functions, conditions, collections, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | Loops, records, pattern matching, user generics |
+| B language | Own grammar, immutable names, typed functions, conditions, ordered decision tables, collections, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | Loops, records, pattern matching, user generics |
 | BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
 | Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
 | Node.js libraries | Typed POSIX path and semver functions, plus explicit declarations for synchronous named npm exports | Automatic TypeScript signature discovery, promises, callbacks and object handles |

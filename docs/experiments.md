@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.13 editing registers
+
+The [register pilot](../experiments/register-pilot/README.md) compares ordinary and table presentations of the same two starting programs. Four additional runs use the ordinary starters with the table syntax disabled. The [coordinate example](registers.md#where-a-rule-holds) checks when a familiar rule survives rounding to the nearest lower grid point.
+
 ## B 0.12 first-pass changes and library reuse
 
 [Independent AI editing tasks](../experiments/first-pass/README.md) count submitted patches until behavior passes. [Two-call requirements](../experiments/joint-design/README.md) compare B with a shared parameter, a whole-layout oracle and typed Python. [Node interoperability](../experiments/node-interop/README.md) exercises actual package exports and boundary failures.

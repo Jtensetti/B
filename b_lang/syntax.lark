@@ -49,16 +49,29 @@ type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 args: expr ("," expr)*
 pairs: pair ("," pair)*
 pair: expr ":" expr
-?atom: NUMBER                        -> number
-     | ESCAPED_STRING                -> string
-     | "true"                        -> true
-     | "false"                       -> false
-     | "none"                        -> none
+?scalar: number_literal
+       | ESCAPED_STRING              -> string
+       | "true"                      -> true
+       | "false"                     -> false
+       | "none"                      -> none
+number_literal: NUMBER               -> number
+?case_literal: scalar
+             | "-" number_literal    -> neg
+case_row: COMP case_literal "=>" expr
+_ROW_SEMI: ";"
+_row_sep: _ROW_SEMI _NL* | _NL+
+case_table: CASES NAME "{" _NL* (case_row _row_sep)+ "else" "=>" expr _ROW_SEMI? _NL* "}"
+
+?atom: case_table
+     | CASES                         -> identifier
+     | scalar
      | NAME                          -> identifier
      | "[" [args] "]"                -> list_literal
      | "{" [pairs] "}"               -> dict_literal
      | "(" expr ")"                  -> grouped
 
+// At expression position CASES may also be an ordinary name or call.
+CASES: "cases"
 BACKEND: "py" | "net"
 COMP: "==" | "!=" | "<=" | ">=" | "<" | ">"
 NAME: /[A-Za-z_][A-Za-z0-9_]*/
