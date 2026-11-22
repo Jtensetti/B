@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.15 compact edits and subtitle maintenance
+
+The [encoding comparison](../experiments/shorthand-encoding/README.md) measures source spelling and recoverable equality instructions under two token vocabularies. The [shorthand editing pilot](../experiments/shorthand-pilot/README.md) measures whether models can generate those changes. A [subtitle maintenance study](../experiments/subtitle-maintenance/README.md) compares edits to B and typed Python rules in a shared WebVTT checker.
+
 ## B 0.14 executable handoffs
 
 The [handoff pilot](../experiments/handoff-pilot/README.md) compares a pending conditional edit with a task-matched note and checks a stale instruction against the current product brief. The [token measurements](../experiments/handoff-cost/README.md) compare reading whole files, extracting a single note and excluding prose before building a prompt.

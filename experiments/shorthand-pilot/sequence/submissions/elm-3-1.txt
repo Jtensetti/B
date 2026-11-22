@@ -1,0 +1,4 @@
+bell 0 12
+lamp 3 21
+label 4 "bay #4"
+weight depot 0 25

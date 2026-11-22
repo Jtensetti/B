@@ -22,6 +22,19 @@ The first run prints `standard`. Listing prints only `next route when days == 5 
 
 If the next maintainer needs to inspect the target, `b next work.bee --context` displays each affected declaration followed by its instruction once. This saves opening the whole file for a small change. The output omits other functions and external requirements. A maintainer may still need those for an unfamiliar change. [Token counts and retrieval comparisons](../experiments/handoff-cost/README.md).
 
+## Compact input
+
+Use `b next PROGRAM --from-short ROWS` to preview a batch, or use `-` for standard input. Each line describes one equality override. The short form is a separate input to this command. Source files continue to support ordinary `next` expressions.
+
+| Row | Meaning |
+| --- | --- |
+| `route 5 "express"` | When the only parameter of `route` equals 5, return "express". |
+| `signal phase 3 8` | When the named parameter `phase` of `signal` equals 3, return 8. |
+
+The comparison value and replacement must both be B scalar literals. Quoted text can contain spaces and literal hashes. For a function with multiple parameters, write the parameter name even when their types differ. The expanded edit is subject to B's existing scope, type and fallback checks. A batch may target several distinct functions. Resolve any earlier pending edits before supplying new rows. `--context` includes the affected declarations. `--apply` applies the complete checked batch to the original file. A failing row leaves the file intact. Repeating an applied batch whose identical edits are still the leading branches leaves the source untouched.
+
+If an exception only applies when `phase == 3 and channel != 0`, write the full expression in the ordinary register. A short row naming `phase` alone would change every channel. [Source token counts](../experiments/shorthand-encoding/README.md) · [First-submission outcomes](../experiments/shorthand-pilot/README.md).
+
 ## What is checked
 
 The condition uses the target's parameters, literals, comparisons, Boolean operators and basic arithmetic. Calls to other functions belong in the replacement expression. The condition must produce a Boolean and the result must fit the function. B also checks that the conditional preserves the existing result conversions on the fallback branch. The target must have a B source definition. A file can carry one pending edit per function. Multiple targets are checked together and applied in one file replacement. When any edit fails, the file keeps its original contents.

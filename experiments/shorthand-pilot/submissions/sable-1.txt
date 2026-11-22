@@ -1,0 +1,4 @@
+next bell when slot == 2 => 70
+next lamp when zone == 5 => 4
+next label when lane == 0 => "late #2"
+next weight when depot == 2 => 14

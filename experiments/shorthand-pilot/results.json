@@ -1,0 +1,218 @@
+[
+  {
+    "id": "sable",
+    "task": "dispatch",
+    "arm": "ordinary",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "b",
+        "file": "sable-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 4,
+          "total": 4,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 44,
+          "total": 44,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 4/4\n"
+      }
+    ]
+  },
+  {
+    "id": "pipit",
+    "task": "window",
+    "arm": "optional",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "b",
+        "file": "pipit-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 3,
+          "total": 3,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 42,
+          "total": 42,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 3/3\n"
+      }
+    ]
+  },
+  {
+    "id": "elm",
+    "task": "dispatch",
+    "arm": "optional",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "short",
+        "file": "elm-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 4,
+          "total": 4,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 44,
+          "total": 44,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 4/4\n"
+      }
+    ]
+  },
+  {
+    "id": "brook",
+    "task": "window",
+    "arm": "ordinary",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "b",
+        "file": "pipit-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 3,
+          "total": 3,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 42,
+          "total": 42,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 3/3\n"
+      }
+    ]
+  },
+  {
+    "id": "fir",
+    "task": "dispatch",
+    "arm": "optional",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "short",
+        "file": "elm-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 4,
+          "total": 4,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 44,
+          "total": 44,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 4/4\n"
+      }
+    ]
+  },
+  {
+    "id": "umber",
+    "task": "window",
+    "arm": "ordinary",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "b",
+        "file": "umber-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 3,
+          "total": 3,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 42,
+          "total": 42,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 3/3\n"
+      }
+    ]
+  },
+  {
+    "id": "kite",
+    "task": "dispatch",
+    "arm": "ordinary",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "b",
+        "file": "sable-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 4,
+          "total": 4,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 44,
+          "total": 44,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 4/4\n"
+      }
+    ]
+  },
+  {
+    "id": "wren",
+    "task": "window",
+    "arm": "optional",
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "register": "b",
+        "file": "umber-1.txt",
+        "public": {
+          "accepted": true,
+          "passed": 3,
+          "total": 3,
+          "api": true,
+          "mismatches": []
+        },
+        "independent": {
+          "accepted": true,
+          "passed": 42,
+          "total": 42,
+          "api": true,
+          "mismatches": []
+        },
+        "feedback": "Public pass: 3/3\n"
+      }
+    ]
+  }
+]
