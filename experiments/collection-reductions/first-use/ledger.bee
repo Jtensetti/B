@@ -1,0 +1,16 @@
+fn complete(row: Dict[Text,Int]) -> Bool pure =
+  row["gross"] != none and row["tare"] != none
+
+fn net(row: Dict[Text,Int]) -> Int pure =
+  (row["gross"] ?? 0) - (row["tare"] ?? 0)
+
+fn exceeds(row: Dict[Text,Int], allowance: Int) -> Bool pure =
+  complete(row) and net(row) > allowance
+
+fn ledger(rows: List[Dict[Text,Int]], allowance: Int) -> Dict[Text,Int] pure =
+  summarize row in rows {
+    weighed: count
+    incomplete: count where complete(row) == false
+    over: count where exceeds(row, allowance)
+    extra: sum (net(row) - allowance) where exceeds(row, allowance)
+  }

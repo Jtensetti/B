@@ -1,0 +1,7 @@
+fn profile(xs: List[Int]) -> Dict[Text,Int] pure = summarize x in xs {
+  n: count
+  net: sum x
+  early: count where x < 0
+  lo: min x default 0
+  hi: max x default 0
+}

@@ -7,9 +7,10 @@ once its semantics and supported operations are specified.
 from __future__ import annotations
 import ast
 import keyword
+from contextlib import contextmanager
 
 from .ir import ExprIR, ProgramIR, StmtIR
-from .types import BError
+from .types import BOOL, FLOAT, INT, NONE, TEXT, BError
 
 
 _BINARY = {
@@ -19,6 +20,13 @@ _COMPARISONS = {
     "==": ast.Eq, "!=": ast.NotEq, "<": ast.Lt, ">": ast.Gt,
     "<=": ast.LtE, ">=": ast.GtE,
 }
+_SCALAR_OPS = {"literal", "name", "cmp", "and", "or", "not", "neg", "conditional", *_BINARY}
+
+
+def _inert_scalar(e: ExprIR) -> bool:
+    """Exact scalar operations cannot call out and change the list during its traversal."""
+    return (e.typ in (BOOL, FLOAT, INT, NONE, TEXT) and e.op in _SCALAR_OPS
+            and all(_inert_scalar(child) for child in e.operands))
 
 
 def _python_name(name: str) -> str:
@@ -28,9 +36,95 @@ def _python_name(name: str) -> str:
     return name
 
 
+def _load(name: str) -> ast.Name:
+    return ast.Name(id=name, ctx=ast.Load())
+
+
+def _assign(name: str, value: ast.expr) -> ast.Assign:
+    return ast.Assign(targets=[ast.Name(id=name, ctx=ast.Store())], value=value)
+
+
 class PythonLowerer:
     def __init__(self):
         self._tmp = 0
+        self._helpers: list[ast.FunctionDef] = []
+        self._locals: set[str] = set()
+
+    @contextmanager
+    def _bind(self, names):
+        surrounding = self._locals
+        self._locals = surrounding.union(names)
+        try:
+            yield
+        finally:
+            self._locals = surrounding
+
+    def _summarize(self, e: ExprIR) -> ast.Call:
+        # Keep the traversal in its own helper so the call remains an expression
+        # even inside a lazy branch. It receives the source and any captured locals.
+        source = self.expr(e.operands[0])
+        binder = _python_name(e.data["binder"])
+        body: list[ast.stmt] = []
+        if not all(_inert_scalar(child) for child in e.operands[1:]):
+            # An opaque call can reach the same list via another name. Freeze its
+            # membership before the first field, while retaining the items' identities.
+            body.append(_assign("_b_source", ast.Subscript(value=_load("_b_source"), slice=ast.Slice(),
+                                                          ctx=ast.Load())))
+        loop_body: list[ast.stmt] = []
+        keys: list[ast.expr] = []
+        values: list[ast.expr] = []
+        needs_size = False
+        with self._bind([binder]):
+            for i, (label, op, value_idx, guard_idx, default) in enumerate(e.data["fields"]):
+                acc = f"_b_acc_{i}"
+                keys.append(ast.Constant(label))
+                if op == "count" and guard_idx is None:
+                    needs_size = True
+                    values.append(_load("_b_size"))
+                    continue
+                if op in ("count", "sum"):
+                    body.append(_assign(acc, ast.Constant(0)))
+                    term = ast.Constant(1) if op == "count" else self.expr(e.operands[value_idx])
+                    update = [ast.AugAssign(target=ast.Name(id=acc, ctx=ast.Store()), op=ast.Add(), value=term)]
+                    values.append(_load(acc))
+                elif op in ("min", "max"):
+                    body.append(_assign(acc, ast.Constant(None)))
+                    empty = ast.Compare(left=_load(acc), ops=[ast.Is()], comparators=[ast.Constant(None)])
+                    projection = self.expr(e.operands[value_idx])
+                    if isinstance(projection, ast.Name) and projection.id == binder:
+                        candidate = binder
+                        update = []
+                    else:
+                        candidate = "_b_candidate"
+                        update = [_assign(candidate, projection)]
+                    comparison = ast.Compare(left=_load(candidate), ops=[ast.Lt() if op == "min" else ast.Gt()],
+                                             comparators=[_load(acc)])
+                    update.append(ast.If(test=ast.BoolOp(op=ast.Or(), values=[empty, comparison]),
+                                         body=[_assign(acc, _load(candidate))], orelse=[]))
+                    values.append(ast.IfExp(test=empty, body=ast.Constant(default), orelse=_load(acc)))
+                else:
+                    raise BError("E_INTERNAL", f"Unknown summary reducer: {op}")
+                if guard_idx is None:
+                    loop_body.extend(update)
+                else:
+                    loop_body.append(ast.If(test=self.expr(e.operands[guard_idx]), body=update, orelse=[]))
+        if needs_size:
+            body.append(_assign("_b_size", ast.Call(func=_load("_b_len"), args=[_load("_b_source")], keywords=[])))
+        if loop_body:
+            body.append(ast.For(target=ast.Name(id=binder, ctx=ast.Store()), iter=_load("_b_source"),
+                                body=loop_body, orelse=[]))
+        body.append(ast.Return(value=ast.Dict(keys=keys, values=values)))
+        # A nested helper call already exposes its captures as ordinary loads.
+        # Global names stay global, preserving B's usual point of lookup.
+        reads = {n.id for stmt in loop_body for n in ast.walk(stmt)
+                 if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
+        captures = sorted(self._locals.intersection(reads) - {binder})
+        helper_name = f"_b_summary_{len(self._helpers)}"
+        args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in ["_b_source", *captures]],
+                             vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])
+        self._helpers.append(ast.FunctionDef(name=helper_name, args=args, body=body,
+            decorator_list=[], returns=None, type_comment=None))
+        return ast.Call(func=_load(helper_name), args=[source, *map(_load, captures)], keywords=[])
 
     def expr(self, e: ExprIR) -> ast.expr:
         op, children, data = e.op, e.operands, e.data
@@ -44,6 +138,12 @@ class PythonLowerer:
             if len(children) % 2:
                 raise BError("E_INTERNAL", "Odd number of dictionary children in BIR")
             return ast.Dict(keys=[self.expr(x) for x in children[::2]], values=[self.expr(x) for x in children[1::2]])
+        if op == "summarize":
+            return self._summarize(e)
+        if op == "lookup":
+            dictionary, key = children
+            get = ast.Attribute(value=self.expr(dictionary), attr="get", ctx=ast.Load())
+            return ast.Call(func=get, args=[self.expr(key)], keywords=[])
         if op == "attr":
             if keyword.iskeyword(data):
                 return ast.Call(func=ast.Name(id="_b_getattr", ctx=ast.Load()),
@@ -100,14 +200,18 @@ class PythonLowerer:
                                                       args=[ast.Name(id=name, ctx=ast.Load()), ast.Constant(str(typ))],
                                                       keywords=[])))
             if s.requires is not None:
-                body.append(ast.If(test=ast.UnaryOp(op=ast.Not(), operand=self.expr(s.requires)),
+                with self._bind(names):
+                    precondition = self.expr(s.requires)
+                body.append(ast.If(test=ast.UnaryOp(op=ast.Not(), operand=precondition),
                     body=[ast.Raise(exc=ast.Call(func=ast.Name(id="_b_contract_error", ctx=ast.Load()),
                                   args=[ast.Constant(f"Precondition of {s.name} failed")], keywords=[]),
                                     cause=None)], orelse=[]))
-            body.append(ast.Assign(targets=[ast.Name(id="_b_result", ctx=ast.Store())], value=self.expr(s.expr)))
+            with self._bind(names):
+                body.append(_assign("_b_result", self.expr(s.expr)))
             if s.ensures is not None:
                 # `result` is an expression-scope pseudo-variable, not a mutable B binding.
-                condition = self.expr(s.ensures)
+                with self._bind([*names, "result"]):
+                    condition = self.expr(s.ensures)
                 class ReplaceResult(ast.NodeTransformer):
                     def visit_Name(self, node):
                         if node.id == "result":
@@ -131,9 +235,11 @@ class PythonLowerer:
         raise BError("E_INTERNAL", f"Unknown BIR statement: {s.op}")
 
     def lower(self, program: ProgramIR) -> ast.Module:
+        self._helpers.clear()
         builtins = ast.ImportFrom(module="builtins", names=[
             ast.alias(name="print", asname="_b_print"),
             ast.alias(name="getattr", asname="_b_getattr"),
+            ast.alias(name="len", asname="_b_len"),
         ], level=0)
         body = [builtins, ast.ImportFrom(module="b_lang.runtime", names=[
             ast.alias(name="py_module", asname="_b_py"),
@@ -157,5 +263,7 @@ class PythonLowerer:
                 "_b_js_module = _b_js_session.module"
             ).body
             body.extend(setup)
-        body.extend(self.statement(s) for s in program.statements)
+        statements = [self.statement(s) for s in program.statements]
+        body.extend(self._helpers)
+        body.extend(statements)
         return ast.fix_missing_locations(ast.Module(body=body, type_ignores=[]))

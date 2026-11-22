@@ -75,6 +75,11 @@ def _site(roots, item: Obligation) -> tuple[ExprIR, list[tuple[ExprIR, bool]]]:
             index = int(part)
             if node.op in ("and", "or") and index == 1:
                 tests.extend(_comparisons(node.operands[0], node.op == "and"))
+            elif node.op == "summarize":
+                for _, _, value, guard, _ in node.data["fields"]:
+                    if index == value and guard is not None:
+                        tests.extend(_comparisons(node.operands[guard], True))
+                        break
         node = node.operands[index]
     while node.op == "guard":
         node = node.operands[0]

@@ -121,9 +121,23 @@ def _render(node: ExprIR) -> str:
         return f"{_render(args[0])}({', '.join(_render(a) for a in args[1:])})"
     if op == "list":
         return "[" + ", ".join(_render(a) for a in args) + "]"
+    if op == "lookup":
+        return f"{_render(args[0])}[{_render(args[1])}]"
     if op == "dict":
         entries = (f"{_render(k)}: {_render(v)}" for k, v in zip(args[::2], args[1::2]))
         return "{" + ", ".join(entries) + "}"
+    if op == "summarize":
+        fields = []
+        for label, reducer, value, guard, default in node.data["fields"]:
+            field = f"{label}: {reducer}"
+            if value is not None:
+                field += " " + _render(args[value])
+            if guard is not None:
+                field += " where " + _render(args[guard])
+            if default is not None:
+                field += f" default {default}"
+            fields.append(field)
+        return f"summarize {node.data['binder']} in {_render(args[0])} {{ " + "; ".join(fields) + " }"
     if op == "attr":
         return f"{_render(args[0])}.{node.data}"
     if op == "conditional":
@@ -206,6 +220,28 @@ class _Pass:
                     interval = narrowed
         return Fact(interval, sources=sources, conditional=conditional)
 
+    def summarize(self, node: ExprIR, env: dict[str, Fact], site: str) -> Fact:
+        source = node.operands[0]
+        facts = [self.expr(source, env, site + ".0")]
+        if source.op == "list" and not source.operands:
+            return Fact(sources=facts[0].sources)
+        # Each iteration starts with a fresh element. A field's filter can
+        # justify its own projection, but says nothing about the next field.
+        element = Fact(Interval()) if source.typ.args[0] == INT else _UNKNOWN
+        scope = {**env, node.data["binder"]: element}
+        for _, _, value, guard, _ in node.data["fields"]:
+            active = scope
+            if guard is not None:
+                test = node.operands[guard]
+                predicate = self.expr(test, scope, f"{site}.{guard}")
+                facts.append(predicate)
+                if predicate.boolean is False:
+                    continue
+                active = _refine(test, scope, True)
+            if value is not None and active is not None:
+                facts.append(self.expr(node.operands[value], active, f"{site}.{value}"))
+        return Fact(sources=_sources(facts))
+
     def expr(self, node: ExprIR, env: dict[str, Fact], site: str) -> Fact:
         op, args = node.op, node.operands
         if op == "literal":
@@ -216,6 +252,8 @@ class _Pass:
             return _UNKNOWN
         if op == "name":
             return env.get(node.data, _UNKNOWN)
+        if op == "summarize":
+            return self.summarize(node, env, site)
         if op == "conditional":
             condition = self.expr(args[0], env, site + ".test")
             branches = []

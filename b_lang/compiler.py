@@ -1,4 +1,4 @@
-"""B 0.15 compiler: parse -> typed BIR -> Python backend.
+"""B 0.16 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -194,9 +194,48 @@ class Compiler:
             return f"{base}.{ex.parts[1]}" if base else None
         return None
 
+    def _summarize(self, ex: Expr, scope: dict[str, Symbol]) -> Value:
+        binder, source, fields = ex.parts
+        if binder in scope or binder.startswith("_b_") or binder in {"true", "false", "none", "if", "not"}:
+            raise BError("E_NAME", f"summarize cannot bind {binder}: name is already in scope or reserved")
+        collection = self.infer(source, scope)
+        if collection.type.name != "List":
+            raise BError("E_TYPE", f"summarize needs a List[T] source, got {collection.type}")
+        elements = {**scope, binder: Symbol(collection.type.args[0])}
+        operands = [collection.node]
+        reductions = []
+        labels = set()
+        for label, reducer, raw_value, raw_guard, default in fields:
+            if label in labels:
+                raise BError("E_NAME", f"Duplicate summarize field {label}")
+            labels.add(label)
+            guard_index = value_index = None
+            if raw_guard is not None:
+                guard = self.infer(raw_guard, elements)
+                self._check_type(guard, BOOL, f"summarize {label} filter")
+                guard_index = len(operands)
+                operands.append(guard.node)
+            if raw_value is not None:
+                value = self.infer(raw_value, elements)
+                self._check_type(value, INT, f"summarize {label} value")
+                value_index = len(operands)
+                operands.append(value.node)
+            reductions.append((label, reducer, value_index, guard_index, default))
+        return self.val(Type("Dict", (TEXT, INT)), "summarize", *operands,
+                        data={"binder": binder, "fields": tuple(reductions)})
+
     def infer(self, ex: Expr, scope: dict[str, Symbol] | None = None) -> Value:
         symbols = self.symbols if scope is None else scope
         kind, p = ex.kind, ex.parts
+        if kind == "summarize":
+            return self._summarize(ex, symbols)
+        if kind == "lookup":
+            dictionary = self.infer(p[0], symbols)
+            if dictionary.type.name != "Dict":
+                raise BError("E_TYPE", f"Key lookup needs a Dict[Text, T], got {dictionary.type}")
+            key = self.infer(p[1], symbols)
+            self._check_type(key, TEXT, "dictionary lookup key")
+            return self.val(option(dictionary.type.args[1]), "lookup", dictionary.node, key.node)
         if kind == "coalesce":
             left = self.infer(p[0], symbols)
             if left.type.name != "Option":
@@ -398,6 +437,12 @@ class Compiler:
         return node.node
 
     def _pure_captures(self, node: ExprIR, locals_: set[str]) -> None:
+        if node.op == "summarize":
+            self._pure_captures(node.operands[0], locals_)
+            bound = locals_ | {node.data["binder"]}
+            for field_operand in node.operands[1:]:
+                self._pure_captures(field_operand, bound)
+            return
         if node.op == "name" and node.data not in locals_:
             sym = self.symbols.get(node.data)
             if not sym or (sym.type != Type("Function")
