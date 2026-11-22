@@ -40,10 +40,13 @@ def _check_int(value: int) -> int:
     return value
 
 
-class _Evaluator:
-    def __init__(self, program: ProgramIR, target: str):
+class NativeEvaluator:
+    """Bounded evaluator for the closed native integer fragment of checked BIR."""
+
+    def __init__(self, program: ProgramIR, target: str, *, check_target_post: bool = False):
         self.functions = {s.name: s for s in program.statements if s.op == "fn"}
         self.target = target
+        self.check_target_post = check_target_post
         self.nodes = 0
         self.checked: set[str] = set()
         self.steps = 0
@@ -64,7 +67,7 @@ class _Evaluator:
         self._check_expr(fn.expr, names, active, depth)
         if fn.requires is not None:
             self._check_expr(fn.requires, names, active, depth)
-        if fn.ensures is not None and name != self.target:
+        if fn.ensures is not None and (name != self.target or self.check_target_post):
             self._check_expr(fn.ensures, names | {"result"}, active, depth)
         self.checked.add(name)
 
@@ -96,6 +99,29 @@ class _Evaluator:
         except Unsupported:
             return False
         return True
+
+    def accepts_input(self, inputs: dict[str, int]) -> bool:
+        """Check a target precondition, including input representation limits."""
+        fn = self.functions[self.target]
+        if inputs.keys() != {name for name, _ in fn.params}:
+            raise ProbeFailure("input names differ from the target parameters")
+        for value in inputs.values():
+            _check_int(value)
+        self.steps = 0
+        return fn.requires is None or self.eval(fn.requires, inputs)
+
+    def public_result(self, inputs: dict[str, int]) -> int:
+        """Observe a normal public return, including both target contract checks."""
+        if not self.check_target_post:
+            raise Unsupported("public calls require a prevalidated target postcondition")
+        if not self.accepts_input(inputs):
+            raise ProbeFailure(f"target precondition failed in {self.target}")
+        fn = self.functions[self.target]
+        self.steps = 0
+        value = _check_int(self.eval(fn.expr, inputs))
+        if fn.ensures is not None and not self.eval(fn.ensures, {**inputs, "result": value}):
+            raise ProbeFailure(f"target postcondition failed in {fn.name}")
+        return value
 
     def eval(self, e: ExprIR, env: dict, depth: int = 0):
         self.steps += 1
@@ -243,7 +269,7 @@ def discover(program: ProgramIR, function: str) -> dict:
               "declared_audit": "unavailable",
               "inadmissible_inputs": 0}
     try:
-        interpreter = _Evaluator(program, function)
+        interpreter = NativeEvaluator(program, function)
     except Unsupported as exc:
         return {**report, "status": "unsupported", "reason": str(exc)}
     fn = interpreter.functions[function]

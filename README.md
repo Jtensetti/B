@@ -2,9 +2,21 @@
 
 **B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
 
-**Version 0.10 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.11 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Ask which requirement matters to an edit
+
+A layout function returns gap 1 at rank 0. A proposed change returns 2 there. Several product requirements fit the original program. B can ask whether that one alternative is permitted, then decide the change on a finite input grid while leaving unrelated requirements open.
+
+```sh
+b clarify examples/intent/layout.bee examples/intent/layout.json --edit examples/intent/compact.bee
+b clarify examples/intent/layout.bee examples/intent/layout.json --edit examples/intent/compact.bee \
+  --answer '{"inputs":{"rank":0},"result":2,"allowed":true}' --json
+```
+
+In a matched two-product experiment, B, typed Python and fixed plain-language questions reached the same 48 correct edit decisions when the owner's rule was listed. Each active approach made eight mistakes across twelve decisions when the true rule was missing. [Command and limits](docs/contract-questions.md) · [Methods and results](experiments/intent-pilot/README.md).
 
 ## Ask B what a function does
 
@@ -157,6 +169,7 @@ This limitation matters more than adding new punctuation or another file extensi
 
 ## Project references
 
+- [Contract questions about proposed edits (0.11)](docs/contract-questions.md)
 - [Discovering and checking contracts (0.10)](docs/contract-discovery.md)
 - [Contract analysis and revision comparison (0.8)](docs/composition.md)
 - [Language and grammar](docs/language.md)

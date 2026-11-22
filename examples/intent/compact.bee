@@ -1,0 +1,1 @@
+fn gap(rank: Int) -> Int pure requires rank >= 0 and rank <= 2 = if rank == 0 then 2 else rank + 1

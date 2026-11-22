@@ -1,0 +1,11 @@
+{
+  "function": "gap",
+  "axes": {"rank": [0, 1, 2]},
+  "outputs": [1, 2, 3, 4],
+  "candidates": {
+    "current": "result == rank + 1",
+    "compact_choice": "result == rank + 1 or (rank == 0 and result == 2)",
+    "wide_choice": "result == rank + 1 or (rank == 2 and result == 4)",
+    "both_choices": "result == rank + 1 or (rank == 0 and result == 2) or (rank == 2 and result == 4)"
+  }
+}
