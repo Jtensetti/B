@@ -30,7 +30,7 @@ def test_overlap_selects_first_match_and_preserves_contracts():
     declaration = "fn band(x: Int) -> Int pure requires x >= -5 ensures result >= 0 = "
     ordinary = "if x < 0 then 4 else if x <= 5 then 2 else if x <= 2 then 1 else 3"
     table = """cases x {
-        < 0 => 4; # Semicolons and line breaks can both separate rows.
+        < 0 => 4;
         <= 5 => 2
 
         <= 2 => 1

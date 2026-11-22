@@ -2,9 +2,18 @@
 
 **B is an experimental programming language for AI-assisted changes.** Its primary goal is to reach working behavior on the first submitted implementation, and to reduce repair attempts when that fails. Programs can reuse libraries from Python, .NET and Node.js. An independent behavior check determines whether a submitted change actually works.
 
-**Version 0.13 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.14 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Leave the next edit in the program
+
+```bee
+fn route(days: Int) -> Text pure = if days < 3 then "priority" else "standard"
+next route when days == 5 => "express"
+```
+
+This program still returns `"standard"` for day 5. `b next FILE` prints the pending instruction. Add `--context` to see the target function alongside it. `b next FILE --apply` checks it, adds the exception to the function and removes the instruction. The next run returns `"express"`. Both forms are B code with the usual types, contracts and effects. [Handoffs and upgrading old source](docs/handoffs.md).
 
 ## Edit a decision as a table
 

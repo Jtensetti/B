@@ -28,6 +28,7 @@ jobs:
         run: |
           python experiments/register-pilot/replay.py
           python experiments/register-pilot/availability/replay.py
+      - run: python experiments/handoff-pilot/replay.py
       - run: python experiments/node-interop/measure.py
       - run: b check experiments/node-interop/channel.bee --strict
       - name: Run one B program across Python, .NET and Node

@@ -2,6 +2,10 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## B 0.14
+
+A maintainer can leave a [typed, pending edit](handoffs.md) for the next maintainer to apply. The [pilot](../experiments/handoff-pilot/README.md) measures the recipient's first submission after someone has already supplied a handoff. An end-to-end comparison should give the first model an original product request, count the work of producing each form of handoff, and score a second model's revision after a requirement changes.
+
 ## B 0.13
 
 B accepts [ordered decision tables](registers.md) as another way to write conditional expressions. In the [register pilot](../experiments/register-pilot/README.md), solvers editing routing rules chose tables and solvers changing a pulse used arithmetic. Four later runs with the table disabled also passed on the first submission. A larger follow-up should use unseen sequences of edits where first submissions already vary in correctness. Randomly assign the available forms and give the groups the same edits and feedback. Count failed tasks and retained behavior alongside first-pass acceptance.

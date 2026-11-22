@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.14 executable handoffs
+
+The [handoff pilot](../experiments/handoff-pilot/README.md) compares a pending conditional edit with a task-matched note and checks a stale instruction against the current product brief. The [token measurements](../experiments/handoff-cost/README.md) compare reading whole files, extracting a single note and excluding prose before building a prompt.
+
 ## B 0.13 editing registers
 
 The [register pilot](../experiments/register-pilot/README.md) compares ordinary and table presentations of the same two starting programs. Four additional runs use the ordinary starters with the table syntax disabled. The [coordinate example](registers.md#where-a-rule-holds) checks when a familiar rule survives rounding to the nearest lower grid point.

@@ -1,0 +1,159 @@
+[
+  {
+    "id": "linnet",
+    "task": "shade",
+    "handoff": "prose",
+    "events": [
+      {
+        "action": "note",
+        "visible_bytes": 40,
+        "status": 0
+      },
+      {
+        "action": "source",
+        "visible_bytes": 164,
+        "status": 0
+      },
+      {
+        "action": "submit",
+        "visible_bytes": 91,
+        "status": 0
+      }
+    ],
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "file": "linnet-1.bee",
+        "public": [
+          3,
+          3,
+          true
+        ],
+        "independent": [
+          15,
+          15,
+          true
+        ]
+      }
+    ]
+  },
+  {
+    "id": "cinder",
+    "task": "signal",
+    "handoff": "typed",
+    "events": [
+      {
+        "action": "source",
+        "visible_bytes": 250,
+        "status": 0
+      },
+      {
+        "action": "note",
+        "visible_bytes": 33,
+        "status": 0
+      },
+      {
+        "action": "submit",
+        "visible_bytes": 91,
+        "status": 0
+      }
+    ],
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "file": "cinder-1.bee",
+        "public": [
+          3,
+          3,
+          true
+        ],
+        "independent": [
+          25,
+          25,
+          true
+        ]
+      }
+    ]
+  },
+  {
+    "id": "maple",
+    "task": "shade",
+    "handoff": "typed",
+    "events": [
+      {
+        "action": "note",
+        "visible_bytes": 31,
+        "status": 0
+      },
+      {
+        "action": "source",
+        "visible_bytes": 195,
+        "status": 0
+      },
+      {
+        "action": "apply",
+        "visible_bytes": 0,
+        "status": 0
+      },
+      {
+        "action": "submit",
+        "visible_bytes": 91,
+        "status": 0
+      }
+    ],
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "file": "linnet-1.bee",
+        "public": [
+          3,
+          3,
+          true
+        ],
+        "independent": [
+          15,
+          15,
+          true
+        ]
+      }
+    ]
+  },
+  {
+    "id": "iris",
+    "task": "signal",
+    "handoff": "prose",
+    "events": [
+      {
+        "action": "note",
+        "visible_bytes": 42,
+        "status": 0
+      },
+      {
+        "action": "source",
+        "visible_bytes": 217,
+        "status": 0
+      },
+      {
+        "action": "submit",
+        "visible_bytes": 91,
+        "status": 0
+      }
+    ],
+    "first_accepted": 1,
+    "attempts": [
+      {
+        "file": "cinder-1.bee",
+        "public": [
+          3,
+          3,
+          true
+        ],
+        "independent": [
+          25,
+          25,
+          true
+        ]
+      }
+    ]
+  }
+]

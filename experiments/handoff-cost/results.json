@@ -1,0 +1,82 @@
+{
+  "encoding": "o200k_base",
+  "revision": "1cbf1fb8a71ae048e7ba5602ba2d37c96e4f9a09",
+  "corpus": {
+    "files": 26,
+    "files_with_comments": 21,
+    "full_tokens": 2006,
+    "filtered_tokens": 1597
+  },
+  "matched": {
+    "no_handoff": {
+      "line": "",
+      "author_writes_line": 0,
+      "successor_reads_line_only": 0,
+      "successor_reads_full_file": 45,
+      "author_line_plus_successor_line": 0,
+      "author_line_plus_successor_full_file": 45
+    },
+    "prose": {
+      "line": "# When days equals 5, route should return \"express\".\n",
+      "author_writes_line": 13,
+      "successor_reads_line_only": 13,
+      "successor_reads_full_file": 58,
+      "author_line_plus_successor_line": 26,
+      "author_line_plus_successor_full_file": 71
+    },
+    "shorthand": {
+      "line": "# route: days=5 -> \"express\"\n",
+      "author_writes_line": 10,
+      "successor_reads_line_only": 10,
+      "successor_reads_full_file": 55,
+      "author_line_plus_successor_line": 20,
+      "author_line_plus_successor_full_file": 65
+    },
+    "directive": {
+      "line": "next route when days == 5 => \"express\"\n",
+      "author_writes_line": 11,
+      "successor_reads_line_only": 11,
+      "successor_reads_full_file": 56,
+      "author_line_plus_successor_line": 22,
+      "author_line_plus_successor_full_file": 67
+    }
+  },
+  "pilot": [
+    {
+      "id": "linnet",
+      "task": "shade",
+      "handoff": "prose",
+      "note": 13,
+      "source": 56,
+      "total": 69,
+      "hypothetical_target_and_note": 54
+    },
+    {
+      "id": "cinder",
+      "task": "signal",
+      "handoff": "typed",
+      "note": 11,
+      "source": 75,
+      "total": 86,
+      "hypothetical_target_and_note": 60
+    },
+    {
+      "id": "maple",
+      "task": "shade",
+      "handoff": "typed",
+      "note": 11,
+      "source": 67,
+      "total": 78,
+      "hypothetical_target_and_note": 52
+    },
+    {
+      "id": "iris",
+      "task": "signal",
+      "handoff": "prose",
+      "note": 13,
+      "source": 64,
+      "total": 77,
+      "hypothetical_target_and_note": 62
+    }
+  ]
+}

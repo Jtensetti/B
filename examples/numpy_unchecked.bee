@@ -1,5 +1,3 @@
-# Real NumPy API; deliberately dynamic until B understands NumPy's re-exported stubs.
-# b run works with installed NumPy; b check --strict is expected to reject.
 use py:numpy as np
 let total = np.sum([1, 2, 3])
 print total

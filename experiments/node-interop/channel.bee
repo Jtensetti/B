@@ -1,4 +1,3 @@
-# Pick an eligible stable-channel release from an encoded artifact path.
 use py:urllib.parse as urls
 foreign urls.unquote(Text) -> Text
 use net:System.Text.RegularExpressions.Regex as channels

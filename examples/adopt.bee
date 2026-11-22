@@ -1,5 +1,3 @@
-# A real Python source function is checked and compiled into *native B*.
-# No Python module import is emitted, and no external effect permission needed.
 permit [console]
 adopt py:b_examples.pure_kernels.forward as next
 adopt py:b_examples.pure_kernels.square as sq

@@ -6,7 +6,7 @@ import json
 import sys
 from pathlib import Path
 
-from . import __version__, clarify_cli, register_view
+from . import __version__, clarify_cli, comment_migration, handoff_cli, register_view
 from .compiler import compile_b
 from .impact import compare
 from .types import BError
@@ -15,10 +15,11 @@ from .types import BError
 SPEC_VERSION = __version__.rsplit(".", 1)[0]
 
 
-def read_source(path: Path) -> str:
+def read_source(path: Path, *, newline: str | None = None) -> str:
     if path.suffix.lower() not in (".bee", ".b4", ".bsrc", ".b"):
         raise BError("E_EXTENSION", "Expected .bee (preferred), .b4, .bsrc or legacy .b source file")
-    return path.read_text(encoding="utf-8")
+    with path.open(encoding="utf-8", newline=newline) as stream:
+        return stream.read()
 
 
 def compile_file(path: Path, *, conditional_guarantees: bool = True):
@@ -92,12 +93,18 @@ def main(argv: list[str] | None = None) -> int:
     discover.add_argument("--trace", action="store_true", help="Include the observations and eliminated candidates")
     discover.add_argument("--json", action="store_true", help="Emit a machine-readable report")
     register_view.add_command(sub)
+    handoff_cli.add_command(sub)
+    comment_migration.add_command(sub)
     clarify_cli.add_command(sub)
     impact = sub.add_parser("impact", help="Compare contract obligations in two revisions")
     impact.add_argument("before", type=Path)
     impact.add_argument("after", type=Path)
     impact.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "next":
+        return handoff_cli.run(args, read_source)
+    if args.command == "migrate-comments":
+        return comment_migration.run(args, read_source)
     if args.command == "view":
         return register_view.run(args, read_source)
     if args.command == "clarify":
@@ -237,11 +244,15 @@ def main(argv: list[str] | None = None) -> int:
             from .guidance import guidance
             hints = guidance(result.ir, result.analysis, conditional_guarantees=use_rules)
         unresolved = [o for o in result.analysis.obligations if o.status != "proved"]
+        pending_unresolved = ([o for o in result.pending_analysis.obligations if o.status != "proved"]
+                              if result.pending_analysis is not None else [])
         rejection = None
         if args.strict and result.diagnostics:
             rejection = BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
         elif args.command == "check" and args.require_proofs and unresolved:
             rejection = BError("E_PROOF_REQUIRED", f"{len(unresolved)} obligation(s) lack a static proof")
+        elif args.command == "check" and args.require_proofs and pending_unresolved:
+            rejection = BError("E_PROOF_REQUIRED", f"{len(pending_unresolved)} obligation(s) in the pending revision lack a static proof")
         joint_checks = []
         if args.command == "check" and args.joint:
             from .joint_cli import describe, run_checks
@@ -258,6 +269,8 @@ def main(argv: list[str] | None = None) -> int:
             if args.command == "check":
                 for item in unresolved:
                     print(item.describe(), file=sys.stderr)
+                for item in pending_unresolved:
+                    print(f"Pending handoff: {item.describe()}", file=sys.stderr)
                 for hint in hints:
                     print(f"{hint['caller']} [{hint['site']}] {hint['detail']} {hint['suggestion']}", file=sys.stderr)
             raise rejection
@@ -271,6 +284,7 @@ def main(argv: list[str] | None = None) -> int:
                     "status": "rejected" if rejection else "accepted", "language": "B", "spec": SPEC_VERSION,
                     **({"error": {"code": rejection.code, "message": rejection.message}} if rejection else {}),
                     "contract_analysis": result.analysis.to_dict(),
+                    **({"pending_analysis": result.pending_analysis.to_dict()} if result.pending_analysis is not None else {}),
                     "conditional_guarantees": use_rules,
                     **({"joint_checks": joint_checks} if joint_checks else {}),
                     **({"guidance": hints} if args.explain else {}),
@@ -295,6 +309,8 @@ def main(argv: list[str] | None = None) -> int:
                 for assumption in result.assumptions:
                     print(f"ASSUMED FOREIGN CONTRACT: {assumption}")
                 print(f"B check: {len(result.diagnostics)} warning(s), {len(unresolved)} unproved obligation(s)")
+                if result.pending_analysis is not None:
+                    print(f"Pending handoff: {len(pending_unresolved)} unproved obligation(s)")
             return 1 if rejection else 0
         elif args.command == "run":
             # Imports can execute real library code in their respective runtimes.

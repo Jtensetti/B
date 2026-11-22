@@ -1,4 +1,3 @@
-# Fully interval-proved integer postcondition, plus runtime guards.
 permit [console]
 fn successor(x: Int) -> Int pure requires x >= 0 ensures result > 0 = x + 1
 let answer: Int = successor(41)

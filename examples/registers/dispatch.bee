@@ -1,4 +1,3 @@
-# Dispatch parcels by their lead time in whole days.
 fn route(days: Int) -> Text pure = cases days {
     < 0 => "overdue"
     == 0 => "today"

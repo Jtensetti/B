@@ -1,4 +1,3 @@
-# B 0.4: Option is explicit, ?? supplies a typed default without re-evaluation.
 use py:b_examples.poly_lib as lib
 
 let found: Option[Int] = lib.find_code("Ada")

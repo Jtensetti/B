@@ -1,10 +1,12 @@
 """Small independent B syntax tree. No Python source is evaluated as B source."""
 from __future__ import annotations
 from dataclasses import dataclass
+from functools import cache
 from typing import Any
 from lark import Lark, Transformer
-from lark.exceptions import LarkError, UnexpectedToken, VisitError
+from lark.exceptions import LarkError, UnexpectedCharacters, UnexpectedToken, VisitError
 from importlib import resources
+import re
 
 @dataclass(frozen=True)
 class Expr:
@@ -90,14 +92,35 @@ class ToModel(Transformer):
         flags = {key: value for item in xs[3:-1] if item is not None for key, value in (item,)}
         return Stmt("fn", (str(xs[0]), xs[1] or [], xs[2], xs[-1],
                             bool(flags.get("pure", False)), flags.get("requires"), flags.get("ensures")))
+    def next_stmt(self, xs): return Stmt("next", (str(xs[0]), xs[1], xs[2]))
     def print_stmt(self, xs): return Stmt("print", (xs[0],))
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 
-_PARSER = Lark(resources.files("b_lang").joinpath("syntax.lark").read_text(), parser="lalr", maybe_placeholders=True)
+_GRAMMAR = resources.files("b_lang").joinpath("syntax.lark").read_text()
+_PARSER = Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True)
+
+
+@cache
+def positioned_parser():
+    """Only source-rewriting callers need token offsets."""
+    return Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, propagate_positions=True)
+
+
+def parser_input(source: str) -> str:
+    # Preserve character offsets for source rewriters, including CRLF pairs.
+    if "\r" in source:
+        source = re.sub(r"\r(?!\n)", "\n", source)
+    return source + ("\n" if source and not source.endswith("\n") else "")
+
 
 def parse(source: str) -> list[Stmt]:
     try:
-        tree = _PARSER.parse(source + ("\n" if source and not source.endswith("\n") else ""))
+        tree = _PARSER.parse(parser_input(source))
+    except UnexpectedCharacters as error:
+        if error.char == "#":
+            raise LarkError(f"Free-form # comments were removed in B 0.14 (line {error.line}, "
+                            f"column {error.column}). Run 'b migrate-comments FILE' to print migrated source.") from error
+        raise
     except UnexpectedToken as error:
         # At the end of a comparison row the grammar expects a separator.
         # After the separator it expects the next comparison or the fallback.
