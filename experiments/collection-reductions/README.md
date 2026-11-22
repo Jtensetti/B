@@ -12,6 +12,8 @@ Ten more fixed cases cover empty and all-zero streams, extremes, cancellation, a
 
 The fixed recordings `[6,-3,6,-3]` and `[-3,-3,6,6]` have identical reports. Only the second contains two consecutive late ticks. A requirement about consecutive misses needs additional state specifying order.
 
+An [executable follow-up](order_check.py) keeps three Boolean facts for each nonempty chunk: whether its first tick is late, its last tick is late, and it already contains a consecutive late pair. Empty chunks are represented separately. Joining adjacent chunks can create a new pair only at their shared boundary. Across all 511 late/on-time patterns of lengths zero through eight, the result matched direct inspection at 4,097 two-part splits and 18,943 three-part splits under both parenthesizations. Order matters, yet the original sequence can be discarded after these facts are computed. This follow-up runs in Python and supplies a reference for a future B operation.
+
 ## Running the experiment
 
 Run these commands from the repository root with B installed in editable mode.
@@ -19,6 +21,7 @@ Run these commands from the repository root with B installed in editable mode.
 ```sh
 python experiments/collection-reductions/measure.py
 python experiments/collection-reductions/measure.py --timing
+python experiments/collection-reductions/order_check.py
 ```
 
 `measure.py` first compares every implementation against the independent cases. It checks invalid data at the three checked entry points, including a boolean mixed with integers. Timings measure the same result on prebuilt valid lists. Warm samples rotate the engine order and report the median of seven batches. The 10,000-element workload uses a fixed seed and uniform synthetic integer offsets from −250 to +250 µs. Data generation and I/O are outside the timed call.
