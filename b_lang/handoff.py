@@ -14,6 +14,12 @@ class Handoff:
     source: str
     target_spans: tuple[tuple[int, int], ...]
 
+    def entries(self, original: str, *, include_context: bool = False) -> list[str]:
+        if include_context:
+            return [original[start:end] + "\n" + note for (start, end), note
+                    in zip(self.target_spans, self.instructions, strict=True)]
+        return list(self.instructions)
+
 
 def materialize(source: str) -> Handoff:
     """Render all pending branches at their target bodies in the original lexical scope."""
@@ -101,8 +107,4 @@ def inspect_handoff(source: str, *, strict: bool = False, include_context: bool 
     handoff = compile_b(source, strict=strict).handoff
     if handoff is None:
         return [], source
-    if include_context:
-        entries = [source[start:end] + "\n" + note for (start, end), note
-                   in zip(handoff.target_spans, handoff.instructions, strict=True)]
-        return entries, handoff.source
-    return list(handoff.instructions), handoff.source
+    return handoff.entries(source, include_context=include_context), handoff.source

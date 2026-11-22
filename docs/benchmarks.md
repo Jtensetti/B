@@ -21,4 +21,4 @@ The correct objective is not the fewest characters, the fewest prompts or even t
 
 ## Status
 
-**No performance or AI-token benchmark has been run yet.** The included tests establish only that the implemented subset behaves as expected in the covered cases. Treat all efficiency claims as unproven until measured.
+The [0.11 selection experiment](../experiments/intent-pilot/README.md) timed an individual tool under fixed inputs. The [0.14 token study](../experiments/handoff-cost/README.md) counted source and displayed tool text. Neither measured a complete model session. The [0.15 editing pilot](../experiments/shorthand-pilot/README.md) measures generation of scoped edits, and the [subtitle study](../experiments/subtitle-maintenance/README.md) compares B and typed Python inside a common file-processing tool. A decision about B's overall cost advantage still needs whole-session measurements across independent projects.

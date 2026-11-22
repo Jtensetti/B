@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.14
+# B language reference — implemented experimental v0.15
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -42,6 +42,8 @@ case_table    = "cases", identifier, "{", {newline}, row, {row},
 row           = comparison_operator, scalar_threshold, "=>", expression, separator ;
 separator     = ";", {newline} | newline, {newline} ;
 ```
+
+The `b next --from-short` command accepts a [separate compact edit format](handoffs.md#compact-input).
 
 A top-level `next` declares a pending edit on a source function. The condition and replacement use the target function’s scope. [Listing, applying and checking an edit](handoffs.md).
 
@@ -109,6 +111,8 @@ For `net:`, the B host has only an explicit set of allowed `System.Math` and `Sy
 | --- | --- |
 | `E_SYNTAX` | Invalid B grammar |
 | `E_REGISTER_VIEW` | The requested source view is unavailable for the declaration or fails its equivalence check |
+| `E_SHORTHAND` | An edit row is malformed, lacks a unique parameter or names an unavailable function or parameter |
+| `E_SHORTHAND_PENDING` | New compact rows would mix with existing pending source edits |
 | `E_HANDOFF` | The proposed conditional edit cannot be applied to the target |
 | `E_HANDOFF_CHANGED` | The file changed before the checked revision could be written |
 | `E_DEPTH` | Expression nesting exceeds the compiler’s capacity, including long decision chains |

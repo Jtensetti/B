@@ -1,0 +1,150 @@
+[
+  {
+    "id": "sable",
+    "arm": "ordinary",
+    "stages": [
+      {
+        "stage": 2,
+        "events": [
+          {
+            "action": "brief",
+            "sha256": "44ccf5237c6a9cd6e376c8456d38212a18b5938f4978d23bc14ce8ba3ccd237b",
+            "bytes": 283
+          },
+          {
+            "action": "submit",
+            "sha256": "1b21d1463ffbc0162b6ece0f491452965e0bf00a4a37680689514196e1d47efc",
+            "bytes": 17
+          }
+        ],
+        "attempts": [
+          {
+            "register": "full",
+            "file": "sable-2-1.txt",
+            "feedback": "Public pass: 4/4\n",
+            "public": {
+              "accepted": true,
+              "passed": 4,
+              "total": 4,
+              "failures": []
+            },
+            "independent": {
+              "accepted": true,
+              "passed": 44,
+              "total": 44,
+              "failures": []
+            }
+          }
+        ]
+      },
+      {
+        "stage": 3,
+        "events": [
+          {
+            "action": "brief",
+            "sha256": "bf0d54cfd6270f9b690808f815e6f4878254cc20152fe6f54ed9e5aa4ba4d38b",
+            "bytes": 282
+          },
+          {
+            "action": "submit",
+            "sha256": "1b21d1463ffbc0162b6ece0f491452965e0bf00a4a37680689514196e1d47efc",
+            "bytes": 17
+          }
+        ],
+        "attempts": [
+          {
+            "register": "b",
+            "file": "sable-3-1.txt",
+            "feedback": "Public pass: 4/4\n",
+            "public": {
+              "accepted": true,
+              "passed": 4,
+              "total": 4,
+              "failures": []
+            },
+            "independent": {
+              "accepted": true,
+              "passed": 44,
+              "total": 44,
+              "failures": []
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "id": "elm",
+    "arm": "optional",
+    "stages": [
+      {
+        "stage": 2,
+        "events": [
+          {
+            "action": "brief",
+            "sha256": "44ccf5237c6a9cd6e376c8456d38212a18b5938f4978d23bc14ce8ba3ccd237b",
+            "bytes": 283
+          },
+          {
+            "action": "submit",
+            "sha256": "1b21d1463ffbc0162b6ece0f491452965e0bf00a4a37680689514196e1d47efc",
+            "bytes": 17
+          }
+        ],
+        "attempts": [
+          {
+            "register": "short",
+            "file": "elm-2-1.txt",
+            "feedback": "Public pass: 4/4\n",
+            "public": {
+              "accepted": true,
+              "passed": 4,
+              "total": 4,
+              "failures": []
+            },
+            "independent": {
+              "accepted": true,
+              "passed": 44,
+              "total": 44,
+              "failures": []
+            }
+          }
+        ]
+      },
+      {
+        "stage": 3,
+        "events": [
+          {
+            "action": "brief",
+            "sha256": "bf0d54cfd6270f9b690808f815e6f4878254cc20152fe6f54ed9e5aa4ba4d38b",
+            "bytes": 282
+          },
+          {
+            "action": "submit",
+            "sha256": "1b21d1463ffbc0162b6ece0f491452965e0bf00a4a37680689514196e1d47efc",
+            "bytes": 17
+          }
+        ],
+        "attempts": [
+          {
+            "register": "short",
+            "file": "elm-3-1.txt",
+            "feedback": "Public pass: 4/4\n",
+            "public": {
+              "accepted": true,
+              "passed": 4,
+              "total": 4,
+              "failures": []
+            },
+            "independent": {
+              "accepted": true,
+              "passed": 44,
+              "total": 44,
+              "failures": []
+            }
+          }
+        ]
+      }
+    ]
+  }
+]

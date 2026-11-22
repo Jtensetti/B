@@ -11,6 +11,8 @@ from .types import BError
 def add_command(sub):
     parser = sub.add_parser("next", help="List or apply the source file's pending instructions")
     parser.add_argument("file", type=Path)
+    parser.add_argument("--from-short", type=Path, metavar="ROWS",
+                        help="Read compact edit rows from a UTF-8 file or - for standard input")
     action = parser.add_mutually_exclusive_group()
     action.add_argument("--context", action="store_true", help="Show each current target declaration with its instruction")
     action.add_argument("--apply", action="store_true", help="Write the checked changes and consume the instructions")
@@ -48,7 +50,19 @@ def run(args, read_source):
     try:
         target = args.file.resolve(strict=True)
         source = read_source(args.file, newline="")
-        instructions, revision = inspect_handoff(source, strict=args.strict, include_context=args.context)
+        if args.from_short is None:
+            instructions, revision = inspect_handoff(source, strict=args.strict, include_context=args.context)
+        else:
+            from .shorthand import prepare_shorthand
+            rows = sys.stdin.read() if args.from_short == Path("-") else args.from_short.read_text(encoding="utf-8")
+            expanded, handoff = prepare_shorthand(source, rows, strict=args.strict)
+            if handoff is None:
+                return 0
+            instructions = handoff.entries(expanded, include_context=args.context)
+            revision = handoff.source
+            if not source.endswith(("\r", "\n")):
+                # The separator before the temporary instructions is outside the original file.
+                revision = revision.rstrip("\r\n")
         if args.apply:
             if instructions:
                 _replace_checked(args.file, target, source, revision)

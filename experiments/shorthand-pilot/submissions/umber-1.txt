@@ -1,0 +1,1 @@
+next readout when station >= 1 and tick >= 2 and tick <= 5 => 20 - tick

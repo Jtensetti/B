@@ -1,0 +1,4 @@
+bell 4 11
+lamp 1 17
+label 3 "under deck"
+weight compartment 3 31

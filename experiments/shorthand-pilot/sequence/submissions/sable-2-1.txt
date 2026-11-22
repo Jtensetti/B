@@ -1,0 +1,4 @@
+fn bell(slot: Int) -> Int pure requires slot >= 0 and slot <= 5 = if slot == 4 then 11 else if slot == 2 then 70 else slot + 3
+fn lamp(zone: Int) -> Int pure requires zone >= 0 and zone <= 5 = if zone == 1 then 17 else if zone == 5 then 4 else zone * 2
+fn label(lane: Int) -> Text pure requires lane >= 0 and lane <= 5 = if lane == 3 then "under deck" else if lane == 0 then "late #2" else if lane < 2 then "front" else "rear"
+fn weight(compartment: Int, depot: Int) -> Int pure requires compartment >= 0 and compartment <= 3 and depot >= 0 and depot <= 3 = if compartment == 3 then 31 else if depot == 2 then 14 else compartment * 4 + depot

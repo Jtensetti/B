@@ -1,0 +1,1 @@
+fn flag(lead: Int, duration: Int) -> Int pure requires duration > 0 = if lead > 80 then 1 else 0

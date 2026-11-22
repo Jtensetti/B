@@ -2,9 +2,19 @@
 
 **B is an experimental programming language for AI-assisted changes.** Its primary goal is to reach working behavior on the first submitted implementation, and to reduce repair attempts when that fails. Programs can reuse libraries from Python, .NET and Node.js. An independent behavior check determines whether a submitted change actually works.
 
-**Version 0.14 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.15 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Apply a small change from a compact row
+
+```sh
+cp examples/registers/dispatch.bee dispatch-work.bee
+printf 'route 5 "express"\n' | b next dispatch-work.bee --from-short -
+printf 'route 5 "express"\n' | b next dispatch-work.bee --from-short - --apply
+```
+
+The first command after copying displays `next route when days == 5 => "express"`. The second applies it. B recovers `days` because the target has exactly one parameter. For a function with several parameters the row includes the chosen name. Use an ordinary `next` condition for an interval or a combination of parameters. [Syntax and limits](docs/handoffs.md#compact-input) · [Comparison with ordinary B](experiments/shorthand-pilot/README.md).
 
 ## Leave the next edit in the program
 

@@ -1,0 +1,4 @@
+next bell when slot == 0 => 12
+next lamp when zone == 3 => 21
+next label when lane == 4 => "bay #4"
+next weight when depot == 0 => 25

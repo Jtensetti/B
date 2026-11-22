@@ -1,0 +1,9 @@
+{
+  "function": "flag",
+  "axes": {"lead": [0, 80, 81, 160], "duration": [1, 81, 1000]},
+  "outputs": [0, 1],
+  "candidates": {
+    "early_start": "(result == 1 and lead > 80) or (result == 0 and lead <= 80)",
+    "shared_time": "(result == 1 and lead > 80 and duration > 80) or (result == 0 and (lead <= 80 or duration <= 80))"
+  }
+}
