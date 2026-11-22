@@ -1,4 +1,4 @@
-"""B 0.10 compiler: parse -> typed BIR -> Python backend.
+"""B 0.11 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed

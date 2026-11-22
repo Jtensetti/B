@@ -2,6 +2,12 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## B 0.11
+
+[Contract clarification](contract-questions.md) can distinguish supplied policies or ask only about the outputs of a pending edit. On the [paired comparison](../experiments/intent-pilot/README.md), typed Python and plain-language questions matched B. On the [complete three-row layout problem](../experiments/layout-coherence/README.md), single-return contracts cannot distinguish an independently adjustable layout from one that requires a consistent style.
+
+For 0.12, test one joint requirement over two calls from the same version. Compare its cost with passing a shared style parameter, checking a whole layout as one value, and using a two-call typed Python property test. Measure valid style changes retained and mixed layouts wrongly accepted. Let the specification's natural scope decide whether a new language feature earns its place.
+
 ## B 0.10
 
 B can [discover and independently check a candidate equality](contract-discovery.md). The [contract pilot](../experiments/contract-pilot/README.md) found that eight AI solvers on two explicit maintenance tasks reached the same correctness ceiling with and without discovery. Copying a verified current default into a contract can still reject legitimate future implementations.

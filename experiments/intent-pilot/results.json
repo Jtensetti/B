@@ -1,0 +1,191 @@
+[
+  {
+    "scenario": "included",
+    "method": "B",
+    "correct-accept": 18,
+    "correct-block": 30,
+    "answers": 16,
+    "cases": 8,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "included",
+    "method": "typed Python",
+    "correct-accept": 18,
+    "correct-block": 30,
+    "answers": 16,
+    "cases": 8,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "included",
+    "method": "plain language",
+    "correct-accept": 18,
+    "correct-block": 30,
+    "answers": 16,
+    "cases": 8,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "included",
+    "method": "passive",
+    "correct-accept": 8,
+    "deferred": 24,
+    "correct-block": 16,
+    "answers": 0,
+    "cases": 8,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "documented",
+    "method": "B",
+    "correct-accept": 4,
+    "correct-block": 8,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "documented",
+    "method": "typed Python",
+    "correct-accept": 4,
+    "correct-block": 8,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "documented",
+    "method": "plain language",
+    "correct-accept": 4,
+    "correct-block": 8,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "documented",
+    "method": "passive",
+    "correct-accept": 4,
+    "correct-block": 8,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "one-answer",
+    "method": "B",
+    "correct-accept": 4,
+    "deferred": 4,
+    "correct-block": 4,
+    "answers": 2,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "one-answer",
+    "method": "typed Python",
+    "correct-accept": 4,
+    "deferred": 4,
+    "correct-block": 4,
+    "answers": 2,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "one-answer",
+    "method": "plain language",
+    "correct-accept": 4,
+    "deferred": 4,
+    "correct-block": 4,
+    "answers": 2,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "one-answer",
+    "method": "passive",
+    "correct-accept": 2,
+    "deferred": 6,
+    "correct-block": 4,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "silent-omission",
+    "method": "B",
+    "correct-accept": 2,
+    "false-accept": 6,
+    "false-block": 2,
+    "correct-block": 2,
+    "answers": 4,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "silent-omission",
+    "method": "typed Python",
+    "correct-accept": 2,
+    "false-accept": 6,
+    "false-block": 2,
+    "correct-block": 2,
+    "answers": 4,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "silent-omission",
+    "method": "plain language",
+    "correct-accept": 2,
+    "false-accept": 6,
+    "false-block": 2,
+    "correct-block": 2,
+    "answers": 4,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "silent-omission",
+    "method": "passive",
+    "correct-accept": 2,
+    "deferred": 6,
+    "false-block": 2,
+    "correct-block": 2,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 0
+  },
+  {
+    "scenario": "conflicting-omission",
+    "method": "B",
+    "deferred": 12,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 2
+  },
+  {
+    "scenario": "conflicting-omission",
+    "method": "typed Python",
+    "deferred": 12,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 2
+  },
+  {
+    "scenario": "conflicting-omission",
+    "method": "plain language",
+    "deferred": 12,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 2
+  },
+  {
+    "scenario": "conflicting-omission",
+    "method": "passive",
+    "deferred": 12,
+    "answers": 0,
+    "cases": 2,
+    "no-survivor": 2
+  }
+]

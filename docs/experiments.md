@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.11 contract questions
+
+The [matched B/Python/plain-language experiment](../experiments/intent-pilot/README.md) scores later edits against an independent scripted owner. Separate comparisons examine [questions about one edit](../experiments/edit-questions/README.md), [exact and greedy interview depth](../experiments/intent-limits/README.md) and [requirements that relate outputs of different calls](../experiments/layout-coherence/README.md).
+
 ## B 0.10 contract discovery
 
 [Two independently scored AI tasks](../experiments/contract-pilot/README.md) compare the same compiler with candidate discovery shown or hidden. The [booking example](contract-discovery.md) checks a conservation law across calls. Earlier small AI trials covered [billing revisions](../experiments/change-pilot/README.md) and [conditional guarantees](../experiments/law-pilot/README.md).

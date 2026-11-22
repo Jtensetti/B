@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.10
+# B language reference — implemented experimental v0.11
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -151,3 +151,8 @@ Grammar: `adopt_stmt = "adopt", "py", ":", dotted_module_and_function, "as", loc
 ## Discovering an integer postcondition
 
 `b discover FILE --function NAME --json` returns an implementation-derived proposal and its evidence. `--expect 'result == ...'` checks a separately supplied equality. `b check` can export an affine result equality to other functions after verifying the declared contract. [Supported expressions, examples and exit codes](contract-discovery.md).
+
+
+## Clarifying a proposed change
+
+`b clarify FILE REQUEST [--edit REVISED] [--answer JSON] [--json]` checks candidate postconditions and asks about a concrete permitted output on an explicit grid. `--strategy minimax` selects the optional bounded policy-identification planner. [Request format, semantics, abstentions and exit codes](contract-questions.md).
