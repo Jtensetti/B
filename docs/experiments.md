@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.18 executable changes
+
+[Bookings and sensor readings](../experiments/executable-changes/README.md) exercise the same declaration as running code and as a constraint on a revision. The comparison measures mutations caught, state across two events, text tokens and local execution time. [A two-edit author trial](../experiments/executable-changes/first-use/README.md) records first submissions in B and Python.
+
 ## B 0.17 ordered histories
 
 [Ordered counts](../experiments/ordered-history/README.md) compare consecutive late ticks and overlapping subtitle intervals against independent definitions. A [translation check](../experiments/ordered-history/loop-proof.md) confirms that the loop emitted for one Boolean pair counter has the same structure as an inductively justified reference.

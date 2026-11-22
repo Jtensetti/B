@@ -1,8 +1,12 @@
-# B language reference — implemented experimental v0.17
+# B language reference — implemented experimental v0.18
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
 For source adoption and contract analysis across functions, see [source adoption](source-adoption.md), [contract analysis](composition.md) and [conditional guarantees](conditional-guarantees.md).
+
+## Executable rule extensions
+
+`also free_entry(true, "sun") keeping seats, recipient` adds a ground input tuple to a pure native Boolean predicate. The optional `keeping` clause protects named functions against a transitive dependency on that predicate. Source order does not change the meaning of a fact. See the [grammar, examples and revision checker](executable-changes.md).
 
 ## 1. Source form and tokens
 

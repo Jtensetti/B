@@ -2,7 +2,11 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
-## B 0.17 and the next language experiment
+## B 0.18
+
+One executable declaration now extends a rule and can protect other results from that change. The [experiment](../experiments/executable-changes/README.md) compares two working implementations against the same booking and sensor outcomes. A [paired author trial](../experiments/executable-changes/first-use/README.md) showed how strongly the result depends on the supplied interface. Test the next revision on an unfamiliar change where the right function to protect must be discovered, and count context retrieval, incorrect assumptions, repairs, checking and execution. Include tasks that cannot be expressed by adding a single tuple.
+
+## B 0.17
 
 [Ordered counts](language.md#ordered-counts) infer the previous test or the necessary prefix extremum for common pair predicates. A two-sided interval rule also works on data in arbitrary order through direct search. On the [disjoint interval benchmark](../experiments/ordered-history/README.md), an indexed Python algorithm performed substantially less work for that last rule. The B example also demonstrates how validating record shape and checking start order let a caller select the simple rule safely.
 

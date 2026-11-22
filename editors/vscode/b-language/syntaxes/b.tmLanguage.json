@@ -11,6 +11,7 @@
         "4": {"name": "keyword.control.bee"}
       }
     },
+    {"name": "keyword.declaration.bee", "match": "^\\s*also(?=[ \\t]+[A-Za-z_][A-Za-z0-9_]*[ \\t]*\\()"},
     {"name": "keyword.control.bee", "match": "\\b(?:if|then|else|and|or|not|assert|count[ \\t]+(?:adjacent|earlier)|summarize(?=[ \\t]+[A-Za-z_][A-Za-z0-9_]*[ \\t]+in\\b)|cases(?=[ \\t]+[A-Za-z_][A-Za-z0-9_]*[ \\t]*\\{))\\b"},
     {"name": "keyword.declaration.bee", "match": "\\b(?:use|foreign|let|fn|as|print)\\b"},
     {"name": "support.type.bee", "match": "\\b(?:Int|Float|Bool|Text|Any|List|Option|Dict)\\b"},
