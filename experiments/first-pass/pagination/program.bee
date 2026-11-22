@@ -1,0 +1,3 @@
+fn start(row: Int, compact: Int) -> Int pure requires row >= 0 and row <= 9 and compact >= 0 and compact <= 1 = row * 4
+fn stop(row: Int, compact: Int) -> Int pure requires row >= 0 and row <= 9 and compact >= 0 and compact <= 1 = row * 4 + 4
+fn page_tag(sheet: Int) -> Int pure = sheet * 7 + 2

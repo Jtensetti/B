@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.11
+# B language reference — implemented experimental v0.12
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -18,7 +18,7 @@ The following EBNF captures the implemented constructs; the Lark grammar governs
 program       = { newline | statement, newline }, [statement] ;
 statement     = permit | use | adopt | foreign | let | fn | print | assert ;
 permit        = "permit", "[", [identifier, {",", identifier}], "]" ;
-use           = "use", ("py" | "net"), ":", path, "as", identifier ;
+use           = "use", (("py" | "net"), ":", path | "js", ":", (path | string)), "as", identifier ;
 adopt         = "adopt", "py", ":", path, "as", identifier ;
 foreign       = "foreign", path, "(", [type_list], ")", "->", type ;
 let           = "let", identifier, [":", type], "=", expression ;
@@ -156,3 +156,10 @@ Grammar: `adopt_stmt = "adopt", "py", ":", dotted_module_and_function, "as", loc
 ## Clarifying a proposed change
 
 `b clarify FILE REQUEST [--edit REVISED] [--answer JSON] [--json]` checks candidate postconditions and asks about a concrete permitted output on an explicit grid. `--strategy minimax` selects the optional bounded policy-identification planner. [Request format, semantics, abstentions and exit codes](contract-questions.md).
+
+
+## JavaScript libraries and joint checks
+
+A `js:` import can name an installed npm package or the supported `"node:path/posix"` module. Quote hyphenated and scoped names. [Foreign types and examples](interop.md).
+
+`b check FILE --joint REQUEST` tests a typed relation across pairs of native integer calls in the specified finite domain. Additional `--joint` files can be checked in the same invocation. [Requirements and failure output](joint-checks.md).

@@ -2,6 +2,8 @@ start: (_NL | stmt _NL)* stmt?
 _NL: NEWLINE
 
 ?stmt: "permit" "[" [names] "]"                          -> permit_stmt
+     | "use" "js" ":" ESCAPED_STRING "as" NAME            -> js_string_use
+     | "use" "js" ":" path "as" NAME                     -> js_use
      | "use" BACKEND ":" path "as" NAME                   -> use_stmt
      | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
      | "let" NAME [":" type_expr] "=" expr               -> let_stmt

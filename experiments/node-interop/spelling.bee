@@ -1,0 +1,8 @@
+use js:"fastest-levenshtein" as words
+foreign words.closest(Text, List[Text]) -> Text
+foreign words.distance(Text, Text) -> Int
+
+let query = "Trellebog"
+let suggestion = words.closest(query, ["Malmö", "Trelleborg", "Lund"])
+print suggestion
+print words.distance(query, suggestion)

@@ -59,6 +59,8 @@ def main(argv: list[str] | None = None) -> int:
         p.add_argument("file", type=Path, help="B source file (.bee preferred; .b4, .bsrc and .b supported)")
         p.add_argument("--strict", action="store_true", help="Reject unresolved static checks")
         if cmd == "check":
+            p.add_argument("--joint", action="append", default=[], type=Path, metavar="REQUEST",
+                           help="Check a relation on pairs of native calls in an explicit grid (repeatable)")
             p.add_argument("--no-conditional-guarantees", action="store_true",
                            help="Run the same checker with conditional result guarantees disabled")
             p.add_argument("--explain", action="store_true",
@@ -72,8 +74,8 @@ def main(argv: list[str] | None = None) -> int:
     audit_command = sub.add_parser("audit", help="Measure direct Python signatures visible to B; does not import target")
     audit_command.add_argument("target", help="py:module.name")
     audit_command.add_argument("--json", action="store_true")
-    inspect = sub.add_parser('inspect', help='Inspect Python static signatures or the .NET host metadata')
-    inspect.add_argument('target', help='py:module.name or net:Full.Type.Name')
+    inspect = sub.add_parser('inspect', help='Inspect Python, Node.js or .NET function signatures')
+    inspect.add_argument('target', help='py:module.name, js:package or net:Full.Type.Name')
     inspect.add_argument('--json', action='store_true', help='Machine-readable result')
     inspect.add_argument('--live', action='store_true', help='Read live .NET metadata instead of the checked-in snapshot')
     inspect.add_argument('--verify', action='store_true', help='Fail if the live .NET metadata differs from the snapshot')
@@ -186,6 +188,11 @@ def main(argv: list[str] | None = None) -> int:
                 }
                 if found.source_kind == 'unavailable':
                     raise BError('E_IMPORT', f'Python module {name} is not installed')
+            elif args.target.startswith('js:'):
+                from .jsmeta import describe
+                if args.live or args.verify:
+                    raise BError('E_USAGE', '--live and --verify require a net: target')
+                result = describe(args.target[3:])
             elif args.target.startswith('net:'):
                 current = describe_live() if (args.live or args.verify) else manifest()
                 if args.verify and current != manifest():
@@ -200,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
                                          for m in current['types'][name]],
                           'behavior_proven': False}
             else:
-                raise BError('E_IMPORT', 'Expected py: or net: prefix')
+                raise BError('E_IMPORT', 'Expected py:, js: or net: prefix')
             if args.json:
                 print(json.dumps(result, ensure_ascii=False))
             else:
@@ -229,6 +236,18 @@ def main(argv: list[str] | None = None) -> int:
             rejection = BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
         elif args.command == "check" and args.require_proofs and unresolved:
             rejection = BError("E_PROOF_REQUIRED", f"{len(unresolved)} obligation(s) lack a static proof")
+        joint_checks = []
+        if args.command == "check" and args.joint:
+            from .joint_cli import describe, run_checks
+            joint_checks = run_checks(result.ir, args.joint)
+            failed = [row for row in joint_checks if row["status"] != "passed"]
+            if failed and rejection is None:
+                first = failed[0]
+                code = first.get("code", "E_JOINT_" + first["status"].upper())
+                rejection = BError(code, f"{len(failed)} of {len(joint_checks)} joint requirements did not pass")
+            if not machine:
+                for row in joint_checks:
+                    print(describe(row), file=sys.stdout if row["status"] == "passed" else sys.stderr)
         if rejection and not machine:
             if args.command == "check":
                 for item in unresolved:
@@ -247,6 +266,7 @@ def main(argv: list[str] | None = None) -> int:
                     **({"error": {"code": rejection.code, "message": rejection.message}} if rejection else {}),
                     "contract_analysis": result.analysis.to_dict(),
                     "conditional_guarantees": use_rules,
+                    **({"joint_checks": joint_checks} if joint_checks else {}),
                     **({"guidance": hints} if args.explain else {}),
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
@@ -271,9 +291,15 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"B check: {len(result.diagnostics)} warning(s), {len(unresolved)} unproved obligation(s)")
             return 1 if rejection else 0
         elif args.command == "run":
-            # Running B can run imported Python/.NET code; this is not a sandbox.
+            # Imports can execute real library code in their respective runtimes.
             namespace = {"__name__": "__b_program__"}
-            exec(result.code, namespace, namespace)
+            if any(s.op == "import" and s.backend == "js" for s in result.ir.statements):
+                namespace["__file__"] = str(args.file.resolve())
+            try:
+                exec(result.code, namespace, namespace)
+            finally:
+                if "_b_js_session" in namespace:
+                    namespace["_b_js_session"].close()
         return 0
     except (BError, OSError, RuntimeError, AssertionError, ImportError, ValueError, TypeError, ZeroDivisionError) as exc:
         if machine:

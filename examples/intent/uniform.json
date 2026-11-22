@@ -1,0 +1,5 @@
+{
+  "left": {"function": "gap", "axes": {"rank": [0, 1, 2]}},
+  "where": "left_rank < right_rank",
+  "ensures": "left_result - left_rank == right_result - right_rank"
+}

@@ -1,6 +1,6 @@
-# Cross-language interoperability in B 0.5
+# Cross-language interoperability in B
 
-B's value proposition is reuse of existing software. It does not translate Python or .NET implementations into B, and imported behavior is not formally verified.
+B's value proposition is reuse of existing software. The linked libraries execute in their respective runtimes. Foreign signatures describe expected values, and the adapters check values at their boundaries.
 
 ## Python metadata discovery
 
@@ -36,6 +36,22 @@ The .NET 10 host has a narrow allowlist of static functions. `B.NetHost --descri
 - Calls cross a JSON-lines process boundary. Complex CLR objects, generics, callbacks and zero-copy buffers are not supported.
 - Reflection is used only to describe **allowed** methods, never to authorize an arbitrary method at runtime.
 - Live introspection: `b inspect net:System.Math --live`. Metadata drift check: `b inspect net:System.Math --verify`.
+
+## Node.js and npm (B 0.12)
+
+`use js:"node:path/posix" as path` gives B six static signatures for POSIX path operations. `use js:semver as versions` provides signatures for `satisfies`, `compare`, `valid` and `maxSatisfying`. The latter two can return `Option[Text]`. At execution B checks that the installed semver package is version 7. Inspect the catalog with `b inspect js:semver --json`. The catalog is available during compilation without starting Node or loading npm code.
+
+For a different installed package, quote scoped or hyphenated names and declare the synchronous export to be called:
+
+```bee
+use js:"fastest-levenshtein" as words
+foreign words.closest(Text, List[Text]) -> Text
+print words.closest("Trellebog", ["Trelleborg", "Lund", "Malmö"])
+```
+
+The Node process resolves packages from the B source's directory on `b run`. A generated Python file resolves from its own directory at execution. Calls within one execution share module state. Each JSON-compatible value is copied across the boundary. Supported B types are `Text`, `Bool`, safe `Int`, finite `Float` and supported nested `Option`, `List` and string-keyed `Dict` values. JavaScript safe integers run from −(2⁵³−1) through 2⁵³−1. Promises, callbacks, class instances, buffers and BigInt require other interfaces. Foreign effects follow B's normal effect rules. Imported code runs with the process's operating-system permissions.
+
+The installed-package tests use two independently published packages and an uncurated named export. The three-runtime example uses Python to decode an artifact path, .NET to check its release channel and JavaScript to check the version range. [Examples and measured coverage](../experiments/node-interop/README.md).
 
 ## Planned other ecosystems
 

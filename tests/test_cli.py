@@ -9,7 +9,7 @@ def test_bsrc_is_preferred_source_and_check_json(tmp_path: Path, capsys):
     assert main(['check', str(example), '--strict', '--json']) == 0
     record = json.loads(capsys.readouterr().out)
     assert record['status'] == 'accepted'
-    assert record['spec'] == '0.11'
+    assert record['spec'] == '0.12'
     assert record['diagnostics'] == []
     assert record['behavior_proven'] is False
 

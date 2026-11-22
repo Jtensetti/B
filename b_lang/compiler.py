@@ -1,4 +1,4 @@
-"""B 0.11 compiler: parse -> typed BIR -> Python backend.
+"""B 0.12 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -20,6 +20,7 @@ from .effects import ALLOWED as ALLOWED_EFFECTS, expression_effects, statement_e
 from .discovery import inspect_python
 from .adoption import adopt_python
 from .interop import ForeignCatalog
+from . import jsmeta
 from .ir import ExprIR, ProgramIR, StmtIR
 from .lowering import PythonLowerer
 from .optimizer import optimize
@@ -287,7 +288,11 @@ class Compiler:
                 ref.node = self.guard(ref.node, ATTRIBUTES[path])
                 return ref
             if path and self.registry.lookup(path):
+                if path.startswith("js:"):
+                    self.used_foreign.add(path)
                 return self.val(Type("Function"), "attr", bv.node, data=name, foreign=path)
+            if path and path.startswith("js:"):
+                raise BError("E_FOREIGN", f"Unregistered Node export {path}; declare its foreign signature")
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
             if path and path.startswith("py:"):
@@ -435,6 +440,8 @@ class Compiler:
             sig = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
             if any(t in (NONE, MODULE) for t in (*sig.params, sig.result)):
                 raise BError("E_TYPE", "Foreign signatures cannot use internal None or Module types")
+            if fullname.startswith("js:"):
+                jsmeta.check_declaration(sym.foreign[3:], parts[1:], sig)
             self.registry.add(fullname, sig, "user-declaration")
             self.assumptions.append(f"{fullname}({', '.join(map(str, sig.params))}) -> {sig.result}")
             return StmtIR("foreign", target=fullname)
@@ -445,6 +452,12 @@ class Compiler:
                 if found.source_kind == "unavailable":
                     raise BError("E_IMPORT", f"Python module {path} is not installed")
                 self.registry.add_python_module(path, found)
+            elif backend == "js":
+                jsmeta.check_target(path)
+                for name, sig in jsmeta.CATALOG.get(path, {}).items():
+                    key = f"js:{path}.{name}"
+                    if not self.registry.lookup(key):
+                        self.registry.add(key, sig, jsmeta.provenance(path))
             elif backend == "net":
                 if not any(k.startswith(f"net:{path}.") for k in self.registry.symbols):
                     raise BError("E_IMPORT", f"No registered .NET metadata for {path}")
@@ -462,7 +475,9 @@ class Compiler:
             if wanted.name == "List" and expr.kind == "list":
                 for element in expr.parts:
                     self._check_type(self.infer(element), wanted.args[0], f"element of {name}")
-            self._new(name, Symbol(wanted, constant=self._at_runtime_constant(value.constant, wanted)))
+            alias = self._foreign_path(expr, self.symbols) if wanted == MODULE else None
+            self._new(name, Symbol(wanted, constant=self._at_runtime_constant(value.constant, wanted),
+                                   foreign=alias if alias and alias.startswith("js:") else None))
             node = self.guard(value.node, wanted) if annotation is not None else value.node
             return StmtIR("let", name=name, typ=wanted, expr=node,
                           effects=tuple(sorted(expression_effects(node, self.symbols))))

@@ -1,0 +1,3 @@
+fn fast(total: Int, quota: Int, rush: Int) -> Int pure requires total >= 0 and total <= 8 and quota >= 0 and quota <= 8 and rush >= 0 and rush <= 1 = if quota < total then quota else total
+fn slow(total: Int, quota: Int, rush: Int) -> Int pure requires total >= 0 and total <= 8 and quota >= 0 and quota <= 8 and rush >= 0 and rush <= 1 = total - fast(total, quota, rush)
+fn batch_tag(sheet: Int) -> Int pure = sheet * 5 + 3

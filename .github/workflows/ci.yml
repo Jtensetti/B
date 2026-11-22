@@ -14,12 +14,26 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci --prefix experiments/node-interop --ignore-scripts --no-audit --no-fund
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: 10.0.x
       - run: python -m pip install -e '.[dev]'
       - run: dotnet build dotnet/B.NetHost/B.NetHost.csproj -c Release --nologo
       - run: pytest -q
+      - run: python experiments/node-interop/measure.py
+      - run: b check experiments/node-interop/channel.bee --strict
+      - name: Run one B program across Python, .NET and Node
+        run: |
+          python - <<'PYTHON'
+          import subprocess
+          output = subprocess.check_output(["b", "run", "experiments/node-interop/channel.bee"], text=True)
+          assert output.splitlines() == ["True", "False", "False"], output
+          PYTHON
+      - run: b check examples/intent/layout.bee --joint examples/intent/uniform.json
       - run: b check examples/polyglot.b --strict
       - run: b run examples/polyglot.b
       - run: b check examples/polyglot.bsrc --strict
