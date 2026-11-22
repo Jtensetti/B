@@ -126,6 +126,9 @@ def _render(node: ExprIR) -> str:
     if op == "dict":
         entries = (f"{_render(k)}: {_render(v)}" for k, v in zip(args[::2], args[1::2]))
         return "{" + ", ".join(entries) + "}"
+    if op == "history_count":
+        return (f"(count {node.data['mode']} {node.data['past']}, {node.data['current']} "
+                f"in {_render(args[0])} where {_render(args[1])})")
     if op == "summarize":
         fields = []
         for label, reducer, value, guard, default in node.data["fields"]:
@@ -252,6 +255,21 @@ class _Pass:
             return _UNKNOWN
         if op == "name":
             return env.get(node.data, _UNKNOWN)
+        if op == "history_count":
+            source, predicate = args
+            source_fact = self.expr(source, env, site + ".0")
+            # Each matching position contributes once. The first has no predecessor.
+            upper = max(0, len(source.operands) - 1) if source.op == "list" else None
+            if upper == 0:
+                return Fact(Interval(0, 0), sources=source_fact.sources)
+            element = Fact(Interval()) if source.typ.args[0] == INT else _UNKNOWN
+            scope = {**env, node.data["past"]: element, node.data["current"]: element}
+            test = self.expr(predicate, scope, site + ".1")
+            if test.boolean is False:
+                upper = 0
+            lower = upper if upper is not None and test.boolean is True else 0
+            return Fact(Interval(lower, upper), sources=source_fact.sources | test.sources,
+                        conditional=test.conditional)
         if op == "summarize":
             return self.summarize(node, env, site)
         if op == "conditional":

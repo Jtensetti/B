@@ -71,3 +71,9 @@ B 0.8 adds an optional `constant_precondition_proved` marker to a native call in
 ## Collection expressions in B 0.16
 
 A `summarize` node has result type `Dict[Text,Int]`. Operand zero is the input list. Each ordered entry in `value.fields` contains the output name, reducer, value operand index, guard operand index and empty default. An unused slot is null. `value.binder` names the local element shared by the fields. A backend must evaluate the source once, visit each element in order and evaluate guarded values only on matching elements. Item membership is fixed at the start of the traversal. Updates to objects inside the list can still be visible to following field expressions. A backend can read the list length for an unconditional count. A `lookup` node holds a dictionary and a text key as operands and returns an optional value.
+
+## Ordered counts in B 0.17
+
+`history_count` returns `Int`. Its operands are the list source and the typed pair predicate. Its data contains the source names for the historical and current binders, the match mode and the selected plan. `past_side` identifies which projected operand uses the historical binder in specialized plans. For prefix extrema, `comparison` gives the operator when comparing the retained past value on the left against the current threshold. The optimizer determines the plan again after simplifying the predicate. Raw and optimized BIR thus describe their own executable operands.
+
+For a strict prefix with integer projections, an earlier value exceeds a threshold exactly when the maximum of that nonempty prefix exceeds it. An empty prefix yields no match. Testing before extending the prefix keeps the current event out of its own history. A [separate induction argument and translation check](../experiments/ordered-history/loop-proof.md) cover the emitted loop for one Boolean adjacent-pair program.

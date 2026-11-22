@@ -2,9 +2,20 @@
 
 **B is an experimental programming language designed for programs written by AI.** A model can express a calculation in typed B source, reuse existing Python, .NET and Node.js libraries, and let the compiler check and execute the result. The research goal is working software in fewer attempts at lower total cost.
 
-**Version 0.16 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.17 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Count events that depend on history
+
+```bee
+fn late_pairs(offsets: List[Int]) -> Int pure ensures result >= 0 =
+    count adjacent past, now in offsets where past > 0 and now > 0
+
+print late_pairs([7, 4, 3, 0, 9])
+```
+
+This prints `2`. Three consecutive late ticks form two adjacent pairs. The compiler remembers one Boolean between ticks. Writing `count earlier` makes every earlier position eligible as a witness. Each current position contributes at most one. For example, to count overlapping subtitle cues with ordered starts, B can compare the current start with the largest preceding end time. The [subtitle example](experiments/ordered-history/patterns.bee) also accepts unsorted data and returns `none` for missing endpoints or nonpositive durations through its `overlap_count` entry point. [Language semantics](docs/language.md#ordered-counts) · [Results and limits](experiments/ordered-history/README.md).
 
 ## Compute several results in one traversal
 
@@ -227,7 +238,7 @@ This limitation matters more than adding new punctuation or another file extensi
 
 | Layer | Working today | Not yet provided |
 | --- | --- | --- |
-| B language | Own grammar, immutable names, typed functions, conditions, ordered decision tables, named list reductions, optional dictionary lookups, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | General loops, records, pattern matching, user generics |
+| B language | Own grammar, immutable names, typed functions, conditions, ordered decision tables, named list reductions, ordered counts, optional dictionary lookups, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | General loops, records, pattern matching, user generics |
 | BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
 | Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
 | Node.js libraries | Typed POSIX path and semver functions, plus explicit declarations for synchronous named npm exports | Automatic TypeScript signature discovery, promises, callbacks and object handles |

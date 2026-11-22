@@ -1,0 +1,23 @@
+fn late_pairs(offsets: List[Int]) -> Int pure =
+    count adjacent p, q in offsets where p > 0 and q > 0
+
+fn overlaps_sorted(cues: List[Dict[Text,Int]]) -> Int pure =
+    count earlier p, q in cues where (p["end"] ?? 0) > (q["start"] ?? 0)
+
+fn overlaps_neighbors(cues: List[Dict[Text,Int]]) -> Int pure =
+    count adjacent p, q in cues where (p["end"] ?? 0) > (q["start"] ?? 0)
+
+fn overlaps_any_order(cues: List[Dict[Text,Int]]) -> Int pure =
+    count earlier p, q in cues where (p["start"] ?? 0) < (q["end"] ?? 0) and (q["start"] ?? 0) < (p["end"] ?? 0)
+
+fn invalid(cue: Dict[Text,Int]) -> Bool pure =
+    cue["start"] == none or cue["end"] == none or (cue["end"] ?? 0) <= (cue["start"] ?? 0)
+
+fn valid_cues(cues: List[Dict[Text,Int]]) -> Bool pure =
+    (summarize cue in cues { invalid: count where invalid(cue) }) == {"invalid": 0}
+
+fn start_reversals(cues: List[Dict[Text,Int]]) -> Int pure =
+    count adjacent p, q in cues where (p["start"] ?? 0) > (q["start"] ?? 0)
+
+fn overlap_count(cues: List[Dict[Text,Int]]) -> Option[Int] pure =
+    if not valid_cues(cues) then none else if start_reversals(cues) == 0 then overlaps_sorted(cues) else overlaps_any_order(cues)
