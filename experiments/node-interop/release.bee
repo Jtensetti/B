@@ -1,0 +1,7 @@
+# Choose the newest compatible stable release and its destination.
+use js:semver as versions
+use js:"node:path/posix" as path
+
+let available = ["0.2.9", "0.3.0", "0.2.11-rc.1", "0.2.10"]
+let selected: Option[Text] = versions.maxSatisfying(available, "^0.2.0")
+print path.join("dist", selected ?? "no-compatible-release")

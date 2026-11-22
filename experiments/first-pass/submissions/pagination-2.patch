@@ -1,0 +1,7 @@
+--- a/program.bee
++++ b/program.bee
+@@ -1,2 +1,2 @@
+-fn start(row: Int, compact: Int) -> Int pure requires row >= 0 and row <= 9 and compact >= 0 and compact <= 1 = row * 4
+-fn stop(row: Int, compact: Int) -> Int pure requires row >= 0 and row <= 9 and compact >= 0 and compact <= 1 = row * 4 + 4
++fn start(row: Int, compact: Int) -> Int pure requires row >= 0 and row <= 9 and compact >= 0 and compact <= 1 = if compact == 0 then row * 4 else 3 * row - row % 2 + (if row < 2 then 1 else if row < 5 then 2 else 4)
++fn stop(row: Int, compact: Int) -> Int pure requires row >= 0 and row <= 9 and compact >= 0 and compact <= 1 = if compact == 0 then row * 4 + 4 else 3 * row + row % 2 + 2 + (if row < 2 then 1 else if row < 5 then 2 else 4)

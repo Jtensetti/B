@@ -62,6 +62,10 @@ class ToModel(Transformer):
     def comparison(self, xs): return Expr("cmp", (xs[0], str(xs[1]), xs[2]))
     def foreign_stmt(self, xs): return Stmt("foreign", (xs[0], xs[1] or [], xs[2]))
     def use_stmt(self, xs): return Stmt("use", (str(xs[0]), xs[1], str(xs[2])))
+    def js_use(self, xs): return Stmt("use", ("js", xs[0], str(xs[1])))
+    def js_string_use(self, xs):
+        import json
+        return Stmt("use", ("js", json.loads(str(xs[0])), str(xs[1])))
     def adopt_stmt(self, xs): return Stmt("adopt", (str(xs[0]), str(xs[1])))
     def let_stmt(self, xs): return Stmt("let", (str(xs[0]), xs[1], xs[2]))
     def fn_stmt(self, xs):

@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.12 first-pass changes and library reuse
+
+[Independent AI editing tasks](../experiments/first-pass/README.md) count submitted patches until behavior passes. [Two-call requirements](../experiments/joint-design/README.md) compare B with a shared parameter, a whole-layout oracle and typed Python. [Node interoperability](../experiments/node-interop/README.md) exercises actual package exports and boundary failures.
+
 ## B 0.11 contract questions
 
 The [matched B/Python/plain-language experiment](../experiments/intent-pilot/README.md) scores later edits against an independent scripted owner. Separate comparisons examine [questions about one edit](../experiments/edit-questions/README.md), [exact and greedy interview depth](../experiments/intent-limits/README.md) and [requirements that relate outputs of different calls](../experiments/layout-coherence/README.md).

@@ -1,0 +1,4 @@
+# Negative means the first release comes first in descending version order.
+use js:semver as versions
+foreign versions.rcompare(Text, Text) -> Int
+print versions.rcompare("0.2.10", "0.2.9")

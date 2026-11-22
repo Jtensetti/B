@@ -3,10 +3,8 @@ import json
 import sys
 from pathlib import Path
 
+from .request_json import MAX_REQUEST_BYTES, decode
 from .types import BError
-
-
-MAX_REQUEST_BYTES = 64 * 1024
 
 
 def add_command(sub):
@@ -19,20 +17,6 @@ def add_command(sub):
     command.add_argument("--strategy", choices=("balanced", "minimax"),
                          help="Question strategy for identifying a policy")
     command.add_argument("--json", action="store_true", help="Emit the full finite-domain report")
-
-
-def _json(text):
-    def object_from_pairs(pairs):
-        obj = {}
-        for key, value in pairs:
-            if key in obj:
-                raise BError("E_CLARIFY_INPUT", f"Duplicate JSON key {key!r}")
-            obj[key] = value
-        return obj
-    try:
-        return json.loads(text, object_pairs_hook=object_from_pairs)
-    except (ValueError, RecursionError) as exc:
-        raise BError("E_CLARIFY_INPUT", f"Invalid JSON: {exc}") from exc
 
 
 def _fields(value, required, optional=()):
@@ -49,7 +33,7 @@ def load_request(path, extra_answers):
         raw = stream.read(MAX_REQUEST_BYTES + 1)
     if len(raw) + sum(len(a.encode("utf-8")) for a in extra_answers) > MAX_REQUEST_BYTES:
         raise BError("E_CLARIFY_LIMIT", f"Request and responses exceed {MAX_REQUEST_BYTES} bytes")
-    request = _json(raw)
+    request = decode(raw, "E_CLARIFY_INPUT")
     _fields(request, ("function", "candidates", "axes", "outputs"), ("answers",))
     if not isinstance(request["function"], str) or not request["function"].isidentifier():
         raise BError("E_CLARIFY_INPUT", "Expected a B function name")
@@ -57,7 +41,7 @@ def load_request(path, extra_answers):
     if not isinstance(responses, list):
         raise BError("E_CLARIFY_INPUT", "Expected answers to be an array of objects")
     answers = []
-    for record in [*responses, *(_json(text) for text in extra_answers)]:
+    for record in [*responses, *(decode(text, "E_CLARIFY_INPUT") for text in extra_answers)]:
         _fields(record, ("inputs", "result", "allowed"))
         answers.append((record["inputs"], record["result"], record["allowed"]))
     return request, answers

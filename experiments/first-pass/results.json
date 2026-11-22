@@ -1,0 +1,242 @@
+[
+  {
+    "task": "pagination",
+    "provider": "B",
+    "replicate": 1,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "pagination-1.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 51,
+        "cases": 51
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 4533,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 2645,
+        "feedback_sha256": "c5195f335af51e8ef99fc7f5347792493bab2704c797a886e0a138770230ebf3"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1888,
+        "feedback_sha256": "5f1ac2dce4fd6d2a2812e32dcd9c752f45e1ebead811316922a77205751e716e"
+      }
+    ]
+  },
+  {
+    "task": "pagination",
+    "provider": "Python",
+    "replicate": 1,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "pagination-2.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 51,
+        "cases": 51
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 2604,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 1472,
+        "feedback_sha256": "645bb7b3d2d839875008a692c2d20846bf47ca7a418cc6602ac9f1708b84bcdf"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1132,
+        "feedback_sha256": "d577c599fcaedd1db67f26abb19bf89e1cb2c84b70bed0aeab6bb4c2f1c0b01c"
+      }
+    ]
+  },
+  {
+    "task": "presses",
+    "provider": "Python",
+    "replicate": 1,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "presses-1.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 339,
+        "cases": 339
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 2317,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 1286,
+        "feedback_sha256": "7c9e761380fbb86db24db16581388a131226182a7a8f5bd1ea42df3a7b6fe185"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1031,
+        "feedback_sha256": "beb355fa59c7acf27f9f035c6927070c4210ff707faeb1c490af6a543eefe5c4"
+      }
+    ]
+  },
+  {
+    "task": "presses",
+    "provider": "B",
+    "replicate": 1,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "presses-2.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 339,
+        "cases": 339
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 3867,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 2206,
+        "feedback_sha256": "a661b05df4f66ef7985eebcebf2fc50a778c93aac3490d9515877f0ff1574d5b"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1661,
+        "feedback_sha256": "bdc74ddecd055bfcc0b095442dec170f69d1f1d1a93fd5719fdb2246411b8d40"
+      }
+    ]
+  },
+  {
+    "task": "presses",
+    "provider": "B",
+    "replicate": 2,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "presses-3.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 339,
+        "cases": 339
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 3867,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 2206,
+        "feedback_sha256": "a661b05df4f66ef7985eebcebf2fc50a778c93aac3490d9515877f0ff1574d5b"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1661,
+        "feedback_sha256": "bdc74ddecd055bfcc0b095442dec170f69d1f1d1a93fd5719fdb2246411b8d40"
+      }
+    ]
+  },
+  {
+    "task": "presses",
+    "provider": "Python",
+    "replicate": 2,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "presses-4.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 339,
+        "cases": 339
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 2317,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 1286,
+        "feedback_sha256": "7c9e761380fbb86db24db16581388a131226182a7a8f5bd1ea42df3a7b6fe185"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1031,
+        "feedback_sha256": "beb355fa59c7acf27f9f035c6927070c4210ff707faeb1c490af6a543eefe5c4"
+      }
+    ]
+  },
+  {
+    "task": "pagination",
+    "provider": "Python",
+    "replicate": 2,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "pagination-3.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 51,
+        "cases": 51
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 2604,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 1472,
+        "feedback_sha256": "645bb7b3d2d839875008a692c2d20846bf47ca7a418cc6602ac9f1708b84bcdf"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1132,
+        "feedback_sha256": "d577c599fcaedd1db67f26abb19bf89e1cb2c84b70bed0aeab6bb4c2f1c0b01c"
+      }
+    ]
+  },
+  {
+    "task": "pagination",
+    "provider": "B",
+    "replicate": 2,
+    "first_accepted_submission": 1,
+    "final_accepted": true,
+    "submissions": [
+      {
+        "patch": "pagination-1.patch",
+        "accepted": true,
+        "api_ok": true,
+        "passed": 51,
+        "cases": 51
+      }
+    ],
+    "instrument_calls": 2,
+    "feedback_bytes": 4533,
+    "events": [
+      {
+        "instrument": "inspect",
+        "feedback_bytes": 2645,
+        "feedback_sha256": "c5195f335af51e8ef99fc7f5347792493bab2704c797a886e0a138770230ebf3"
+      },
+      {
+        "instrument": "submit",
+        "feedback_bytes": 1888,
+        "feedback_sha256": "5f1ac2dce4fd6d2a2812e32dcd9c752f45e1ebead811316922a77205751e716e"
+      }
+    ]
+  }
+]

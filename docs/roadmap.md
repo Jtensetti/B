@@ -2,6 +2,12 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## B 0.12
+
+Prioritize the fraction of tasks solved by the first submitted implementation, followed by attempts until independent acceptance. Include unsolved tasks, regressions and changes to existing behavior in the score. Also measure tool calls, inference cost and time where available. A single expensive submission can still lose to two inexpensive attempts.
+
+B can now [reuse synchronous JavaScript exports](interop.md) and [check relationships across native calls](joint-checks.md). The [first-pass pilot](../experiments/first-pass/README.md) compares B feedback with ordinary typed Python property checks on the same B submissions. Both feedback methods reached first-pass acceptance in all four of their runs. The [construction comparison](../experiments/joint-design/README.md) tests when a shared style parameter eliminates the failure before either checker is needed. For future adapters, choose a held-out task and library where the current runtimes force a reimplementation or repeated boundary repairs.
+
 ## B 0.11
 
 [Contract clarification](contract-questions.md) can distinguish supplied policies or ask only about the outputs of a pending edit. On the [paired comparison](../experiments/intent-pilot/README.md), typed Python and plain-language questions matched B. On the [complete three-row layout problem](../experiments/layout-coherence/README.md), single-return contracts cannot distinguish an independently adjustable layout from one that requires a consistent style.

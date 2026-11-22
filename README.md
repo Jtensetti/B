@@ -1,10 +1,30 @@
 # B
 
-**B is an experimental, independently parsed and type-checked programming language for composing existing ecosystems.** Its primary goal is to reduce unnecessary implementation work without pretending that an imported library is automatically correct.
+**B is an experimental programming language for AI-assisted changes.** Its primary goal is to reach working behavior on the first submitted implementation, and to reduce repair attempts when that fails. Programs can reuse libraries from Python, .NET and Node.js. An independent behavior check determines whether a submitted change actually works.
 
-**Version 0.11 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
+**Version 0.12 (research prototype).** Preferred source suffix: `.bee`; `.b4`, `.bsrc` and `.b` are supported aliases. B is unrelated to the historical Bell Labs B language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Use an existing npm function
+
+```bee
+use js:semver as versions
+let chosen: Option[Text] = versions.maxSatisfying(["0.2.9", "0.2.10", "0.3.0"], "^0.2.0")
+print chosen ?? "no compatible release"
+```
+
+B knows the signature of this semver 7 function. With Node and the package installed it prints `0.2.10`. Other packages can expose synchronous named exports through a typed declaration. The [examples](experiments/node-interop/README.md) include release selection, spelling suggestions and a program that passes values through three runtimes.
+
+```sh
+npm ci --prefix experiments/node-interop --ignore-scripts --no-audit --no-fund
+b run experiments/node-interop/release.bee
+b run experiments/node-interop/spelling.bee
+```
+
+## Catch a bad interaction in one check
+
+`b check examples/intent/compact.bee --joint examples/intent/uniform.json` shows two individually legal rows that cannot share a screen under a uniform style. One command can check several relationships and give a concrete failing pair for each. In two maintenance tasks all eight AI submissions passed the independent oracle on the first try, four with B feedback and four with typed Python property feedback. [Joint checks](docs/joint-checks.md) · [Independent AI editing pilot](experiments/first-pass/README.md).
 
 ## Ask which requirement matters to an edit
 
@@ -98,9 +118,10 @@ A real, **typed backend-neutral intermediate representation (BIR)** sits between
       |
   Python AST backend --> CPython / real Python packages
                         --> explicit typed .NET bridge
+                        --> Node worker for synchronous JavaScript exports
 ```
 
-The Python backend **consumes BIR**, not the source language's syntax tree. BIR is JSON-inspectable; it can preserve a referenced Python or .NET function's assumed signature, backend and provenance. This makes another backend possible in principle, but **only the Python lowering backend is implemented**.
+The Python backend **consumes BIR**, not the source language's syntax tree. BIR is JSON-inspectable; it can preserve a referenced Python, .NET or JavaScript function's assumed signature, backend and provenance. This makes another backend possible in principle, but **only the Python lowering backend is implemented**.
 
 BIR optimization folds supported pure literals without evaluating foreign functions or removing runtime type guards.
 
@@ -121,7 +142,7 @@ This is B source, not a Python program. The `statistics.mean` function runs in C
 
 ## Install and run
 
-Requires Python 3.11+. Running the .NET example also requires the .NET 10 SDK.
+Requires Python 3.11+. The .NET example requires the .NET 10 SDK. The JavaScript examples use Node.js (CI uses Node 22) and any packages imported by the program.
 
 ```sh
 python -m pip install -e '.[dev]'
@@ -163,6 +184,7 @@ This limitation matters more than adding new punctuation or another file extensi
 | B language | Own grammar, immutable names, typed functions, conditions, collections, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | Loops, records, pattern matching, user generics |
 | BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
 | Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
+| Node.js libraries | Typed POSIX path and semver functions, plus explicit declarations for synchronous named npm exports | Automatic TypeScript signature discovery, promises, callbacks and object handles |
 | .NET libraries | Restricted `System.Math` and `Regex` host, metadata verified in CI | Arbitrary assemblies, object models, reflection-based adapters |
 | Correctness | Static types/errors, integer bounds, conditional guarantees, affine equalities, revision comparison, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
 | AI advantage | Explicit machine-readable IR and diagnostics | Any measured improvement in AI's correctness or tokens |

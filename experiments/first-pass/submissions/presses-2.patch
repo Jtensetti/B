@@ -1,0 +1,11 @@
+--- a/program.bee
++++ b/program.bee
+@@ -1,2 +1,6 @@
+-fn fast(total: Int, quota: Int, rush: Int) -> Int pure requires total >= 0 and total <= 8 and quota >= 0 and quota <= 8 and rush >= 0 and rush <= 1 = if quota < total then quota else total
+-fn slow(total: Int, quota: Int, rush: Int) -> Int pure requires total >= 0 and total <= 8 and quota >= 0 and quota <= 8 and rush >= 0 and rush <= 1 = total - fast(total, quota, rush)
++fn available(total: Int, rush: Int) -> Int pure = if rush == 1 and total >= 4 then total - 1 else total
++fn fast_limit(copies: Int, rush: Int) -> Int pure = if rush == 1 and copies >= 2 then copies - 1 else copies
++fn fast_request(copies: Int, quota: Int, rush: Int) -> Int pure = if rush == 1 and copies >= 3 and quota > 0 then quota + 1 else quota
++fn smaller(a: Int, b: Int) -> Int pure = if a < b then a else b
++fn fast(total: Int, quota: Int, rush: Int) -> Int pure requires total >= 0 and total <= 8 and quota >= 0 and quota <= 8 and rush >= 0 and rush <= 1 = smaller(fast_request(available(total, rush), quota, rush), fast_limit(available(total, rush), rush))
++fn slow(total: Int, quota: Int, rush: Int) -> Int pure requires total >= 0 and total <= 8 and quota >= 0 and quota <= 8 and rush >= 0 and rush <= 1 = available(total, rush) - fast(total, quota, rush)

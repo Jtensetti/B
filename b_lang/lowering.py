@@ -77,10 +77,11 @@ class PythonLowerer:
 
     def statement(self, s: StmtIR) -> ast.stmt:
         if s.op == "import":
-            if s.backend not in ("py", "net") or not s.target or not s.name:
+            if s.backend not in ("py", "net", "js") or not s.target or not s.name:
                 raise BError("E_INTERNAL", "Invalid import BIR")
+            adapter = {"py": "_b_py", "net": "_b_net", "js": "_b_js_module"}[s.backend]
             return ast.Assign(targets=[ast.Name(id=_python_name(s.name), ctx=ast.Store())], value=ast.Call(
-                func=ast.Name(id="_b_py" if s.backend == "py" else "_b_net", ctx=ast.Load()),
+                func=ast.Name(id=adapter, ctx=ast.Load()),
                 args=[ast.Constant(s.target)], keywords=[]))
         if s.op in ("foreign", "permit"):
             return ast.Pass()
@@ -141,5 +142,20 @@ class PythonLowerer:
             ast.alias(name="BAssertionError", asname="_b_assertion_error"),
             ast.alias(name="BContractError", asname="_b_contract_error"),
         ], level=0)]
+        if any(s.op == "import" and s.backend == "js" for s in program.statements):
+            signatures = []
+            for symbol in program.foreign_symbols:
+                if symbol.backend == "js":
+                    target, member = symbol.path[3:].rsplit(".", 1)
+                    signature = symbol.binding
+                    signatures.append((target, member, tuple(map(str, signature.params)), str(signature.result)))
+            body.append(ast.Assign(targets=[ast.Name(id="_b_js_signatures", ctx=ast.Store())],
+                                   value=ast.Constant(tuple(signatures))))
+            setup = ast.parse(
+                "from b_lang.jsruntime import NodeSession as _b_NodeSession\n"
+                "_b_js_session = _b_NodeSession(globals().get('__file__'), _b_js_signatures)\n"
+                "_b_js_module = _b_js_session.module"
+            ).body
+            body.extend(setup)
         body.extend(self.statement(s) for s in program.statements)
         return ast.fix_missing_locations(ast.Module(body=body, type_ignores=[]))

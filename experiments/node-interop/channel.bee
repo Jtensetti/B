@@ -1,0 +1,12 @@
+# Pick an eligible stable-channel release from an encoded artifact path.
+use py:urllib.parse as urls
+foreign urls.unquote(Text) -> Text
+use net:System.Text.RegularExpressions.Regex as channels
+use js:"node:path/posix" as path
+use js:semver as versions
+
+fn allowed(decoded: Text) -> Bool = channels.IsMatch(decoded, "^stable/[a-z0-9-]+/[^/]+$") and versions.satisfies(path.basename(decoded), "^1.4.0")
+fn eligible(raw: Text) -> Bool = allowed(urls.unquote(raw))
+print eligible("stable/editor/1%2E4%2E3")
+print eligible("preview/editor/1%2E4%2E3")
+print eligible("stable/editor/2%2E0%2E0")
