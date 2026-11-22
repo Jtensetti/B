@@ -1,0 +1,146 @@
+[
+  {
+    "run": "wren",
+    "task": "routing",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "routing-1.bee",
+        "notation_used": "table",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 44,
+        "independent_cases": 44,
+        "source_bytes": 255
+      }
+    ]
+  },
+  {
+    "run": "spruce",
+    "task": "sampler",
+    "starter": "table",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "sampler-1.bee",
+        "notation_used": "arithmetic",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 79,
+        "independent_cases": 79,
+        "source_bytes": 253
+      }
+    ]
+  },
+  {
+    "run": "dune",
+    "task": "routing",
+    "starter": "table",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "routing-2.bee",
+        "notation_used": "table",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 44,
+        "independent_cases": 44,
+        "source_bytes": 277
+      }
+    ]
+  },
+  {
+    "run": "flint",
+    "task": "sampler",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "sampler-1.bee",
+        "notation_used": "arithmetic",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 79,
+        "independent_cases": 79,
+        "source_bytes": 253
+      }
+    ]
+  },
+  {
+    "run": "fern",
+    "task": "sampler",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "sampler-1.bee",
+        "notation_used": "arithmetic",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 79,
+        "independent_cases": 79,
+        "source_bytes": 253
+      }
+    ]
+  },
+  {
+    "run": "opal",
+    "task": "routing",
+    "starter": "table",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "routing-3.bee",
+        "notation_used": "table",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 44,
+        "independent_cases": 44,
+        "source_bytes": 278
+      }
+    ]
+  },
+  {
+    "run": "kite",
+    "task": "sampler",
+    "starter": "table",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "sampler-1.bee",
+        "notation_used": "arithmetic",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 79,
+        "independent_cases": 79,
+        "source_bytes": 253
+      }
+    ]
+  },
+  {
+    "run": "ash",
+    "task": "routing",
+    "starter": "conditional",
+    "submit_calls": 1,
+    "first_accepted_submission": 1,
+    "attempts": [
+      {
+        "source": "routing-1.bee",
+        "notation_used": "table",
+        "public_passed": 4,
+        "independent_accepted": true,
+        "independent_passed": 44,
+        "independent_cases": 44,
+        "source_bytes": 255
+      }
+    ]
+  }
+]

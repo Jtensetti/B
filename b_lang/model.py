@@ -2,7 +2,8 @@
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
-from lark import Lark, Transformer, Token
+from lark import Lark, Transformer
+from lark.exceptions import LarkError, UnexpectedToken, VisitError
 from importlib import resources
 
 @dataclass(frozen=True)
@@ -49,6 +50,23 @@ class ToModel(Transformer):
         for kind, val in xs[1:]: base = Expr(kind, (base, val))
         return base
     def conditional(self, xs): return Expr("conditional", tuple(xs))
+    def case_row(self, xs):
+        operator, threshold, value = xs
+        return str(operator), threshold, value
+
+    def case_table(self, xs):
+        _, name, *rows, fallback = xs
+        # These spellings start a literal, operator or conditional where the
+        # equivalent ordinary comparison must read a variable.
+        if name in {"true", "false", "none", "if", "not"}:
+            raise LarkError(f"Decision table pivot '{name}' must be usable as an ordinary variable "
+                            f"at line {name.line}, column {name.column}")
+        pivot = Expr("name", (str(name),))
+        for operator, threshold, value in reversed(rows):
+            test = Expr("cmp", (pivot, operator, threshold))
+            fallback = Expr("conditional", (test, value, fallback))
+        return fallback
+
     def coalesce(self, xs): return Expr("coalesce", tuple(xs))
     def not_op(self, xs): return Expr("not", (xs[0],))
     def neg(self, xs): return Expr("neg", (xs[0],))
@@ -78,4 +96,20 @@ class ToModel(Transformer):
 _PARSER = Lark(resources.files("b_lang").joinpath("syntax.lark").read_text(), parser="lalr", maybe_placeholders=True)
 
 def parse(source: str) -> list[Stmt]:
-    return ToModel().transform(_PARSER.parse(source + ("\n" if source and not source.endswith("\n") else "")))
+    try:
+        tree = _PARSER.parse(source + ("\n" if source and not source.endswith("\n") else ""))
+    except UnexpectedToken as error:
+        # At the end of a comparison row the grammar expects a separator.
+        # After the separator it expects the next comparison or the fallback.
+        if error.token.type == "RBRACE" and (
+            "_ROW_SEMI" in error.accepts or {"COMP", "ELSE"} <= error.accepts
+        ):
+            raise LarkError(f"Expected a final 'else => result' row before '}}' "
+                            f"at line {error.line}, column {error.column}") from error
+        raise
+    try:
+        return ToModel().transform(tree)
+    except VisitError as error:
+        if isinstance(error.orig_exc, (LarkError, RecursionError)):
+            raise error.orig_exc from error
+        raise

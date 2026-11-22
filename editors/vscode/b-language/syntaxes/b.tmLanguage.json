@@ -5,12 +5,12 @@
   "patterns": [
     {"name": "comment.line.number-sign.bee", "match": "#.*$"},
     {"name": "string.quoted.double.bee", "begin": "\"", "end": "\"", "patterns": [{"name": "constant.character.escape.bee", "match": "\\\\(?:[\\\"\\\\/bfnrt]|u[0-9a-fA-F]{4})"}]},
-    {"name": "keyword.control.bee", "match": "\\b(?:if|then|else|and|or|not|assert)\\b"},
+    {"name": "keyword.control.bee", "match": "\\b(?:if|then|else|and|or|not|assert|cases(?=[ \\t]+[A-Za-z_][A-Za-z0-9_]*[ \\t]*\\{))\\b"},
     {"name": "keyword.declaration.bee", "match": "\\b(?:use|foreign|let|fn|as|print)\\b"},
     {"name": "support.type.bee", "match": "\\b(?:Int|Float|Bool|Text|Any|List|Option|Dict)\\b"},
     {"name": "constant.language.bee", "match": "\\b(?:true|false|none)\\b"},
     {"name": "constant.numeric.bee", "match": "\\b\\d+(?:\\.\\d+)?\\b"},
     {"name": "support.constant.bee", "match": "\\b(?:py|net)(?=:)"},
-    {"name": "keyword.operator.bee", "match": "(?:->|\\?\\?|==|!=|<=|>=|[+\\-*/%<>:=])"}
+    {"name": "keyword.operator.bee", "match": "(?:=>|->|\\?\\?|==|!=|<=|>=|[+\\-*/%<>:=])"}
   ]
 }

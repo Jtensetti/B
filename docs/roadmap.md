@@ -2,6 +2,10 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## B 0.13
+
+B accepts [ordered decision tables](registers.md) as another way to write conditional expressions. In the [register pilot](../experiments/register-pilot/README.md), solvers editing routing rules chose tables and solvers changing a pulse used arithmetic. Four later runs with the table disabled also passed on the first submission. A larger follow-up should use unseen sequences of edits where first submissions already vary in correctness. Randomly assign the available forms and give the groups the same edits and feedback. Count failed tasks and retained behavior alongside first-pass acceptance.
+
 ## B 0.12
 
 Prioritize the fraction of tasks solved by the first submitted implementation, followed by attempts until independent acceptance. Include unsolved tasks, regressions and changes to existing behavior in the score. Also measure tool calls, inference cost and time where available. A single expensive submission can still lose to two inexpensive attempts.

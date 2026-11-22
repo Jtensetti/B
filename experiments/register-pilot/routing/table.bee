@@ -1,0 +1,9 @@
+fn lane(code: Int) -> Int pure requires code >= -3 and code <= 35 = cases code {
+  < 0 => 9;
+  <= 5 => 1;
+  <= 12 => 2;
+  <= 22 => 3;
+  <= 30 => 5;
+  else => 6
+}
+fn tag(batch: Int) -> Int pure = 3 * batch + 1

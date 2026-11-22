@@ -1,0 +1,2 @@
+fn sample(frame: Int, gain: Int) -> Int pure requires frame >= 0 and frame <= 23 and gain >= 1 and gain <= 3 = if frame < 8 then frame * gain else if frame < 16 then (frame - 8) * gain else (frame - 16) * gain
+fn tag(frame: Int) -> Int pure = 2 * frame + 1

@@ -1,4 +1,4 @@
-"""B 0.12 compiler: parse -> typed BIR -> Python backend.
+"""B 0.13 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -575,7 +575,11 @@ class Compiler:
 
 
 def compile_b(source: str, strict: bool = False, *, conditional_guarantees: bool = True) -> Compiled:
-    result = Compiler().compile(source, conditional_guarantees=conditional_guarantees)
+    try:
+        result = Compiler().compile(source, conditional_guarantees=conditional_guarantees)
+    except RecursionError as exc:
+        raise BError("E_DEPTH", "Program exceeds the compiler's nesting capacity. "
+                     "Split deeply nested expressions or long decision tables into smaller functions.") from exc
     if strict and result.diagnostics:
         raise BError("E_STRICT", "Unresolved checks: " + "; ".join(d.code for d in result.diagnostics))
     return result
