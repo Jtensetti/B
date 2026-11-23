@@ -537,6 +537,12 @@ class _Checker:
             target = self._children(target, env, "A called value")
             return Expr(kind, (target, tuple(self.plain(a, env, "An argument to a foreign or computed call")
                                              for a in arguments))), ()
+        if kind == "each":
+            shape, key, value, binders, source, condition = parts
+            inner = {k: v for k, v in env.items() if k not in binders}
+            plain = lambda node, label: None if node is None else self.plain(node, inner, label)
+            return Expr(kind, (shape, plain(key, "A key"), plain(value, "An item of a new collection"), binders,
+                               plain(source, "A collection"), plain(condition, "where"))), ()
         if kind in ("summarize", "history_count"):
             return node, ()  # binders range over plain list elements; quantities cannot enter lists
         return self._children(node, env, f"A value inside {kind}"), ()

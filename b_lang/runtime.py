@@ -21,6 +21,15 @@ class BExampleError(AssertionError):
     """A stated example of an imported function no longer holds."""
     pass
 
+def text(value) -> str:
+    """B's spelling of a scalar: true/false in lower case, as B source writes them."""
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    return str(value)
+
+
 class BContractError(AssertionError):
     """A B function requires/ensures condition failed at execution."""
     pass
@@ -71,6 +80,16 @@ def _guard_type(value: Any, typ: Type) -> Any:
                     raise _type_mismatch(item, element_type)
             return snapshot
         return [_guard_type(item, element_type) for item in value]
+    if typ.name == "Record":
+        if type(value) is not dict:
+            raise _type_mismatch(value, typ)
+        snapshot = {}
+        for field in typ.args:
+            if field.name in value:
+                snapshot[field.name] = _guard_type(value[field.name], field.args[0])
+            elif field.args[0].name != "Option":
+                raise BBoundaryError(f"Missing field {field.name} at boundary")
+        return snapshot  # fields B does not declare are not carried along
     if typ.name == "Dict":
         if type(value) is not dict:
             raise _type_mismatch(value, typ)

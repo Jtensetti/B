@@ -2,7 +2,7 @@
 
 **B is an experimental programming language in which the source is the owner's decisions.** Examples, rule extensions and protections are declarations. The compiler derives code from them, checks that every recorded decision still holds after a change, and asks for the one concrete input a set of decisions leaves open. B also has ordinary typed functions, contracts and adapters for Python, .NET and Node.js libraries. [The long-term goal and its milestones](docs/vision.md).
 
-**Version 0.24 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
+**Version 0.25 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
 

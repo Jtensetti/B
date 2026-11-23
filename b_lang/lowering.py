@@ -110,6 +110,25 @@ class PythonLowerer:
         finally:
             self._locals = surrounding
 
+    def _each(self, e: ExprIR) -> ast.expr:
+        source, *rest = e.operands
+        names = [_python_name(n) for n in e.data["binders"]]
+        iterable = self.expr(source)
+        if e.data["source"] == "Dict" and len(names) == 2:
+            iterable = ast.Call(func=ast.Attribute(value=iterable, attr="items", ctx=ast.Load()), args=[], keywords=[])
+        if len(names) == 2:
+            target = ast.Tuple(elts=[ast.Name(id=n, ctx=ast.Store()) for n in names], ctx=ast.Store())
+        else:
+            target = ast.Name(id=names[0], ctx=ast.Store())
+        with self._bind(names):
+            key = self.expr(rest.pop(0)) if e.data["shape"] == "dict" else None
+            value = self.expr(rest.pop(0))
+            conditions = [self.expr(rest.pop(0))] if e.data["condition"] else []
+        loop = [ast.comprehension(target=target, iter=iterable, ifs=conditions, is_async=0)]
+        if key is not None:
+            return ast.DictComp(key=key, value=value, generators=loop)
+        return ast.ListComp(elt=value, generators=loop)
+
     def _summarize(self, e: ExprIR) -> ast.Call:
         # Keep the traversal in its own helper so the call remains an expression
         # even inside a lazy branch. It receives the source and any captured locals.
@@ -271,6 +290,27 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return self._history_count(e)
         if op == "summarize":
             return self._summarize(e)
+        if op == "each":
+            return self._each(e)
+        if op == "core":
+            args = [self.expr(x) for x in children]
+            if data == "len":
+                return ast.Call(func=_load("_b_len"), args=args, keywords=[])
+            if data == "sorted":
+                return ast.Call(func=_load("_b_sorted"), args=args, keywords=[])
+            if data in ("keys", "values"):
+                view = ast.Call(func=ast.Attribute(value=args[0], attr=data, ctx=ast.Load()), args=[], keywords=[])
+                return ast.Call(func=_load("_b_list"), args=[view], keywords=[])
+            if data == "text":
+                return ast.Call(func=_load("_b_text"), args=args, keywords=[])
+            return ast.Call(func=ast.Attribute(value=args[1], attr="join", ctx=ast.Load()), args=[args[0]], keywords=[])
+        if op == "record":
+            return ast.Dict(keys=[ast.Constant(name) for name in data], values=[self.expr(x) for x in children])
+        if op == "field":
+            if e.typ.name == "Option":  # an optional field may be absent
+                get = ast.Attribute(value=self.expr(children[0]), attr="get", ctx=ast.Load())
+                return ast.Call(func=get, args=[ast.Constant(data)], keywords=[])
+            return ast.Subscript(value=self.expr(children[0]), slice=ast.Constant(data), ctx=ast.Load())
         if op == "lookup":
             dictionary, key = children
             get = ast.Attribute(value=self.expr(dictionary), attr="get", ctx=ast.Load())
@@ -398,6 +438,8 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="enumerate", asname="_b_enumerate"),
             ast.alias(name="range", asname="_b_range"),
             ast.alias(name="abs", asname="_b_abs"),
+            ast.alias(name="sorted", asname="_b_sorted"),
+            ast.alias(name="list", asname="_b_list"),
             ast.alias(name="repr", asname="_b_repr"),
         ], level=0)
         body = [builtins, ast.ImportFrom(module="b_lang.runtime", names=[
@@ -407,6 +449,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="BAssertionError", asname="_b_assertion_error"),
             ast.alias(name="BContractError", asname="_b_contract_error"),
             ast.alias(name="BExampleError", asname="_b_example_error"),
+            ast.alias(name="text", asname="_b_text"),
         ], level=0)]
         if any(s.op == "import" and s.backend == "js" for s in program.statements):
             signatures = []

@@ -1,4 +1,4 @@
-"""B 0.24 compiler: parse -> typed BIR -> Python backend.
+"""B 0.25 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -33,10 +33,20 @@ from .types import (
     Type, BError, INT, FLOAT, BOOL, TEXT, NONE, ANY, MODULE,
     ATTRIBUTES, Signature, Overloads, Binding, assignable,
     from_syntax, unify, needs_dynamic_guard, needs_numeric_widening, option, supports_ordering,
+    record_fields, record_type, KNOWN,
 )
 
 NOT_CONST = object()
 NUMERIC = (INT, FLOAT)
+CORE_WORDS = frozenset({"len", "sorted", "keys", "values", "text", "join"})
+
+
+def _record_label(typ: Type) -> str:
+    from .types import RECORDS
+    for name, known in RECORDS.items():
+        if known == typ:
+            return name
+    return "this record"
 OPS = {"add": operator.add, "sub": operator.sub, "mul": operator.mul,
        "div": operator.truediv, "mod": operator.mod}
 CMP = {"==": operator.eq, "!=": operator.ne, "<": operator.lt,
@@ -211,6 +221,74 @@ class Compiler:
             elements[name] = Symbol(collection.type.args[0])
         return collection, elements
 
+    def _core_word(self, word: str, args: list[Value]) -> Value:
+        """A few words almost every program needs, typed generically, run by Python's builtins."""
+        arity = {"join": 2}.get(word, 1)
+        if len(args) != arity:
+            raise BError("E_ARITY", f"{word} takes {arity} argument{'s' if arity > 1 else ''}, got {len(args)}")
+        first = args[0]
+        kind = first.type.name
+        if word == "len":
+            if kind not in ("List", "Dict") and first.type != TEXT:
+                raise BError("E_TYPE", f"len needs a List, Dict or Text, got {first.type}")
+            result = INT
+        elif word == "sorted":
+            if kind != "List" or not supports_ordering(first.type.args[0]):
+                raise BError("E_TYPE", f"sorted needs a List of Int, Float or Text, got {first.type}")
+            result = first.type
+        elif word in ("keys", "values"):
+            if kind != "Dict":
+                raise BError("E_TYPE", f"{word} needs a Dict[Text, T], got {first.type}")
+            result = Type("List", (TEXT,)) if word == "keys" else Type("List", (first.type.args[1],))
+        elif word == "text":
+            if first.type not in (INT, FLOAT, TEXT, BOOL):
+                raise BError("E_TYPE", f"text needs an Int, Float, Text or Bool, got {first.type}")
+            result = TEXT
+        else:  # join
+            if first.type != Type("List", (TEXT,)) or args[1].type != TEXT:
+                raise BError("E_TYPE", "join needs a List[Text] and a Text separator")
+            result = TEXT
+        return self.val(result, "core", *(a.node for a in args), data=word)
+
+    def _each(self, ex: Expr, scope: dict[str, Symbol]) -> Value:
+        """[value for x in xs where c] and {key: value for k, v in d where c}."""
+        shape, raw_key, raw_value, binders, source, raw_condition = ex.parts
+        collection = self.infer(source, scope)
+        kind = collection.type.name
+        if kind == "List":
+            if len(binders) != 1:
+                raise BError("E_TYPE", "A list gives one name per item: for x in xs")
+            types = [collection.type.args[0]]
+        elif kind == "Dict":
+            types = [TEXT, collection.type.args[1]][:len(binders)]
+        elif collection.type == ANY:
+            types = [ANY] * len(binders)
+            self.warn("W_DYNAMIC_TYPE", "A collection from an untyped boundary is checked at runtime")
+        else:
+            raise BError("E_TYPE", f"for needs a List[T] or Dict[Text, T], got {collection.type}")
+        if len(set(binders)) != len(binders):
+            raise BError("E_NAME", "for needs two different names")
+        elements = scope.copy()
+        for name, typ in zip(binders, types):
+            if name in elements or name.startswith("_b_") or name in {"true", "false", "none", "if", "not"}:
+                raise BError("E_NAME", f"for cannot bind {name}: name is already in scope or reserved")
+            elements[name] = Symbol(typ)
+        operands = [collection.node]
+        if raw_key is not None:
+            key = self.infer(raw_key, elements)
+            self._check_type(key, TEXT, "dictionary key")
+            operands.append(key.node)
+        value = self.infer(raw_value, elements)
+        operands.append(value.node)
+        if raw_condition is not None:
+            condition = self.infer(raw_condition, elements)
+            self._check_type(condition, BOOL, "where")
+            operands.append(condition.node)
+        result = Type("List", (value.type,)) if shape == "list" else Type("Dict", (TEXT, value.type))
+        return self.val(result, "each", *operands,
+                        data={"shape": shape, "binders": binders, "source": kind,
+                              "condition": raw_condition is not None})
+
     def _summarize(self, ex: Expr, scope: dict[str, Symbol]) -> Value:
         binder, source, fields = ex.parts
         collection, elements = self._list_scope("summarize", source, scope, binder)
@@ -250,6 +328,8 @@ class Compiler:
                             data={"mode": mode, "past": past, "current": current, **plan})
         if kind == "summarize":
             return self._summarize(ex, symbols)
+        if kind == "each":
+            return self._each(ex, symbols)
         if kind == "lookup":
             dictionary = self.infer(p[0], symbols)
             if dictionary.type.name != "Dict":
@@ -340,9 +420,20 @@ class Compiler:
             flattened = [node for key, val in pairs
                          for node in (key.node, self._widen(val, value_type).node)]
             return self.val(Type("Dict", (TEXT, value_type)), "dict", *flattened)
+        if kind == "record":
+            fields = [(name, self.infer(value, symbols)) for name, value in p]
+            typ = record_type([(name, value.type) for name, value in fields])
+            return self.val(typ, "record", *(value.node for _, value in sorted(fields, key=lambda f: f[0])),
+                            data=tuple(sorted(name for name, _ in fields)))
         if kind == "attr":
             base, name = p
             bv = self.infer(base, symbols)
+            if bv.type.name == "Record":
+                fields = record_fields(bv.type)
+                if name not in fields:
+                    raise BError("E_TYPE", f"No field {name} in {_record_label(bv.type)}; "
+                                 f"fields: {', '.join(sorted(fields))}")
+                return self.val(fields[name], "field", bv.node, data=name)
             if bv.type not in (MODULE, ANY):
                 raise BError("E_TYPE", f"Cannot access attribute {name} on {bv.type}")
             path = self._foreign_path(ex, symbols)
@@ -361,6 +452,9 @@ class Compiler:
             if path and path.startswith("py:"):
                 self.warn("W_UNCHECKED_FOREIGN", f"Unspecified Python symbol {path}; no static signature available")
             return self.val(ANY, "attr", bv.node, data=name, foreign=path)
+        if kind == "invoke" and p[0].kind == "name" and p[0].parts[0] in CORE_WORDS \
+                and p[0].parts[0] not in symbols:
+            return self._core_word(p[0].parts[0], [self.infer(a, symbols) for a in p[1]])
         if kind == "invoke":
             target, raw_args = p
             tv = self.infer(target, symbols)
@@ -461,6 +555,11 @@ class Compiler:
         if node.op == "history_count":
             self._pure_captures(node.operands[0], locals_)
             self._pure_captures(node.operands[1], locals_ | {node.data["past"], node.data["current"]})
+            return
+        if node.op == "each":
+            self._pure_captures(node.operands[0], locals_)
+            for child in node.operands[1:]:
+                self._pure_captures(child, locals_ | set(node.data["binders"]))
             return
         if node.op == "summarize":
             self._pure_captures(node.operands[0], locals_)
@@ -666,6 +765,36 @@ class Compiler:
             parsed = parse(source)
         except LarkError as exc:
             raise BError("E_SYNTAX", str(exc)) from exc
+        from .types import RECORDS, record_type
+        RECORDS.clear()
+        declared = {}
+        for statement in parsed:
+            if statement.kind == "record":
+                name, fields = statement.parts
+                if name in declared or name in KNOWN or name in ("List", "Dict", "Option", "Record"):
+                    raise BError("E_TYPE", f"Type {name} is already defined")
+                declared[name] = fields
+
+        def resolve(name, visiting=()):
+            # Records are structural, so a record cannot contain itself.
+            if name in RECORDS:
+                return
+            if name in visiting:
+                raise BError("E_TYPE", f"Record {name} contains itself: " + " -> ".join((*visiting, name)))
+
+            def names(node):
+                yield node[0]
+                for child in node[1]:
+                    yield from names(child)
+
+            for _, field_type in declared[name]:
+                for used in names(field_type):
+                    if used in declared:
+                        resolve(used, (*visiting, name))
+            RECORDS[name] = record_type([(n, from_syntax(t)) for n, t in declared[name]])
+
+        for name in declared:
+            resolve(name)
         from .learn import expand
         parsed, self.learned = expand(parsed)
         from .library_examples import to_checks
@@ -674,7 +803,7 @@ class Compiler:
         for unit, provenance in sorted(BORROWED.items()):
             self.assumptions.append(f"unit {unit} from {provenance}: definition borrowed, not checked by B")
         self.additional_cases = additional_cases(parsed)
-        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know"))
+        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know", "record"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
         if self.permitted_effects is not None:
             denied = set(detected) - set(self.permitted_effects)

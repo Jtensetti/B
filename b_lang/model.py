@@ -57,6 +57,17 @@ class ToModel(Transformer):
     def none(self, _): return Expr("literal", (None,))
     def identifier(self, xs): return Expr("name", (str(xs[0]),))
     def grouped(self, xs): return xs[0]
+    def record_field(self, xs): return (str(xs[0]), xs[1])
+    def record_entry(self, xs): return (str(xs[0]), xs[1])
+    def record_stmt(self, xs): return Stmt("record", (str(xs[0]), tuple(xs[1:])))
+    def record_literal(self, xs): return Expr("record", tuple(xs))
+    def binders(self, xs): return tuple(str(x) for x in xs if x is not None)
+    def list_each(self, xs):
+        value, binders, source, condition = xs
+        return Expr("each", ("list", None, value, binders, source, condition))
+    def dict_each(self, xs):
+        key, value, binders, source, condition = xs
+        return Expr("each", ("dict", key, value, binders, source, condition))
     def list_literal(self, xs): return Expr("list", tuple(xs[0]) if xs and xs[0] is not None else ())
     def pair(self, xs): return (xs[0], xs[1])
     def pairs(self, xs): return list(xs)

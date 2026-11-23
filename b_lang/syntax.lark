@@ -10,6 +10,7 @@ _NL: NEWLINE
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? "by" "examples" -> learned_stmt
      | "domain" NAME ":" also_args                         -> domain_stmt
+     | "record" NAME "{" _NL* record_field ((","|_NL) _NL* record_field)* ","? _NL* "}" -> record_stmt
      | "group" NAME "of" NAME ":" also_args                -> group_stmt
      | "know" NAME                                         -> know_stmt
      | "example" path "(" [example_args] ")" COMP example_value ["within" example_value] ["was" case_literal] -> example_stmt
@@ -59,6 +60,9 @@ history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL
      | "(" [args] ")"              -> invoke
      | "[" expr "]"                -> lookup
 args: expr ("," expr)*
+binders: NAME ["," NAME]
+record_field: NAME ":" type_expr
+record_entry: NAME "=" expr
 pairs: pair ("," pair)*
 pair: expr ":" expr
 ?scalar: number_literal
@@ -96,6 +100,9 @@ unit: NAME ["per" NAME]
      | summary
      | scalar
      | NAME                          -> identifier
+     | "[" expr "for" binders "in" expr ["where" expr] "]"          -> list_each
+     | "{" _NL* record_entry ("," _NL* record_entry)* ","? _NL* "}" -> record_literal
+     | "{" expr ":" expr "for" binders "in" expr ["where" expr] "}" -> dict_each
      | "[" [args] "]"                -> list_literal
      | "{" [pairs] "}"               -> dict_literal
      | "(" expr ")"                  -> grouped

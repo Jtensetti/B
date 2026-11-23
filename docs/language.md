@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.24
+# B language reference — implemented experimental v0.25
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -73,6 +73,14 @@ A top-level `next` declares a pending edit on a source function. The condition a
 A case table is an expression. It compares the named value against each scalar literal in order, using the ordinary comparison operators and type rules. The first matching row supplies the result, with a mandatory final fallback. Numeric thresholds can be negative. See [decision tables and source views](registers.md).
 
 Expressions also allow literals (`true`, `false`, `none`, numbers, strings), references, calls, attribute access and grouping. Precedence (highest to lowest): postfix attribute/call/key lookup, unary `not`/`-`, multiplication/division/modulo, addition/subtraction, comparison, `and`, `or`, `??` (right associative), conditional. Both conditional branches are statically type-checked, even if the condition is constant.
+
+### Transforming collections, records and core words
+
+`[expr for x in xs where cond]` builds a list. `{key: value for k, v in d where cond}` builds a `Dict[Text, V]`. A list gives one name per item. A dictionary gives its key, or its key and value. `where` is optional. The names are local to the expression and may not shadow names in scope.
+
+`record Booking { child: Bool, day: Text, note: Option[Text] }` declares a structural record type, as in TypeScript. `{child = true, day = "sat"}` builds a record, and `b.day` reads a field. An `Option` field may be left out and then reads as `none`. At runtime a record is a dictionary, so JSON from Python or JavaScript enters through the usual border check. A missing required field stops the program there, and undeclared fields are not carried along. Records may refer to records declared later, but not to themselves.
+
+`len`, `sorted`, `keys`, `values`, `text` and `join` are typed core words. Python's builtins run them, but B types them for any element type. `text(true)` is `"true"`. A program's own function of the same name takes precedence.
 
 ### Collection expressions
 
@@ -180,7 +188,7 @@ For `net:`, the B host has only an explicit set of allowed `System.Math` and `Sy
 
 ## 7. Current limitations and status
 
-No B-authored module imports; generic B functions; loops; reassignment; records; general effects/capabilities; exception modeling; asynchronous calls; zero-copy data exchange; Java/Rust/WASM backends; arbitrary .NET libraries; true native B compilation; formal proof or safe execution of untrusted code. `Option` values support a typed `??` fallback, but not yet exhaustive pattern matching/case analysis or unsafe forced unwrapping. Type checking is conservative and may reject useful Python calls; this is safer than silently claiming a type it cannot establish.
+No B-authored module imports; generic B functions; reassignment; recursive records; general effects/capabilities; exception modeling; asynchronous calls; zero-copy data exchange; Java/Rust/WASM backends; arbitrary .NET libraries; true native B compilation; formal proof or safe execution of untrusted code. `Option` values support a typed `??` fallback, but not yet exhaustive pattern matching/case analysis or unsafe forced unwrapping. Type checking is conservative and may reject useful Python calls; this is safer than silently claiming a type it cannot establish.
 
 ## 8. Versioning
 
