@@ -150,3 +150,42 @@ def test_option_narrowing_after_a_none_test():
         compile_b("fn f(o: Option[Int]) -> Int = if o == none then o + 1 else 0\n")
     with pytest.raises(BError):
         compile_b("fn f(a: Option[Int], b: Option[Int]) -> Int = if a != none or b != none then a + b else 0\n")
+
+
+def test_numeric_and_io_core_words(monkeypatch):
+    import io as stdio
+    monkeypatch.setattr("sys.stdin", stdio.StringIO("hello\n"))
+    assert output("print read_line()\nprint round(2.675, 2)\nprint round(2.5)\nprint sum([1.5, 2.25])\n"
+                  "print sum([1, 2])\nprint max([3, 9, 4]) ?? 0\nprint max(2, 3.5)\nprint abs(-4)\n"
+                  "print to_json({a = 1, b = [true, false]})\n") == [
+        "hello", "2.67", "2", "3.75", "3", "9", "3.5", "4", '{"a": 1, "b": [true, false]}']
+
+
+def test_then_and_else_may_start_a_line():
+    assert output('fn size(x: Int) -> Text =\n    if x > 10\n    then "big"\n    else if x > 4\n    then "medium"\n'
+                  '    else "small"\nprint [size(1), size(5), size(20)]\n') == ["['small', 'medium', 'big']"]
+    # A decision table keeps its own else row.
+    assert output('fn r(d: Int) -> Text pure = cases d {\n    < 0 => "late"\n    else => "ok"\n}\nprint r(-1)\n') == ["late"]
+
+
+@pytest.mark.parametrize(("source", "fragment"), [
+    ("print round(\"a\")", "round needs"),
+    ("print sum([\"a\"])", "sum needs"),
+    ("print max([{\"a\": 1}])", "max needs"),
+    ("print min(1, \"a\")", "two Int, Float or Text"),
+    ("print read_line(1)", "takes 0 argument"),
+])
+def test_numeric_core_word_errors(source, fragment):
+    with pytest.raises(BError) as exc:
+        compile_b(source)
+    assert fragment in exc.value.message
+
+
+def test_the_guide_for_models_program_passes_strict_checks(monkeypatch):
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    program = root / "examples/for-models/quote.bee"
+    monkeypatch.setattr(sys, "path", [str(program.parent), *sys.path])
+    assert compile_b(program.read_text(), strict=True)
+    assert program.read_text() in (root / "docs/for-models.md").read_text()

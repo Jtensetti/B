@@ -1,4 +1,4 @@
-"""B 0.26 compiler: parse -> typed BIR -> Python backend.
+"""B 0.27 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -38,7 +38,8 @@ from .types import (
 
 NOT_CONST = object()
 NUMERIC = (INT, FLOAT)
-CORE_WORDS = frozenset({"len", "sorted", "keys", "values", "text", "join"})
+CORE_WORDS = frozenset({"len", "sorted", "keys", "values", "text", "join",
+                        "round", "sum", "min", "max", "abs", "read_line", "to_json"})
 
 
 def _narrowed(test: Expr, scope: dict, outcome: bool) -> dict:
@@ -254,10 +255,39 @@ class Compiler:
 
     def _core_word(self, word: str, args: list[Value]) -> Value:
         """A few words almost every program needs, typed generically, run by Python's builtins."""
-        arity = {"join": 2}.get(word, 1)
-        if len(args) != arity:
-            raise BError("E_ARITY", f"{word} takes {arity} argument{'s' if arity > 1 else ''}, got {len(args)}")
+        arity = {"join": (2,), "round": (1, 2), "min": (1, 2), "max": (1, 2), "read_line": (0,)}.get(word, (1,))
+        if len(args) not in arity:
+            expected = " or ".join(map(str, arity))
+            raise BError("E_ARITY", f"{word} takes {expected} argument{'s' if max(arity) != 1 else ''}, got {len(args)}")
+        if word == "read_line":
+            return self.val(TEXT, "core", data=word)
         first = args[0]
+        if word == "to_json":
+            if first.type == ANY or first.type.name in ("Function", "Module"):
+                raise BError("E_TYPE", f"to_json needs a typed value, got {first.type}")
+            return self.val(TEXT, "core", first.node, data=word)
+        numeric = first.type in (INT, FLOAT)
+        if word == "round":
+            if not numeric or (len(args) == 2 and args[1].type != INT):
+                raise BError("E_TYPE", "round needs a number and an optional Int of decimals")
+            return self.val(INT if len(args) == 1 else FLOAT, "core", *(a.node for a in args), data=word)
+        if word == "abs":
+            if not numeric:
+                raise BError("E_TYPE", f"abs needs a number, got {first.type}")
+            return self.val(first.type, "core", first.node, data=word)
+        if word == "sum":
+            if first.type.name != "List" or first.type.args[0] not in (INT, FLOAT):
+                raise BError("E_TYPE", f"sum needs a List of Int or Float, got {first.type}")
+            return self.val(first.type.args[0], "core", first.node, data=word)
+        if word in ("min", "max"):
+            if len(args) == 2:
+                typ = unify(first.type, args[1].type)
+                if not supports_ordering(typ) or typ == ANY:
+                    raise BError("E_TYPE", f"{word} of two values needs two Int, Float or Text values")
+                return self.val(typ, "core", *(self._widen(a, typ).node for a in args), data=word)
+            if first.type.name != "List" or not supports_ordering(first.type.args[0]):
+                raise BError("E_TYPE", f"{word} needs a List of Int, Float or Text, got {first.type}")
+            return self.val(option(first.type.args[0]), "core", first.node, data=word + "_of")
         kind = first.type.name
         if word == "len":
             if kind not in ("List", "Dict") and first.type != TEXT:

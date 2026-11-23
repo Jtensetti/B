@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.26
+# B language reference — implemented experimental v0.27
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -97,7 +97,7 @@ Each binding is evaluated once. A binding may not hide a function.
 
 After a test `x != none`, `x` has its inner type wherever the test is known to hold. That includes the `then` branch, the `else` branch of `x == none`, both sides of `and`, under `not`, and the item expression of `[... for ... where x != none]`. Only plain names narrow.
 
-`len`, `sorted`, `keys`, `values`, `text` and `join` are typed core words. Python's builtins run them, but B types them for any element type. `text(true)` is `"true"`. A program's own function of the same name takes precedence.
+`len`, `sorted`, `keys`, `values`, `text`, `join`, `round`, `sum`, `min`, `max`, `abs`, `read_line` and `to_json` are typed core words. `min` and `max` of a list give an `Option`, and of two values give the larger or smaller value. A line may start with `then` or `else` to continue an `if`. Python's builtins run them, but B types them for any element type. `text(true)` is `"true"`. A program's own function of the same name takes precedence.
 
 ### Collection expressions
 

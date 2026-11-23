@@ -21,6 +21,25 @@ class BExampleError(AssertionError):
     """A stated example of an imported function no longer holds."""
     pass
 
+def to_json(value) -> str:
+    """One line of JSON, as json.dumps writes it."""
+    return json.dumps(value, ensure_ascii=False)
+
+
+def read_line() -> str:
+    """One line of standard input without its line break; an empty text at the end of input."""
+    import sys
+    return sys.stdin.readline().rstrip("\r\n")
+
+
+def min_of(items):
+    return min(items) if items else None
+
+
+def max_of(items):
+    return max(items) if items else None
+
+
 def index(sequence, position):
     """B's xs[i]: an Option. Negative positions count from the end, as in Python and JavaScript's at()."""
     if -len(sequence) <= position < len(sequence):

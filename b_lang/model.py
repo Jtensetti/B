@@ -232,10 +232,16 @@ def positioned_parser():
                 postlex=_JoinLines())
 
 
+_CONTINUED = re.compile(r"\r?\n[ \t]*(?=then\b|else\b(?![ \t]*=>))")
+
+
 def parser_input(source: str) -> str:
     # Preserve character offsets for source rewriters, including CRLF pairs.
     if "\r" in source:
         source = re.sub(r"\r(?!\n)", "\n", source)
+    # A line starting with `then` or `else` continues the if above it. Spaces of the
+    # same length keep every offset; strings cannot contain a raw newline.
+    source = _CONTINUED.sub(lambda m: " " * len(m.group(0)), source)
     return source + ("\n" if source and not source.endswith("\n") else "")
 
 

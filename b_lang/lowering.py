@@ -317,6 +317,14 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                 return ast.Call(func=_load("_b_list"), args=[view], keywords=[])
             if data == "text":
                 return ast.Call(func=_load("_b_text"), args=args, keywords=[])
+            if data in ("round", "sum", "min", "max", "abs"):
+                return ast.Call(func=_load("_b_" + data), args=args, keywords=[])
+            if data == "to_json":
+                return ast.Call(func=_load("_b_to_json"), args=args, keywords=[])
+            if data == "read_line":
+                return ast.Call(func=_load("_b_read_line"), args=[], keywords=[])
+            if data in ("min_of", "max_of"):
+                return ast.Call(func=_load("_b_" + data), args=args, keywords=[])
             return ast.Call(func=ast.Attribute(value=args[1], attr="join", ctx=ast.Load()), args=[args[0]], keywords=[])
         if op == "record":
             return ast.Dict(keys=[ast.Constant(name) for name in data], values=[self.expr(x) for x in children])
@@ -453,6 +461,10 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="range", asname="_b_range"),
             ast.alias(name="abs", asname="_b_abs"),
             ast.alias(name="sorted", asname="_b_sorted"),
+            ast.alias(name="round", asname="_b_round"),
+            ast.alias(name="sum", asname="_b_sum"),
+            ast.alias(name="min", asname="_b_min"),
+            ast.alias(name="max", asname="_b_max"),
             ast.alias(name="list", asname="_b_list"),
             ast.alias(name="repr", asname="_b_repr"),
         ], level=0)
@@ -465,6 +477,10 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="BExampleError", asname="_b_example_error"),
             ast.alias(name="text", asname="_b_text"),
             ast.alias(name="index", asname="_b_index"),
+            ast.alias(name="read_line", asname="_b_read_line"),
+            ast.alias(name="to_json", asname="_b_to_json"),
+            ast.alias(name="min_of", asname="_b_min_of"),
+            ast.alias(name="max_of", asname="_b_max_of"),
         ], level=0)]
         if any(s.op == "import" and s.backend == "js" for s in program.statements):
             signatures = []
