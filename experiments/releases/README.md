@@ -53,7 +53,7 @@ The release trial showed B losing on changes. This follow-up measures changes al
 Data: [grades](results/changes/grades.txt) and [work](results/changes/work.json). Wall times are omitted, because the runtime's timestamps for resumed agents are unreliable.
 
 - **No errors again.** All four passed every fixture after every change. No change broke an earlier requirement, in either language.
-- **B's cost after learning varies with the solver, not the language.** Change 1 includes reading the B guide. After it, B 1 spent 11,200 output tokens on three changes, against 14,400–14,900 for Python. B 2 spent 25,400. Taken together, B cost about 1.38 times Python's output tokens, down from 1.65–2.5 in the earlier trials.
+- **B's cost after learning varies with the solver, not the language.** Change 1 includes reading the B guide. After it, B 1 spent 11,200 output tokens on three changes, against 14,400–14,900 for Python. B 2 spent 25,400. Taken together, B cost about 1.37 times Python's output tokens, down from 1.65–2.5 in the earlier trials.
 - **What the B solvers did with the new features:** both filtered future releases with one comprehension and reused it, exactly as the Python solvers did. One B solver still wrote a dummy `{"": 0}` fallback, although `x ?? {}` now works. The guide's one line about it was not enough.
 
 ## Summary of four trials
@@ -63,6 +63,6 @@ Data: [grades](results/changes/grades.txt) and [work](results/changes/work.json)
 | Journey (Sonnet, npm semantics) | 0 vs 0 | 0.55 |
 | Shipping (Haiku, Python library) | 0 vs 0 | 3.6 |
 | Releases (Haiku, mixed, with the guide) | 0 vs 0 | 1.4 |
-| Changes only (Haiku, inherited code) | 0 vs 0 | 1.38 (B 1 alone: 0.99) |
+| Changes only (Haiku, inherited code) | 0 vs 0 | 1.37 (B 1 alone: 1.00) |
 
 Sixteen solver runs and 25 graded steps or changes per language have produced no wrong output in either language. The long-term goal asks for fewer errors, and these tasks cannot show that. Self-tested, clearly specified tasks are too easy for today's models in both languages. Less total work holds where B borrows a library that the other language lacks. With today's B it does not hold in general. The next measurement has to put the solvers where errors actually occur: changes whose effects reach code the solver does not read, specifications that leave a case open, and libraries that change underneath the program. B's checks (`example`, `keeping`, units at the border, library examples) are built for exactly these, and none of the four tasks needed them.
