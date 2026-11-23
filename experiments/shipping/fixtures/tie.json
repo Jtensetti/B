@@ -1,0 +1,1 @@
+{"orders": [{"id": "X1", "product": "bat", "qty": 1}], "catalog": {"cat": {"weight_kg": 1}, "bar": {"weight_kg": 2}, "hat": {"weight_kg": 3}}, "usd_to_sek": 10}

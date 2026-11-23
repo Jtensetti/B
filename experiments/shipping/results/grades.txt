@@ -1,0 +1,39 @@
+py1 {"step": 1, "passed": 15, "total": 15}
+[]
+py2 {"step": 1, "passed": 15, "total": 15}
+py2 {"step": 2, "passed": 15, "total": 15}
+[]
+py1 {"step": 2, "passed": 15, "total": 15}
+[]
+py2 {"step": 3, "passed": 15, "total": 15}
+[]
+py1 {"step": 3, "passed": 15, "total": 15}
+[]
+py1 {"step": 4, "passed": 15, "total": 15}
+[]
+py2 {"step": 4, "passed": 15, "total": 15}
+[]
+py1 {"step": 5, "passed": 15, "total": 15}
+[]
+py2 {"step": 5, "passed": 15, "total": 15}
+[]
+b1 {"step": 1, "passed": 15, "total": 15}
+[]
+b1 {"step": 2, "passed": 15, "total": 15}
+[]
+b2 {"step": 1, "passed": 15, "total": 15}
+[]
+b1 {"step": 3, "passed": 15, "total": 15}
+[]
+b1 {"step": 4, "passed": 15, "total": 15}
+[]
+b2 {"step": 2, "passed": 15, "total": 15}
+[]
+b1 {"step": 5, "passed": 15, "total": 15}
+[]
+b2 {"step": 3, "passed": 15, "total": 15}
+[]
+b2 {"step": 4, "passed": 15, "total": 15}
+[]
+b2 {"step": 5, "passed": 15, "total": 15}
+[]

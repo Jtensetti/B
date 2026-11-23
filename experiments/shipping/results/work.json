@@ -1,0 +1,150 @@
+{
+ "b1": {
+  "1": {
+   "tool_calls": 20,
+   "output_tokens": 40214,
+   "input_tokens": 4183522,
+   "assistant_turns": 42,
+   "seconds": 107
+  },
+  "2": {
+   "tool_calls": 6,
+   "output_tokens": 23011,
+   "input_tokens": 1813403,
+   "assistant_turns": 15,
+   "seconds": 90
+  },
+  "3": {
+   "tool_calls": 3,
+   "output_tokens": 9548,
+   "input_tokens": 891101,
+   "assistant_turns": 7,
+   "seconds": 45
+  },
+  "4": {
+   "tool_calls": 3,
+   "output_tokens": 11268,
+   "input_tokens": 921679,
+   "assistant_turns": 7,
+   "seconds": 55
+  },
+  "5": {
+   "tool_calls": 3,
+   "output_tokens": 8467,
+   "input_tokens": 950084,
+   "assistant_turns": 7,
+   "seconds": 51
+  }
+ },
+ "b2": {
+  "1": {
+   "tool_calls": 21,
+   "output_tokens": 46835,
+   "input_tokens": 4931793,
+   "assistant_turns": 50,
+   "seconds": 233
+  },
+  "2": {
+   "tool_calls": 12,
+   "output_tokens": 27516,
+   "input_tokens": 3425975,
+   "assistant_turns": 28,
+   "seconds": 123
+  },
+  "3": {
+   "tool_calls": 3,
+   "output_tokens": 10746,
+   "input_tokens": 1171083,
+   "assistant_turns": 9,
+   "seconds": 32
+  },
+  "4": {
+   "tool_calls": 3,
+   "output_tokens": 11551,
+   "input_tokens": 951963,
+   "assistant_turns": 7,
+   "seconds": 19
+  },
+  "5": {
+   "tool_calls": 3,
+   "output_tokens": 4381,
+   "input_tokens": 975127,
+   "assistant_turns": 7,
+   "seconds": 11
+  }
+ },
+ "py1": {
+  "1": {
+   "tool_calls": 4,
+   "output_tokens": 5645,
+   "input_tokens": 522516,
+   "assistant_turns": 7,
+   "seconds": 10
+  },
+  "2": {
+   "tool_calls": 4,
+   "output_tokens": 5024,
+   "input_tokens": 474882,
+   "assistant_turns": 6,
+   "seconds": 11
+  },
+  "3": {
+   "tool_calls": 5,
+   "output_tokens": 7006,
+   "input_tokens": 576482,
+   "assistant_turns": 7,
+   "seconds": 10
+  },
+  "4": {
+   "tool_calls": 5,
+   "output_tokens": 8717,
+   "input_tokens": 594707,
+   "assistant_turns": 7,
+   "seconds": 9
+  },
+  "5": {
+   "tool_calls": 3,
+   "output_tokens": 2156,
+   "input_tokens": 349927,
+   "assistant_turns": 4,
+   "seconds": 5
+  }
+ },
+ "py2": {
+  "1": {
+   "tool_calls": 4,
+   "output_tokens": 5872,
+   "input_tokens": 523117,
+   "assistant_turns": 7,
+   "seconds": 10
+  },
+  "2": {
+   "tool_calls": 3,
+   "output_tokens": 7723,
+   "input_tokens": 395089,
+   "assistant_turns": 5,
+   "seconds": 10
+  },
+  "3": {
+   "tool_calls": 4,
+   "output_tokens": 3964,
+   "input_tokens": 495206,
+   "assistant_turns": 6,
+   "seconds": 9
+  },
+  "4": {
+   "tool_calls": 5,
+   "output_tokens": 5229,
+   "input_tokens": 598795,
+   "assistant_turns": 7,
+   "seconds": 9
+  },
+  "5": {
+   "tool_calls": 3,
+   "output_tokens": 2758,
+   "input_tokens": 351432,
+   "assistant_turns": 4,
+   "seconds": 6
+  }
+ }
+}

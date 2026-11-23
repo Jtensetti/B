@@ -1,0 +1,41 @@
+use py:builtins as bi
+use py:json as json
+use py:carrier as carrier
+use js:"fastest-levenshtein" as words
+
+record Order { id: Text, product: Text, qty: Int, express: Option[Bool] }
+record Item { weight_kg: Float, volume_l: Option[Float] }
+record Input { orders: List[Order], catalog: Dict[Text, Item], usd_to_sek: Float }
+record Output { quotes_sek: Dict[Text, Float], total_sek: Float, unknown: List[Text], matched: Dict[Text, Text] }
+
+foreign bi.input() -> Text
+foreign bi.sum(List[Float]) -> Float
+foreign bi.round(Float, Int) -> Float
+foreign bi.min(List[Int]) -> Int
+foreign json.loads(Text) -> Input
+foreign json.dumps(Output) -> Text
+
+fn billable_lb(qty: Int, weight_kg: Float, volume_l: Float) -> Float =
+  if qty * volume_l * 1000.0 / 16.387064 / 139.0 > qty * weight_kg / 0.45359237 then qty * volume_l * 1000.0 / 16.387064 / 139.0 else qty * weight_kg / 0.45359237
+
+fn parcel_usd(qty: Int, weight_kg: Float, volume_l: Float, express: Bool) -> Float =
+  carrier.rate(billable_lb(qty, weight_kg, volume_l), express)
+
+fn best_dist(product: Text, names: List[Text]) -> Int =
+  bi.min([words.distance(product, m) for m in names])
+
+fn target(product: Text, names: List[Text]) -> Text =
+  if product in names then product else if len(names) == 0 then "" else if best_dist(product, names) > 2 then "" else sorted([n for n in names where words.distance(product, n) == best_dist(product, names)])[0] ?? ""
+
+let inp: Input = json.loads(bi.input())
+let weights: Dict[Text, Float] = {name: item.weight_kg for name, item in inp.catalog}
+let volumes: Dict[Text, Float] = {name: item.volume_l ?? 0.0 for name, item in inp.catalog}
+let names: List[Text] = sorted(keys(inp.catalog))
+let resolved: Dict[Text, Text] = {o.id: target(o.product, names) for o in inp.orders where target(o.product, names) != ""}
+let known: List[Order] = [o for o in inp.orders where o.id in resolved]
+let unknown: List[Text] = sorted([o.id for o in inp.orders where not (o.id in resolved)])
+let quotes_sek: Dict[Text, Float] = {o.id: bi.round(parcel_usd(o.qty, weights[resolved[o.id] ?? ""] ?? 0.0, volumes[resolved[o.id] ?? ""] ?? 0.0, o.express ?? false) * inp.usd_to_sek, 2) for o in known}
+let matched: Dict[Text, Text] = {o.id: resolved[o.id] ?? "" for o in known where not (o.product in weights)}
+let total: Float = bi.round(bi.sum(values(quotes_sek)), 2)
+let out: Output = {quotes_sek = quotes_sek, total_sek = total, unknown = unknown, matched = matched}
+print json.dumps(out)
