@@ -79,6 +79,8 @@ use js:"package" as p
 foreign m.function(Int, Text) -> Float
 ```
 
+A function that raises an exception for some inputs is declared with an `Option` result: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` instead of stopping. B has no `try`.
+
 `use py:` imports from Python's standard library, installed packages and files next to the program. `use js:` imports npm packages from `node_modules`. `foreign` declares a signature that B could not read.
 
 Objects of another language get a name and typed methods:
@@ -134,3 +136,4 @@ That is exactly the question to put to the owner. Then write the answer back wit
 | `Unspecified Python symbol` | Add a `foreign` declaration with types |
 | `declared pure, but has effects: foreign` | Remove `pure`: the function calls another language |
 | `print needs a plain number, got Length` | Write `print x as m` |
+| A Python `KeyError` or `ValueError` stops the run | Declare the call `-> Option[T] on KeyError` and handle `none` |

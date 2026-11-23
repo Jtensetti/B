@@ -27,6 +27,16 @@ print stats.median([1.0, 3.0, 7.0])
 
 Use when automatic discovery cannot represent the signature. Explicit declarations describe the B boundary but are **trusted claims made by the author**, checked only for type compatibility at runtime. A declaration cannot override a known built-in or auto-discovered signature.
 
+## A call that can fail
+
+```b
+use py:tariff as tariff
+foreign tariff.zone(Text) -> Option[Int] on KeyError
+let zones = [tariff.zone(c) ?? 0 for c in countries]
+```
+
+B has no `try`. A foreign function that raises an exception for some inputs is declared with the exceptions it may raise and an `Option` result, and the call gives `none` when one of them is raised. Exceptions are matched by class name along their hierarchy, so `on LookupError` also catches `KeyError`, and a library's own exception class needs no import. Any other exception still stops the program. The declaration restates the signature B read from the library: the parameters and the type inside the `Option` must match it. It works for Python only. npm and .NET errors are not mapped yet.
+
 ## .NET reflection and a permitted transport
 
 The .NET 10 host has a narrow allowlist of static functions. `B.NetHost --describe` enumerates **real CLR metadata via reflection** and returns their transport-compatible B signatures. The generated [`net-signatures.json`](../b_lang/net-signatures.json) is tracked in Git and used for static checks without starting .NET. CI verifies that its contents match current reflection output.

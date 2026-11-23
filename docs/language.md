@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.28
+# B language reference — implemented experimental v0.29
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -171,6 +171,8 @@ B reads a neighboring `.pyi` stub, else a `.py` source file, via a restricted Py
 An overload is selected only if its argument types distinguish it unambiguously. The checker accepts a **single** matching overload, or a **uniquely exact** alternative, and rejects otherwise with `E_OVERLOAD_AMBIGUOUS`. It does **not** implement the complete Python typing specification's overload algorithm. An overloaded function whose argument is `Any` and could select different return types is rejected rather than guessed. `b inspect py:... --json` lists each supported overload separately.
 
 A used `.pyi` signature is a trusted *assumption*. Typed foreign arguments and results are checked at runtime, including nested lists, dictionaries and nullable values, but the correctness of the library's *behavior* is not thereby proved. The user may still explicitly declare a Python signature with `foreign` when metadata cannot represent it. Unsupported Python calls are dynamic and warn with `W_UNCHECKED_FOREIGN`.
+
+A Python function that raises an exception for some inputs is declared with an `Option` result and the exceptions it may raise: `foreign tariff.zone(Text) -> Option[Int] on KeyError, ValueError`. The call then gives `none` when the function raises one of the named exceptions, matched by class name along the exception's hierarchy, and every other exception still propagates. The declaration restates the signature B already read, with the result wrapped in `Option`. See [interop](interop.md#a-call-that-can-fail).
 
 For `net:`, the B host has only an explicit set of allowed `System.Math` and `System.Text.RegularExpressions.Regex` methods. The checked-in signature snapshot is compared with live reflection in GitHub CI. The interop transport is typed JSON messages; arbitrary .NET assemblies, custom classes or object identity are not available.
 

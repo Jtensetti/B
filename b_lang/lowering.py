@@ -353,6 +353,12 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                 test = _indexed_facts(children[0], rule_params)
             return ast.IfExp(test=test or self.expr(children[0]), body=self.expr(children[1]),
                              orelse=self.expr(children[2]))
+        if op == "catch":
+            thunk = ast.Lambda(args=ast.arguments(posonlyargs=[], args=[], vararg=None, kwonlyargs=[],
+                                                  kw_defaults=[], kwarg=None, defaults=[]),
+                               body=self.expr(children[0]))
+            names = ast.Tuple(elts=[ast.Constant(n) for n in data], ctx=ast.Load())
+            return ast.Call(func=_load("_b_catch"), args=[thunk, names], keywords=[])
         if op == "coalesce":
             # The left side runs once and the fallback only when needed. A helper call, not
             # :=, because Python forbids := where a comprehension names what it iterates over.
@@ -477,6 +483,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="text", asname="_b_text"),
             ast.alias(name="index", asname="_b_index"),
             ast.alias(name="coalesce", asname="_b_coalesce"),
+            ast.alias(name="catch", asname="_b_catch"),
             ast.alias(name="read_line", asname="_b_read_line"),
             ast.alias(name="to_json", asname="_b_to_json"),
             ast.alias(name="min_of", asname="_b_min_of"),

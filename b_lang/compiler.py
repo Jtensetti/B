@@ -1,4 +1,4 @@
-"""B 0.28 compiler: parse -> typed BIR -> Python backend.
+"""B 0.29 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -237,6 +237,38 @@ class Compiler:
         if len(set(candidates)) == 1:
             return candidates[0]
         raise BError("E_OVERLOAD_AMBIGUOUS", f"Ambiguous overload of {target}; annotate or narrow arguments")
+
+    def _foreign_on(self, path, params, result, names):
+        """`foreign m.f(T) -> Option[R] on E`: the call gives none when f raises E.
+
+        The declaration restates f's signature with an Option result. If B already
+        read f's signature from the relative, the parameters and R must match it."""
+        parts = path.split(".")
+        sym = self.symbols.get(parts[0])
+        if len(parts) < 2 or not sym or sym.type != MODULE or not sym.foreign:
+            raise BError("E_FOREIGN", f"{parts[0]} must be an imported foreign module")
+        if not sym.foreign.startswith("py:"):
+            raise BError("E_FOREIGN", "'on' catches Python exceptions only; npm and .NET errors are not mapped yet")
+        declared = from_syntax(result)
+        if declared.name != "Option":
+            raise BError("E_FOREIGN", f"A call that can fail gives an Option: write -> Option[{declared}] on {', '.join(names)}")
+        inner = Signature(tuple(from_syntax(t) for t in params), declared.args[0])
+        fullname = sym.foreign + "." + ".".join(parts[1:])
+        if fullname in self.catching:
+            raise BError("E_FOREIGN", f"{path} is declared twice")
+        existing = self.registry.lookup(fullname)
+        if existing:
+            known = existing.binding
+            if (getattr(known, "params", None), getattr(known, "result", None)) != (inner.params, inner.result):
+                raise BError("E_FOREIGN", f"{path} is known as ({', '.join(map(str, getattr(known, 'params', ())))}) -> "
+                             f"{getattr(known, 'result', '?')}; restate it as that signature with an Option result")
+        else:
+            if any(t in (NONE, MODULE) for t in (*inner.params, inner.result)):
+                raise BError("E_TYPE", "Foreign signatures cannot use internal None or Module types")
+            self.registry.add(fullname, inner, "user-declaration")
+        self.catching[fullname] = tuple(names)
+        self.assumptions.append(f"{fullname} gives none on {', '.join(names)}: declared, not proved")
+        return StmtIR("foreign", target=fullname)
 
     def _foreign_path(self, ex: Expr, scope: dict[str, Symbol]) -> str | None:
         if ex.kind == "name":
@@ -633,6 +665,9 @@ class Compiler:
                     result.node = replace(result.node, precondition_proved=True)
                 if path:
                     result.node = self.guard(result.node, sig.result)
+                if path in self.catching:
+                    caught = Type("Option", (sig.result,))
+                    return self.val(caught, "catch", result.node, data=self.catching[path])
                 return result
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET call {path}")
@@ -745,6 +780,8 @@ class Compiler:
             self.methods[key] = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
             self.assumptions.append(f"method {owner}.{member[0]}: signature declared, not behavior proved")
             return StmtIR("foreign", target=f"method:{owner}.{member[0]}")
+        if kind == "foreign_on":
+            return self._foreign_on(*p)
         if kind in ("foreign", "foreign_units"):
             path, params, result = p
             parts = path.split(".")
@@ -918,6 +955,7 @@ class Compiler:
         RECORDS.clear()
         OPAQUE.clear()
         self.methods = {}
+        self.catching = {}
         for statement in parsed:
             if statement.kind == "foreign_type":
                 name, path = statement.parts

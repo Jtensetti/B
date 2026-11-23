@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
 
+## B 0.29
+
+A foreign call that can fail is declared as one: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` when the library raises `KeyError`, matched by class name along the exception's hierarchy. This removes the gap that made every B solver in the upgrade trial write a Python wrapper. The declaration only restates the signature B read, with an `Option` result. Python only. npm and .NET errors are not mapped yet.
+
 ## After B 0.28: the upgrade trial
 
 The [pre-registered upgrade trial](../experiments/upgrade/PREREGISTRATION.md) replaced a Python library between two changes with a version whose `base_price` includes VAT. Wrong quotes were 0 for B and 0 for Python. Every solver noticed the upgrade while making the next change, and none had written a library check. H2 fails. B used 1.03 times Python's output tokens. Most of B's extra cost came from one gap: B cannot handle an exception from a foreign function, so every B solver wrote a Python wrapper for `tariff.zone`. Next: close that gap in the grammar, so that a foreign call that can fail becomes an `Option`.

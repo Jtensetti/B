@@ -142,6 +142,7 @@ class ToModel(Transformer):
     def comparison(self, xs): return Expr("cmp", (xs[0], str(xs[1]), xs[2]))
     def foreign_type_stmt(self, xs): return Stmt("foreign_type", (str(xs[0]), xs[1]))
     def foreign_stmt(self, xs): return Stmt("foreign", (xs[0], xs[1] or [], xs[2]))
+    def foreign_on_stmt(self, xs): return Stmt("foreign_on", (xs[0], xs[1] or [], xs[2], tuple(str(x) for x in xs[3:])))
     def use_stmt(self, xs): return Stmt("use", (str(xs[0]), xs[1], str(xs[2])))
     def js_use(self, xs): return Stmt("use", ("js", xs[0], str(xs[1])))
     def js_string_use(self, xs):

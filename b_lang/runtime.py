@@ -31,6 +31,19 @@ def coalesce(value, fallback):
     return fallback() if value is None else value
 
 
+def catch(call, names):
+    """A foreign call declared `on E`: none when it raises an exception named in names.
+
+    Exceptions are matched by class name along their hierarchy, so a library's own
+    exception classes need no import. Any other exception propagates unchanged."""
+    try:
+        return call()
+    except Exception as exc:
+        if any(cls.__name__ in names for cls in type(exc).__mro__):
+            return None
+        raise
+
+
 def read_line() -> str:
     """One line of standard input without its line break; an empty text at the end of input."""
     import sys
