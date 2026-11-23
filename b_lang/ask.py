@@ -131,10 +131,45 @@ def _check_repair(repair, without_this) -> bool:
     return compare_functions(before.optimized_ir, after.optimized_ir, [repair["function"]])["status"] == "proved"
 
 
+def _learned_entries(session: Session) -> list[dict]:
+    from .learn import expand, render
+    from .model import parse
+    _, learned = expand(parse(session.combined()))
+    entries = []
+    for name, found in learned.items():
+        anchor = None
+        for origin, rows in session.parsed.items():
+            for node, statement in rows:
+                if statement.parts[0] == name and statement.kind in ("learn", "example"):
+                    anchor = (origin, node.meta.end_pos)
+        entry = {"declaration": f"fn {name} by examples", "kind": "examples", "origin": anchor[0],
+                 "rule": render(found.rule, found.names), "examples": len(found.examples)}
+        if found.determined:
+            entries.append({**entry, "status": "settled",
+                            "reason": "every equally simple reading of the examples agrees"})
+            continue
+        text = found.question_text()
+        if found.unseen_only:
+            entries.append({**entry, "status": "unseen", "question": text,
+                            "reason": "the readings differ only for a value no example mentions; "
+                                      "add an example with such a value"})
+            continue
+        options = []
+        for value in found.answers:
+            line = f"example {call_text(name, found.question)} == {literal(value)}"
+            after = found.with_example(found.question, value)
+            options.append({"value": value, "meaning": "example", "declaration": line, "applicable": True,
+                            "repairs": [], "rule": render(after.rule, after.names),
+                            "settled": after.determined})
+        entries.append({**entry, "status": "question", "question": text, "options": options,
+                        "_insert": {"origin": anchor[0], "offset": anchor[1]}})
+    return entries
+
+
 def ask(file_text: str, delta_text: str | None = None) -> dict:
     session = Session(file_text, delta_text)
     after = compile_b(session.combined())
-    questions = []
+    questions = _learned_entries(session)
     for span, statement in session.declarations():
         target, new, keeping, like = statement.parts
         entry = {"declaration": declaration_text(target, new, keeping, like), "origin": span.origin}
@@ -211,7 +246,7 @@ def ask(file_text: str, delta_text: str | None = None) -> dict:
             ],
             "_repairs": repairs, "_span": span,
         })
-    open_questions = [q for q in questions if q["status"] == "question"]
+    open_questions = [q for q in questions if q["status"] in ("question", "unseen")]
     return {"status": "question" if open_questions else "settled", "declarations": questions, "_session": session}
 
 
@@ -243,7 +278,12 @@ def answer(report: dict, value) -> dict[str, str]:
         raise BError("E_ANSWER", f"B cannot write '{option['meaning']}' automatically: edit "
                      f"{', '.join(question['causes'])} so it agrees, then add {option['declaration']}")
     session = report["_session"]
-    texts = _edited(session, question["_repairs"] if option["repairs"] else [], question["_span"],
-                    option["declaration"])
+    if "_insert" in question:
+        at = question["_insert"]
+        texts = _edited(session, [{"origin": at["origin"], "offset": at["offset"], "replace": "",
+                                   "with": "\n" + option["declaration"]}])
+    else:
+        texts = _edited(session, question["_repairs"] if option["repairs"] else [], question["_span"],
+                        option["declaration"])
     compile_b(session.combined(texts))  # the chosen meaning must compile, including like
     return texts

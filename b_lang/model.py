@@ -148,6 +148,17 @@ class ToModel(Transformer):
     def also_stmt(self, xs):
         like = xs[2][1] if xs[2] is not None else None
         return Stmt("also", (str(xs[0]), xs[1] or (), tuple(xs[3] or ()), like))
+    def domain_stmt(self, xs): return Stmt("domain", (str(xs[0]), xs[1]))
+    def learned_stmt(self, xs):
+        return Stmt("learn", (str(xs[0]), xs[1] or [], xs[2], xs[3] is not None))
+    def example_stmt(self, xs):
+        name, arguments, operator, value, previous = xs
+        if str(operator) != "==":
+            raise LarkError(f"An example states one result with ==, found {operator} "
+                            f"at line {operator.line}, column {operator.column}")
+        literal = lambda node: None if node is None else self.also_args([node])[0]
+        return Stmt("example", (str(name), arguments or (), literal(value), literal(previous),
+                                previous is not None))
     def print_stmt(self, xs): return Stmt("print", (xs[0],))
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 

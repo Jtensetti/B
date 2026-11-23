@@ -17,7 +17,25 @@ def _public(value):
     return value
 
 
+def _render_examples(entry: dict) -> list[str]:
+    lines = [f"{entry['declaration']} ({entry['examples']} examples)", f"  derived: {entry['rule']}"]
+    if entry["status"] == "settled":
+        lines.append(f"  settled: {entry['reason']}")
+        return lines
+    lines.append(f"  question: {entry['question']}")
+    if entry["status"] == "unseen":
+        lines.append(f"  {entry['reason']}")
+        return lines
+    for option in entry["options"]:
+        state = "settled" if option["settled"] else "still open"
+        lines.append(f"    {literal(option['value'])}: {option['declaration']}")
+        lines.append(f"        then: {option['rule']} ({state})")
+    return lines
+
+
 def _render(entry: dict) -> list[str]:
+    if entry.get("kind") == "examples":
+        return _render_examples(entry)
     lines = [entry["declaration"]]
     for change in entry.get("changes", []):
         lines.append(f"  {call_text(change['function'], tuple(change['arguments'].values()))}: "

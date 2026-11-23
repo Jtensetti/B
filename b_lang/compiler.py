@@ -94,6 +94,7 @@ class Compiler:
         self.started_statements = False
         self.additional_cases: dict[str, list[tuple]] = {}
         self.original_rules: dict = {}
+        self.learned: dict = {}
 
     def warn(self, code: str, message: str):
         d = Diagnostic("warning", code, message)
@@ -612,13 +613,38 @@ class Compiler:
                           effects=tuple(sorted(expression_effects(value.node, self.symbols))))
         raise BError("E_INTERNAL", f"Unrecognized statement {kind}")
 
+    def _check_examples(self, program: ProgramIR, parsed) -> None:
+        """Every current example is a checked fact about the final program."""
+        from .learn import resolve_examples
+        from .precedent import call_text, literal
+        from .revision_witness import evaluate_scalar
+        rows = {}
+        for statement in parsed:
+            if statement.kind == "example":
+                rows.setdefault(statement.parts[0], []).append(statement)
+        for name, statements in rows.items():
+            for arguments, expected in resolve_examples(name, statements):
+                known, actual = evaluate_scalar(program, name, arguments)
+                if not known:
+                    self.warn("W_EXAMPLE_UNCHECKED", f"Cannot evaluate example {call_text(name, arguments)} "
+                              "before running")
+                elif type(actual) is not type(expected) or actual != expected:
+                    raise BError("E_EXAMPLE", f"example {call_text(name, arguments)} == {literal(expected)}, "
+                                 f"but the program gives {literal(actual)}")
+        for learned in self.learned.values():
+            if not learned.determined:
+                self.warn("W_EXAMPLES_OPEN", f"{learned.name} is not settled by its examples: "
+                          f"{learned.question_text()} Run 'b ask' to answer.")
+
     def compile(self, source: str, *, conditional_guarantees: bool = True) -> Compiled:
         try:
             parsed = parse(source)
         except LarkError as exc:
             raise BError("E_SYNTAX", str(exc)) from exc
+        from .learn import expand
+        parsed, self.learned = expand(parsed)
         self.additional_cases = additional_cases(parsed)
-        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also"))
+        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
         if self.permitted_effects is not None:
             denied = set(detected) - set(self.permitted_effects)
@@ -627,6 +653,8 @@ class Compiler:
         program = ProgramIR(statements, self.registry.export(self.used_foreign),
                             tuple(self.assumptions), permitted_effects=self.permitted_effects,
                             detected_effects=detected)
+        if any(s.kind == "example" for s in parsed):
+            self._check_examples(program, parsed)
         if self.additional_cases:
             from .preservation import validate_preservation
             validate_preservation(program, [s for s in parsed if s.kind == "also"])

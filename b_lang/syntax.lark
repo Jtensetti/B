@@ -8,6 +8,9 @@ _NL: NEWLINE
      | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
      | "let" NAME [":" type_expr] "=" _NL* expr          -> let_stmt
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
+     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? "by" "examples" -> learned_stmt
+     | "domain" NAME ":" also_args                         -> domain_stmt
+     | "example" NAME "(" [also_args] ")" COMP case_literal ["was" case_literal] -> example_stmt
      | "also" NAME "(" [also_args] ")" [also_like] ["keeping" names] -> also_stmt
      | "next" NAME "when" expr "=>" expr                   -> next_stmt
      | "print" expr                                       -> print_stmt
