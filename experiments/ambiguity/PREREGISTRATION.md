@@ -24,3 +24,30 @@ H1. Over three ambiguous changes, B solvers deliver fewer wrong totals on the hi
 ## Kill criterion
 
 If B solvers deliver as many wrong totals as Python solvers or more, summed over the three changes, H1 fails. B's question tooling would then be no better than a model reading the request carefully, and the roadmap should drop the ambition that B reduces errors in changes.
+
+---
+
+## Results (added after the run)
+
+Six Claude Haiku solvers, three per language, built the calculator and then took the three changes in order. The hidden fixtures were graded after every step. The grader's log is in [`results/grades.txt`](results/grades.txt), the final programs in [`solutions/`](solutions/), and the work per step in [`results/work.json`](results/work.json).
+
+| | Build | Change 1 | Change 2 | Change 3 | Wrong, changes 1–3 | Questions |
+| --- | --- | --- | --- | --- | --- | --- |
+| B (3 solvers) | 0 | 0 | 0 | 0 | **0** | 0 |
+| Python (3 solvers) | 0 | 0 | 0 | 0 | **0** | 0 |
+
+Output tokens over all four steps were 12 214, 20 070 and 12 754 for B (45 038 in total), and 11 883, 15 857 and 22 621 for Python (50 361 in total). B used 0.89 times Python's tokens. With three solvers per language, that difference is within the spread between solvers.
+
+**H1 fails.** B delivered as many wrong totals as Python: none. The kill criterion applies as written. B's question tooling has not been shown to be better than a model that reads the request carefully, so the roadmap no longer claims that B reduces errors in changes.
+
+### Why there were no errors
+
+The ambiguity never reached the code. All six builds put "children on Saturdays" into one condition that waives both the ticket and the fee: `free_entry` in B, `if child and day == "sat": return 0` in Python. Widening that condition to Sunday gives the owner's reading in both languages without a decision being made. In the same way, a fee that already skipped free bookings stayed skipped when it rose to 15 kr. A discount that was already on the ticket stayed on the ticket when it became a percentage. Every solver chose the reading the owner meant, and none asked.
+
+`b ask` was run by two of the three B solvers on change 1. It found that Saturday settled the meaning and asked nothing, which was correct. The third solver edited the condition directly. `also` and `b ask` fit change 1 only. Changes 2 and 3 alter numbers, not a Boolean rule, and B has no question tooling for them.
+
+### What this does and does not show
+
+- It shows that a well-factored first build absorbs this kind of ambiguity in either language. The task was too small to produce the second reading by accident.
+- It does not show that B's questions are useless. They would matter where the existing code does not already encode the analogy, for example when the fee and the ticket have separate conditions, as in the guide's own example. This trial did not create that situation, and running a new trial designed so that B wins would be p-hacking after a failed hypothesis.
+- Together with the four earlier trials, 22 solver runs have now produced no wrong output in either language. "Fewer errors" has not been measured as an advantage, because these tasks do not produce errors for current models.

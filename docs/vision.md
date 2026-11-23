@@ -28,7 +28,9 @@ Python and C# each check their own code. Neither can see that a Python function 
 
 ## Measured so far
 
-Four trials ([journey](../experiments/journey/README.md), [shipping](../experiments/shipping/README.md), [releases and changes](../experiments/releases/README.md)), with 16 solver runs, produced no wrong output in either language. B's total output tokens ranged from 0.55 times Python's, when it borrowed an npm library that Python had to reimplement, to 3.6 times, when it had nothing to borrow and the model first had to learn B. The goal is not met. Fewer errors has not been shown, because these tasks produced no errors to prevent.
+Five trials ([journey](../experiments/journey/README.md), [shipping](../experiments/shipping/README.md), [releases and changes](../experiments/releases/README.md), [ambiguity](../experiments/ambiguity/PREREGISTRATION.md)), with 22 solver runs, produced no wrong output in either language. B's total output tokens ranged from 0.55 times Python's, when it borrowed an npm library that Python had to reimplement, to 3.6 times, when it had nothing to borrow and the model first had to learn B. In the two latest trials, after the guide for models, the ratio was 1.37 and 0.89. The goal is not met.
+
+The ambiguity trial was pre-registered to test B's strongest claim about errors: that `also` and `b ask` prevent wrong readings of ambiguous changes. It failed its kill criterion. Every solver in both languages chose the owner's reading without asking, because a well-factored first build already encoded the analogy the change relied on. B therefore no longer claims to reduce errors in changes. The remaining claims about errors concern what a model cannot see by reading the code: library behavior that changes underneath the program (milestone 2) and units at a language border (milestone 1).
 
 ## Milestones
 

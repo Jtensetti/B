@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.28 ambiguous changes (pre-registered)
+
+[Three ambiguous owner changes](../experiments/ambiguity/PREREGISTRATION.md), three Haiku solvers per language. No wrong totals and no questions in either language. The hypothesis that `also` and `b ask` reduce wrong totals failed its kill criterion.
+
 ## B 0.24 units at a language border
 
 [Seven unit mistakes](../experiments/border-units/README.md) in a program that uses two Python libraries in imperial units. B rejects six before running. Typed Python runs all seven with wrong results. The experiment also found a folding bug in B 0.22, which is fixed.
