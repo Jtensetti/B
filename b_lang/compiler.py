@@ -1,4 +1,4 @@
-"""B 0.22 compiler: parse -> typed BIR -> Python backend.
+"""B 0.23 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -497,7 +497,7 @@ class Compiler:
                 raise BError("E_ADOPT", "Adopted code must be a pure B function")
             return replace(native, backend="py-source", target=(
                 f"py:{fullname}@sha256:{adopted.sha256}"))
-        if kind == "foreign":
+        if kind in ("foreign", "foreign_units"):
             path, params, result = p
             parts = path.split(".")
             if len(parts) < 2:
@@ -506,11 +506,19 @@ class Compiler:
             if not sym or sym.type != MODULE or not sym.foreign:
                 raise BError("E_FOREIGN", f"{parts[0]} must be an imported foreign module")
             fullname = sym.foreign + "." + ".".join(parts[1:])
-            if self.registry.lookup(fullname):
-                raise BError("E_FOREIGN", f"A binding already exists for {fullname}")
+            sig = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
+            existing = self.registry.lookup(fullname)
+            if existing:
+                # A unit annotation may restate a discovered signature in B's units. It
+                # can only restate it: B never overrides what the relative's metadata says.
+                same = (getattr(existing.binding, "params", None) == sig.params
+                        and getattr(existing.binding, "result", None) == sig.result)
+                if kind == "foreign_units" and same:
+                    return StmtIR("foreign", target=fullname)
+                raise BError("E_FOREIGN", f"A binding already exists for {fullname}"
+                             + (" with a different signature" if kind == "foreign_units" else ""))
             if fullname.startswith("net:"):
                 raise BError("E_FOREIGN", "Custom .NET declarations require a host adapter; only registered .NET bindings work")
-            sig = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
             if any(t in (NONE, MODULE) for t in (*sig.params, sig.result)):
                 raise BError("E_TYPE", "Foreign signatures cannot use internal None or Module types")
             if fullname.startswith("js:"):
@@ -643,8 +651,10 @@ class Compiler:
             raise BError("E_SYNTAX", str(exc)) from exc
         from .learn import expand
         parsed, self.learned = expand(parsed)
-        from .units import check as check_units
+        from .units import BORROWED, check as check_units
         parsed = check_units(parsed)
+        for unit, provenance in sorted(BORROWED.items()):
+            self.assumptions.append(f"unit {unit} from {provenance}: definition borrowed, not checked by B")
         self.additional_cases = additional_cases(parsed)
         statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))

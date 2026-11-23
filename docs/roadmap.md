@@ -4,7 +4,11 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 ## Long-term goal
 
-**Decisions in, program out.** In B the source is the owner's decisions. The compiler derives the code, keeps every recorded decision true and asks only what the decisions leave open. [Vision, milestones and kill criteria](vision.md).
+**A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
+
+## B 0.23
+
+Milestone 1 of the [vision](vision.md), units across the border, is partly done. `foreign f(Speed[knot]) -> Length[ft]` restates a Python or registered .NET signature with units. B converts at each call and rejects a wrong dimension at compile time. Missing unit names are borrowed from pint, with provenance in the assumptions. Not verified: real pint (the install was not permitted, so a stand-in was used), npm functions, and a realistic multi-library program for the kill criterion. Next: those three, then milestone 2, examples on imported functions.
 
 ## B 0.22
 

@@ -1,46 +1,61 @@
-# Decisions in, program out
+# B: a sibling of the old languages
 
-**Long-term goal.** In B the source of a program is the set of decisions its owner has made: concrete examples, rules, protections and precedents. The compiler derives the code. After every change it guarantees that every recorded decision still holds. It asks exactly the questions the decisions leave open, as concrete inputs with a small set of possible results.
+## Long-term goal
 
-Most languages, including the ones models write best, treat code as the artifact and decisions as comments, tickets or tests kept somewhere else. A change request then forces a model to find the code that implements a decision, rewrite it, and hope the surrounding decisions survive. That is the three-attempt cycle the project started from. B turns it around:
+**B is a sibling of Python, C# and JavaScript, not their child.** It speaks its own grammar and borrows its vocabulary from the libraries its relatives already have. A program written in B states its owner's decisions. B derives the code from them, uses existing libraries in any of the three ecosystems, and checks before anything runs that the decisions still hold, including across the borders between the languages.
 
-| Today | In B |
-| --- | --- |
-| Translate a requirement into code, then write a test | State the requirement as an example; the code follows |
-| Find and edit the rule that implements a decision | Add one example or one `also` line |
-| Regressions are caught if a test happens to exist | Every recorded decision is checked on every compile |
-| A model guesses the meaning of an ambiguous request | B finds the input where the meanings part and asks for one value |
-| Changing a result silently overwrites it | `was` must state the old value, so stale context fails |
+The goal is reached when a model can start from an empty file and a brief, build something people actually need using libraries from at least two ecosystems, and carry it through a sequence of changes with fewer wrong results and less total work than with typed Python or C# alone. That claim must be measured.
 
-## A related language, not a translation
+## The sibling principle
 
-Think of Python and C# as two branches of a language family. B is a third. It does not speak either one, but it understands much of both because they share ancestry: functions, types, values and errors. BIR, B's typed intermediate form, plays the part of the shared root. The adapters read the "cognates": Python stubs, .NET metadata and npm declarations become typed B signatures without B executing or translating the foreign code. Related languages also have *false friends*. In Python `-7 // 2` is `-4`, while C# integer division `-7 / 2` gives `-3`. The [operator correspondence experiment](../experiments/operator-correspondence/README.md) looks for exactly these cases. B's rule is to treat a foreign word as understood only when its meaning has been checked, and as an assumption otherwise.
+Every proposed feature is sorted into one of three kinds before anything is built.
 
-A language can also know things its speakers take for granted. A week is Monday to Sunday, and the weekend is Saturday and Sunday. B ships such [knowledge](knowledge.md) as ordinary B declarations. Knowing a word makes a rule that uses it simpler, so the same examples settle sooner.
+| Kind | Owned by | Examples | Rule |
+| --- | --- | --- | --- |
+| **Grammar** | B | decisions as source (`example`, `also`, `was`, `keeping`, `like`), questions (`b ask`), dimensions, checks across language borders | Build it in B. It is why B exists. |
+| **Vocabulary** | the relatives | unit tables, date arithmetic, time zones, currencies, parsing, HTTP, numerics | Borrow it through an adapter. Never copy it into B. |
+| **Core words** | B, kept small | weekdays, the SI base units, `kr` | Built in only if it never changes and almost every program needs it. |
 
-## What exists (B 0.18–0.22)
+A feature that fits none of these kinds is not built. Vocabulary that B has already copied (parts of the unit table and the calendar functions) shrinks as borrowing covers it.
 
-1. **Changes as declarations.** `also rule(case) keeping f, g` extends a rule and protects other results. `like (precedent)` requires the new case to behave like an existing one. See [executable changes](executable-changes.md).
-2. **Questions from context.** `b ask` compares a new case with the nearest existing one and asks when they still differ. See [precedent questions](precedent-questions.md).
-3. **Functions from examples.** `fn ... by examples` derives an ordered rule list from examples. It asks for the input that separates the plausible readings and asks about the domain neighbors of a case only one example supports. It checks `example` facts on every function and requires `was` for a changed result. `domain` names the values an input can take. See [decisions as source](examples.md).
+## Why a sibling can do what neither parent can
 
-4. **Knowledge.** `know kalender` brings in domains and named groups written in B. A known group is one test for the learner. Units with exact relations are part of the type system, and currencies never mix without a stated rate. See [what B knows](knowledge.md) and [units](units.md).
-## Measured so far
+Python and C# each check their own code. Neither can see that a Python function measuring in feet receives meters from C#. Neither can treat a library's behavior as a checked fact at upgrade time. B sees every side of the border:
 
-The [decision experiment](../experiments/decisions/README.md) hides six policies and lets an oracle answer B's questions. B identifies four of them exactly with 7–13 answers on domains of 14–100 inputs. Random examples in the same number give the exact policy in at most 30% of trials, and need 1.4–2.9 times as many examples to get there. B settles on a wrong rule for an access policy two cases away from the simplest reading, and refuses a per-item price that is not a rule over literals. A requirement change took one or two owner lines and at most one further question. No model or human owner has used these tools yet.
+- **Dimensions at the border.** A foreign function is declared once with its units, `foreign aviation.takeoff(Speed[knot]) -> Length[ft]`. B converts at every call and rejects a wrong dimension before the program runs.
+- **Decisions about libraries.** An `example` on an imported function becomes a fact checked on every build, so a library upgrade that changes behavior fails visibly.
+- **Questions instead of guesses.** When a request leaves a case open, B finds the concrete input and asks, whatever language the implementation lives in.
 
-## Milestones toward the goal
+## Milestones
 
-Each milestone has a kill criterion. If it fails, the mechanism stays as a tool and the language does not grow.
+Each milestone has a kill criterion. If it fails, the mechanism stays a standalone tool and the language does not grow.
 
-1. **Owner trials.** Give a model an empty file, a brief and a simulated owner that answers only questions. Compare B (examples plus code) with typed Python plus tests over a sequence of five changes. Count wrong results delivered, questions, owner lines, model tokens and time. *Kill:* B does not deliver fewer wrong results at a comparable total cost.
-2. **Coverage beyond neighbors.** B 0.20 asks about a domain neighbor of a single-witness case. Next, find rules several cases away from the simplest reading, such as the staff hours in the access policy, without the tenfold search cost of a wider margin. *Kill:* the question rate doubles without catching more wrong rules in the trials.
-3. **Records and tables.** Most real decisions are about records: a booking, an order, a row. Examples and domains should name fields (`booking.day`), and `domain` should become an enforced finite type. *Kill:* the type checker or runtime cost grows faster than the examples it removes.
-4. **Richer results.** Let a case return an expression over its inputs (`10 * items`) by searching small affine forms, and let functions defined by examples call other functions. *Kill:* search time or wrong generalizations outweigh the code saved.
-5. **Decisions over libraries.** Examples that describe an imported function (Python, .NET, npm) become checked facts about that dependency at upgrade time. *Kill:* foreign evaluation is too slow or too nondeterministic to check on each build.
+1. **Units across the border.** Unit-annotated foreign signatures for Python, .NET and npm, plus unit vocabulary borrowed from pint (Python) when it is installed. *Kill:* the annotations cost more lines than the conversion bugs they prevent in a realistic multi-library program.
+2. **Decisions about libraries.** `example` and `keeping` on imported functions, checked at build time, with a report when a dependency's behavior changes. *Kill:* foreign evaluation is too slow or too nondeterministic to run on every build.
+3. **Records and data.** Records, tables of rows and finite types, so that decisions can be about a booking or an order. Data arrives through borrowed readers (JSON, CSV, HTTP). *Kill:* the type checker grows faster than the code it removes from real programs.
+4. **Exact money.** Money as exact decimals at runtime, borrowed from Python's `decimal` or .NET's `decimal`. *Kill:* the boundary cost exceeds the rounding errors it removes.
+5. **The journey trial.** A model gets an empty file, a brief and a simulated owner, and builds a program that uses libraries from two ecosystems. Then it carries the program through five changes. The comparison is typed Python, or C#, plus tests. Count wrong results, questions, owner lines, tokens and time. *Kill:* B does not deliver fewer wrong results at comparable total cost. Then B's mechanisms become tools for those languages instead.
+
+## Working protocol
+
+So that the work can continue without check-ins:
+
+1. Take the lowest unfinished milestone. Within it, do the step that unblocks the most of the next one.
+2. Sort every new idea into grammar, vocabulary or core words. Borrow vocabulary, and do not copy a library.
+3. Finish every step with tests, an honest note of what was not verified, updated docs and a pushed commit.
+4. Report negative results as plainly as positive ones. A blocked tool, such as an install that is not permitted, is reported, not worked around.
+5. Stop and ask only for decisions that belong to the owner: scope, priorities, or anything that leaves the repository.
+
+## What exists
+
+- **Grammar:** executable changes (`also`, `keeping`, `like`), [precedent questions](precedent-questions.md), [functions from examples](examples.md) with questions, `was`, `domain`, `group`, [dimension checking](units.md), membership tests.
+- **Vocabulary through adapters:** typed Python, .NET and npm signatures ([interop](interop.md)), Python source adoption, unit-annotated foreign signatures, and units borrowed from pint ([units](units.md#across-language-borders)).
+- **Core words, plus copied vocabulary to shrink:** [`know calendar`, `know kalender`, `know physics`, `know currencies`](knowledge.md), and a 127-unit table.
+
+The most relevant measured results are the [hidden-policy experiment](../experiments/decisions/README.md), which compares B's questions with random examples, and the [knowledge comparison](knowledge.md). All experiments are listed in [experiments](experiments.md).
 
 ## What B will not claim
 
 - B cannot know what the owner means beyond the cases the program and the answers contain.
-- Fewer source lines do not by themselves mean fewer tokens or lower cost. Every claim needs a measured comparison with a strong conventional baseline.
-- A smaller, honest language that wins on one kind of task is better than a large one that wins on none.
+- An adapter's signature is an assumption about a library, not a proof of its behavior, until an example checks it.
+- Fewer source lines do not by themselves mean fewer tokens or lower cost.

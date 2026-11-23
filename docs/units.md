@@ -22,6 +22,29 @@ print 5 km                 E_UNIT: print needs a plain number, got Length; conve
 let x = 1 month            E_UNIT: months and years have no fixed length
 ```
 
+## Across language borders
+
+This is what B can do and neither Python nor C# can: a library measures in its own units, and B converts at every call.
+
+```bee
+use py:b_examples.aviation as aviation
+foreign aviation.takeoff_distance(Speed[knot], Mass[lb]) -> Length[ft]
+foreign aviation.fuel_burn(Duration[h]) -> Volume[gal]
+
+print aviation.takeoff_distance(222.24 km per h, 2400 lb) as m     # 11.70432...
+print aviation.fuel_burn(90 min) as l                                # 53.942117922
+```
+
+The Python library ([`b_examples/aviation.py`](../b_examples/aviation.py)) takes knots and pounds and returns feet. B passes `120.0` and `2400.0`, and turns the 38.4 it gets back into 11.70432 m. Passing a mass where a speed belongs is a compile error. So is passing a plain number where the library expects a duration.
+
+`Length[ft]` means "a length, expressed in feet at this border". A unit declaration may only restate the signature B has already read from the relative's metadata. The Python stub says `float`, the declaration says `Speed[knot]`, and both describe the same Float. B refuses a declaration that contradicts the metadata. The same works for the .NET methods B has registered: `foreign math.Sqrt(Area[m2]) -> Length[m]`. npm functions declared through `foreign` follow the same rule, but this has not been run against a real package yet.
+
+## Borrowed vocabulary
+
+B's own table always wins. A unit name it does not know is looked up in [pint](https://pint.readthedocs.io/) when pint is installed in the same Python. Each borrowed unit appears in the compiler's assumptions, for example `unit furlong from pint 0.24: definition borrowed, not checked by B`. Temperatures and dimensions B cannot map are never borrowed. B's `mil` stays the Swedish mil, even though pint's `mil` is a thousandth of an inch.
+
+*Not verified here:* pint could not be installed in the environment where this was written. The adapter is tested with a stand-in registry that follows pint's interface (`Quantity(1, name).to_base_units()`, `.magnitude`, `.dimensionality`). Run the tests with pint installed before relying on it.
+
 ## Syntax
 
 - **A quantity literal** is a number followed by a unit: `5 km`, `19.5 kr`, `-5 degC`. A compound unit uses `per`: `90 km per h`, `10.5 SEK per USD`. Other products come from arithmetic: `3 kW * 2 h` is energy.
@@ -63,4 +86,5 @@ The units are checked and then erased. Every quantity becomes a Float in its SI 
 
 - **Money is Float at runtime.** That is fine for estimates but wrong for bookkeeping. Exact decimal money is the most important next step.
 - **No quantities in lists, dictionaries or functions defined by examples yet.** Convert with `as` first.
-- Foreign calls see plain numbers only, so `as` is required at the boundary. A Python function that takes meters and one that takes feet look the same to B. This is exactly the kind of false friend the vision describes.
+- Foreign functions without a unit declaration see plain numbers, so `as` is required at their border.
+- **Copied vocabulary to shrink.** About half the built-in table (imperial units, calories, atmospheres, horsepower) belongs in a borrowed vocabulary. It stays built in until pint, or .NET's UnitsNet, can be relied on to be present.

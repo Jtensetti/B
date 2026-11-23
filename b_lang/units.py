@@ -191,16 +191,73 @@ DIMENSION_TYPES = {
 }
 
 
+# Vocabulary borrowed from a relative. B's own table always wins; a name it
+# lacks is looked up in pint when pint is installed. Each borrowed unit is
+# reported as an assumption, like any other foreign metadata.
+_PINT_BASES = {"[length]": "m", "[mass]": "kg", "[time]": "s", "[current]": "A",
+               "[substance]": "mol", "[luminosity]": "cd", "[information]": "bit"}
+_vocabulary = None
+BORROWED: dict[str, str] = {}  # unit name -> provenance, for the current compilation
+
+
+def use_vocabulary(registry, provenance: str = "pint") -> None:
+    """Install a pint-compatible registry (tests use a small stand-in)."""
+    global _vocabulary
+    _vocabulary = (registry, provenance) if registry is not None else False
+
+
+def _registry():
+    global _vocabulary
+    if _vocabulary is None:
+        try:
+            import pint
+            _vocabulary = (pint.UnitRegistry(), f"pint {pint.__version__}")
+        except Exception:  # not installed, or failed to load: B's own table only
+            _vocabulary = False
+    return _vocabulary or None
+
+
+def borrowed(name: str) -> tuple[F, Dim, F] | None:
+    found = _registry()
+    if found is None:
+        return None
+    registry, provenance = found
+    try:
+        base = registry.Quantity(1, name).to_base_units()
+        dimensionality = dict(base.dimensionality)
+        magnitude = base.magnitude
+    except Exception:
+        return None
+    exponents = {}
+    for key, power in dimensionality.items():
+        if key not in _PINT_BASES or power != int(power):
+            return None  # temperatures and unknown dimensions stay with B's own table
+        exponents[_PINT_BASES[key]] = int(power)
+    try:
+        factor = F(str(magnitude))
+    except (TypeError, ValueError):
+        return None
+    if factor <= 0:
+        return None
+    BORROWED[name] = provenance
+    return factor, dim(**exponents), F(0)
+
+
+def _lookup(name: str) -> tuple[F, Dim, F]:
+    if name in UNITS:
+        return UNITS[name]
+    found = borrowed(name)
+    if found is None:
+        raise BError("E_UNIT", f"Unknown unit {name!r}" + _suggest(name))
+    return found
+
+
 def unit_of(spec) -> tuple[F, Dim, F]:
     name, per = spec
-    if name not in UNITS:
-        raise BError("E_UNIT", f"Unknown unit {name!r}" + _suggest(name))
-    factor, dimension, offset = UNITS[name]
+    factor, dimension, offset = _lookup(name)
     if per is None:
         return factor, dimension, offset
-    if per not in UNITS:
-        raise BError("E_UNIT", f"Unknown unit {per!r}" + _suggest(per))
-    other, below, other_offset = UNITS[per]
+    other, below, other_offset = _lookup(per)
     if offset or other_offset:
         raise BError("E_UNIT", "An absolute temperature cannot be part of 'per'; use dK, dC or dF")
     return factor / other, _combine(dimension, below, -1), F(0)
@@ -234,6 +291,9 @@ def type_dimension(syntax) -> Dim | None:
     name, args = syntax
     if name in DIMENSION_TYPES and not args:
         return DIMENSION_TYPES[name]
+    if name in DIMENSION_TYPES:
+        boundary_unit(syntax)  # validates Length[ft]
+        return DIMENSION_TYPES[name]
     if name in ("Money", "Pengar"):
         if len(args) != 1 or args[0][0] not in CURRENCIES or args[0][1]:
             raise BError("E_UNIT", f"{name} needs one currency code, for example {name}[SEK]")
@@ -245,6 +305,38 @@ def type_dimension(syntax) -> Dim | None:
     for arg in args:
         if type_dimension(arg) is not None:
             raise BError("E_UNIT", f"Quantities inside {name} are not supported yet; convert with 'as'")
+    return None
+
+
+def boundary_unit(syntax) -> tuple[F, Dim, F] | None:
+    """The unit a foreign value is expressed in: Length[ft] is a length in feet."""
+    name, args = syntax
+    if name in DIMENSION_TYPES and args:
+        if len(args) != 1 or args[0][1]:
+            raise BError("E_UNIT", f"{name}[...] takes one unit name, for example {name}[m]")
+        factor, dimension, offset = unit_of((args[0][0], None))
+        if dimension != DIMENSION_TYPES[name]:
+            raise BError("E_UNIT", f"{args[0][0]} measures {describe(dimension)}, not {name}")
+        return factor, dimension, offset
+    if name in ("Money", "Pengar", "Rate", "Kurs"):
+        dimension = type_dimension(syntax)
+        return F(1), dimension, F(0)
+    return None
+
+
+def _base_name(dimension: Dim) -> str:
+    for name, (factor, d, offset) in UNITS.items():
+        if d == dimension and factor == 1 and not offset:
+            return name
+    return "unit"
+
+
+def _dotted(node) -> str | None:
+    if isinstance(node, Expr) and node.kind == "name":
+        return node.parts[0]
+    if isinstance(node, Expr) and node.kind == "attr":
+        base = _dotted(node.parts[0])
+        return None if base is None else f"{base}.{node.parts[1]}"
     return None
 
 
@@ -262,8 +354,9 @@ def _is_zero(node: Expr) -> bool:
 class _Checker:
     """Check dimensions. Fold quantities known at compile time with exact fractions."""
 
-    def __init__(self, signatures: dict[str, tuple[list[Dim | None], Dim | None]]):
+    def __init__(self, signatures: dict[str, tuple[list[Dim | None], Dim | None]], foreign=None):
         self.signatures = signatures
+        self.foreign = foreign or {}  # "alias.member" -> ([unit or None per parameter], unit or None)
         self.exact: dict[int, F] = {}  # id of a rewritten literal -> its exact value
         self.bound: dict[str, F] = {}  # top-level bindings with an exact value
 
@@ -281,6 +374,40 @@ class _Checker:
         node = _float(value)
         self.exact[id(node)] = value
         return node
+
+    def border_call(self, path, target, arguments, env):
+        """Convert B's SI values to the units a foreign function expects, and back."""
+        expected, result = self.foreign[path]
+        rewritten = []
+        for index, argument in enumerate(arguments):
+            value, dimension = self.expr(argument, env)
+            spec = expected[index] if index < len(expected) else None
+            if spec is None:
+                if dimension:
+                    raise BError("E_UNIT", f"Argument {index + 1} of {path} is a plain number, "
+                                 f"got {describe(dimension)}")
+                rewritten.append(value)
+                continue
+            factor, wanted, offset = spec
+            if dimension != wanted and not (_is_zero(argument) and wanted):
+                raise BError("E_UNIT", f"Argument {index + 1} of {path} must be {describe(wanted)}, "
+                             f"got {describe(dimension)}")
+            known = self.known(value, argument)
+            if known is not None:
+                rewritten.append(self.literal((known - offset) / factor))
+            else:
+                if offset:
+                    value = Expr("sub", (value, _float(offset)))
+                rewritten.append(value if factor == 1 else Expr("div", (value, _float(factor))))
+        call = Expr("invoke", (target, tuple(rewritten)))
+        if result is None:
+            return call, ()
+        factor, dimension, offset = result
+        if factor != 1:
+            call = Expr("mul", (call, _float(factor)))
+        if offset:
+            call = Expr("add", (call, _float(offset)))
+        return call, dimension
 
     def fold(self, kind, a, b, parts, dimension):
         """Compute a quantity expression exactly when both operands are known."""
@@ -397,6 +524,9 @@ class _Checker:
                                      f"{describe(wanted or ())}, got {describe(dimension)}")
                     rewritten.append(value)
                 return Expr(kind, (target, tuple(rewritten))), result or ()
+            path = _dotted(target)
+            if path in self.foreign:
+                return self.border_call(path, target, arguments, env)
             target = self._children(target, env, "A called value")
             return Expr(kind, (target, tuple(self.plain(a, env, "An argument to a foreign or computed call")
                                              for a in arguments))), ()
@@ -429,6 +559,9 @@ def _uses_units(statements) -> bool:
             params, result = statement.parts[1], statement.parts[2]
             if any(type_dimension(t) is not None for _, t in params) or type_dimension(result) is not None:
                 return True
+        if statement.kind == "foreign" and any(type_dimension(t) is not None
+                                                for t in (*statement.parts[1], statement.parts[2])):
+            return True
         if statement.kind == "let" and statement.parts[1] is not None and type_dimension(statement.parts[1]) is not None:
             return True
         if visit(statement.parts):
@@ -438,6 +571,7 @@ def _uses_units(statements) -> bool:
 
 def check(statements: list[Stmt]) -> list[Stmt]:
     """Check dimensions and erase units. Programs without units are returned unchanged."""
+    BORROWED.clear()
     if not _uses_units(statements):
         return statements
     signatures = {}
@@ -445,7 +579,19 @@ def check(statements: list[Stmt]) -> list[Stmt]:
         if statement.kind == "fn":
             name, params, result = statement.parts[:3]
             signatures[name] = ([type_dimension(t) for _, t in params], type_dimension(result))
-    checker = _Checker(signatures)
+    foreign = {}
+    for statement in statements:
+        if statement.kind == "foreign":
+            path, params, result = statement.parts
+            specs = []
+            for t in (*params, result):
+                if type_dimension(t) is not None and boundary_unit(t) is None:
+                    raise BError("E_UNIT", f"{path} receives plain numbers; say which unit it uses, "
+                                 f"for example {t[0]}[{_base_name(type_dimension(t))}]")
+                specs.append(boundary_unit(t))
+            if any(specs):
+                foreign[path] = (specs[:-1], specs[-1])
+    checker = _Checker(signatures, foreign)
     env: dict[str, Dim] = {}
     rewritten = []
     for statement in statements:
@@ -485,6 +631,11 @@ def check(statements: list[Stmt]) -> list[Stmt]:
             if annotation is None and dimension:
                 new_annotation = None
             rewritten.append(Stmt(kind, (name, new_annotation, new_value)))
+        elif kind == "foreign" and parts[0] in foreign:
+            path, params, result = parts
+            plain = [FLOAT_SYNTAX if type_dimension(t) is not None else t for t in params]
+            new_result = FLOAT_SYNTAX if type_dimension(result) is not None else result
+            rewritten.append(Stmt("foreign_units", (path, plain, new_result)))
         elif kind in ("print", "assert"):
             label = "print" if kind == "print" else "assert"
             rewritten.append(Stmt(kind, (checker.plain(parts[0], env, f"{label}"),)))
