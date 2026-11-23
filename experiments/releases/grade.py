@@ -40,6 +40,8 @@ def grade(step: int, workspace: Path) -> dict:
             data.pop("stale_days", None)
         if step < 4:
             data.pop("watch", None)
+        if step < 8:
+            data.pop("stale_overrides", None)
         try:
             done = subprocess.run(run, input=json.dumps(data) + "\n", capture_output=True, text=True,
                                   cwd=workspace, timeout=60)
