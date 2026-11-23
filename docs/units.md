@@ -62,7 +62,7 @@ B's own table always wins. A unit name it does not know is looked up in [pint](h
 | Length | m, km, dm, cm, mm, um, nm, **mil** (Swedish, 10 km), inch, ft, yd, mi, nmi, au |
 | Mass | kg, g, mg, ug, t, **hg**, lb, oz |
 | Time | s, ms, us, ns, min, h, day (24 h), week |
-| Area, volume | m2, cm2, mm2, km2, ha, m3, cm3, l, **dl**, cl, ml, gal (US) |
+| Area, volume | m2, cm2, mm2, km2, ha, inch2, ft2, m3, cm3, l, **dl**, cl, ml, inch3, ft3, gal (US) |
 | Speed, frequency | mph, knot, any length `per` time, Hz, kHz, MHz, GHz, rpm |
 | Force, energy, power, pressure | N, kN, J, kJ, MJ, Wh, kWh, MWh, cal, kcal, W, kW, MW, hp (metric), Pa, hPa, kPa, bar, atm |
 | Electricity, chemistry, light | A, mA, C, mAh, V, mV, kV, ohm, mol, cd |

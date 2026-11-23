@@ -130,3 +130,14 @@ def test_ideal_flight_against_tick_oracle_and_rebound_counterexample():
         speed -= 1
     with pytest.raises(BContractError):
         rebounding["velocity"](5)
+
+
+def test_a_python_module_next_to_the_program_can_be_imported(tmp_path, capsys, monkeypatch):
+    import sys
+    from b_lang.cli import main
+    (tmp_path / "carrier_next_to_program.py").write_text("def rate(weight_lb: float) -> float:\n    return 2 * weight_lb\n")
+    program = tmp_path / "quote.bee"
+    program.write_text("use py:carrier_next_to_program as carrier\nprint carrier.rate(2.0)\n")
+    monkeypatch.setattr(sys, "path", list(sys.path))
+    assert main(["run", str(program)]) == 0
+    assert capsys.readouterr().out.strip() == "4.0"

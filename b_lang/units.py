@@ -105,6 +105,10 @@ _unit("dl", F(1, 10**4), dim(m=3))
 _unit("cl", F(1, 10**5), dim(m=3))
 _unit("ml", F(1, 10**6), dim(m=3))
 _unit("gal", F(3785411784, 10**12), dim(m=3))  # US liquid gallon
+_unit("inch3", F(254, 10000) ** 3, dim(m=3))
+_unit("ft3", F(3048, 10000) ** 3, dim(m=3))
+_unit("inch2", F(254, 10000) ** 2, dim(m=2))
+_unit("ft2", F(3048, 10000) ** 2, dim(m=2))
 
 _unit("mph", F(1609344, 3600000), dim(m=1, s=-1))
 _unit("knot", F(1852, 3600), dim(m=1, s=-1))
@@ -354,6 +358,10 @@ def _is_zero(node: Expr) -> bool:
 class _Checker:
     """Check dimensions. Fold quantities known at compile time with exact fractions."""
 
+    HANDLED = {"quantity", "convert", "name", "literal", "add", "sub", "mul", "div", "mod", "neg", "cmp",
+               "conditional", "coalesce", "and", "or", "not", "invoke", "each", "locals",
+               "summarize", "history_count"}
+
     def __init__(self, signatures: dict[str, tuple[list[Dim | None], Dim | None]], foreign=None):
         self.signatures = signatures
         self.foreign = foreign or {}  # "alias.member" -> ([unit or None per parameter], unit or None)
@@ -559,7 +567,17 @@ class _Checker:
                                plain(source, "A collection"), plain(condition, "where"))), ()
         if kind in ("summarize", "history_count"):
             return node, ()  # binders range over plain list elements; quantities cannot enter lists
-        return self._children(node, env, f"A value inside {kind}"), ()
+        return self._generic(node, env, f"A value inside {kind}"), ()
+
+    def _generic(self, node, env, context):
+        """Any other expression: its parts must be plain numbers, and so is its result."""
+        def part(value):
+            if isinstance(value, Expr):
+                return self.plain(value, env, context)
+            if isinstance(value, tuple):
+                return tuple(part(v) for v in value)
+            return value
+        return Expr(node.kind, tuple(part(p) for p in node.parts))
 
     def _children(self, node, env, context):
         if isinstance(node, Expr):
@@ -567,7 +585,9 @@ class _Checker:
                 return self.plain(node, env, context)
             if node.kind in ("list", "dict", "attr", "lookup"):
                 return Expr(node.kind, tuple(self._children(p, env, context) for p in node.parts))
-            return self.plain(node, env, context)
+            if node.kind in self.HANDLED:
+                return self.plain(node, env, context)
+            return self._generic(node, env, context)
         if isinstance(node, tuple):
             return tuple(self._children(p, env, context) for p in node)
         return node

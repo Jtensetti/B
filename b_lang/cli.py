@@ -142,6 +142,12 @@ def main(argv: list[str] | None = None) -> int:
     ask_command.add_argument("--apply", action="store_true", help="Write the answered revision back to the files")
     ask_command.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    program = getattr(args, "file", None)
+    if isinstance(program, Path):
+        # As Python does for a script: modules next to the program can be imported.
+        folder = str(program.resolve().parent)
+        if folder not in sys.path:
+            sys.path.insert(0, folder)
     if args.command == "ask":
         from . import ask_cli
         return ask_cli.run(args, read_source)

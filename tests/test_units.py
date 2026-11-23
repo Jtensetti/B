@@ -94,3 +94,13 @@ def test_unit_table_is_consistent():
     assert all(code in UNITS for code in CURRENCIES)
     assert UNITS["inch"][0] == Fraction(254, 10000) and UNITS["day"][0] == 86400
     assert "month" not in UNITS and "year" not in UNITS
+
+
+def test_records_lists_and_containment_work_in_a_program_with_units():
+    source = ('record Parcel { id: Text, kg: Float }\n'
+              'fn mass(p: Parcel) -> Mass = p.kg * 1 kg\n'
+              'let parcels = [{id = "a", kg = 2.0}, {id = "b", kg = 0.5}]\n'
+              'print {p.id: mass(p) as lb for p in parcels where "a" in [p.id]}\n'
+              'print 1 inch3 as cm3\n')
+    assert output(source)[0].startswith("{'a': 4.40924")
+    assert output(source)[1] == "16.387064"
