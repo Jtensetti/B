@@ -111,3 +111,21 @@ def test_without_a_vocabulary_only_bs_own_units_exist():
             compile_b("print 1 furlong as m\n")
     finally:
         units._vocabulary = None
+
+
+def test_a_library_result_plus_a_known_quantity_keeps_both_terms():
+    # Regression: exact folding once looked values up by id(), which Python reuses.
+    source = AVIATION + "".join(f"let f{i} = aviation.fuel_burn({i + 1} h) + 12 l\n" for i in range(40))
+    source += "print f39 as l\n"
+    assert output(source) == [pytest.approx(9.5 * 40 * 3.785411784 + 12)]
+
+
+def test_unit_mistake_study_is_current():
+    import json
+    import subprocess
+    import sys
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[1]
+    run = subprocess.run([sys.executable, "experiments/border-units/check.py"], capture_output=True,
+                         text=True, cwd=root, check=True)
+    assert json.loads(run.stdout) == json.loads((root / "experiments/border-units/results.json").read_text())

@@ -39,6 +39,8 @@ The Python library ([`b_examples/aviation.py`](../b_examples/aviation.py)) takes
 
 `Length[ft]` means "a length, expressed in feet at this border". A unit declaration may only restate the signature B has already read from the relative's metadata. The Python stub says `float`, the declaration says `Speed[knot]`, and both describe the same Float. B refuses a declaration that contradicts the metadata. The same works for the .NET methods B has registered: `foreign math.Sqrt(Area[m2]) -> Length[m]`. npm functions declared through `foreign` follow the same rule, but this has not been run against a real package yet.
 
+A [study of seven unit mistakes](../experiments/border-units/README.md) in a two-library program shows what this buys: B rejects six of them before running. The seventh, `95 h` written for `95 min`, is a valid duration and passes.
+
 ## Borrowed vocabulary
 
 B's own table always wins. A unit name it does not know is looked up in [pint](https://pint.readthedocs.io/) when pint is installed in the same Python. Each borrowed unit appears in the compiler's assumptions, for example `unit furlong from pint 0.24: definition borrowed, not checked by B`. Temperatures and dimensions B cannot map are never borrowed. B's `mil` stays the Swedish mil, even though pint's `mil` is a thousandth of an inch.

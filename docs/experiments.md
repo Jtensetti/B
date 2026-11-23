@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.24 units at a language border
+
+[Seven unit mistakes](../experiments/border-units/README.md) in a program that uses two Python libraries in imperial units. B rejects six before running. Typed Python runs all seven with wrong results. The experiment also found a folding bug in B 0.22, which is fixed.
+
 ## B 0.20 decisions as source
 
 [Hidden policies](../experiments/decisions/README.md) compare how many examples B needs when it chooses its own questions with the same number of random examples. Two requirement changes count the owner's lines and answers.

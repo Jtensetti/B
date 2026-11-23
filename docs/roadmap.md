@@ -8,7 +8,7 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 ## B 0.24
 
-Milestone 2 of the [vision](vision.md) has started. An `example` on an imported function is type checked, units included, and runs where it stands. `b check --library-examples` reports each fact separately after an upgrade. A simulated upgrade of a Python VAT module is caught. Not done: .NET and npm runs (no SDK or packages here), properties over many inputs, and `keeping` on library functions.
+Milestone 2 of the [vision](vision.md) has started. An `example` on an imported function is type checked, units included, and runs where it stands. `b check --library-examples` reports each fact separately after an upgrade. A simulated upgrade of a Python VAT module is caught. Not done: .NET and npm runs (no SDK or packages here), properties over many inputs, and `keeping` on library functions. The [unit-mistake study](../experiments/border-units/README.md) tests milestone 1's kill criterion on one program. Unit declarations cost no extra lines and catch six of seven mistakes, measured against typed Python without a unit library. Next: milestone 3, records and data, which the journey trial needs.
 
 ## B 0.23
 

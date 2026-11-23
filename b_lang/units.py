@@ -357,12 +357,15 @@ class _Checker:
     def __init__(self, signatures: dict[str, tuple[list[Dim | None], Dim | None]], foreign=None):
         self.signatures = signatures
         self.foreign = foreign or {}  # "alias.member" -> ([unit or None per parameter], unit or None)
-        self.exact: dict[int, F] = {}  # id of a rewritten literal -> its exact value
+        # id of a rewritten literal -> (that literal, its exact value). The node is kept so its
+        # id cannot be reused by another object; identity is checked on every lookup.
+        self.exact: dict[int, tuple[Expr, F]] = {}
         self.bound: dict[str, F] = {}  # top-level bindings with an exact value
 
     def known(self, node, original=None) -> F | None:
-        if id(node) in self.exact:
-            return self.exact[id(node)]
+        entry = self.exact.get(id(node))
+        if entry is not None and entry[0] is node:
+            return entry[1]
         source = original if original is not None else node
         if isinstance(source, Expr) and source.kind == "literal" and type(source.parts[0]) in (int, float):
             return F(str(source.parts[0])) if type(source.parts[0]) is float else F(source.parts[0])
@@ -370,9 +373,13 @@ class _Checker:
             return self.bound[source.parts[0]]
         return None
 
+    def _is_exact(self, node) -> bool:
+        entry = self.exact.get(id(node))
+        return entry is not None and entry[0] is node
+
     def literal(self, value: F) -> Expr:
         node = _float(value)
-        self.exact[id(node)] = value
+        self.exact[id(node)] = (node, value)
         return node
 
     def border_call(self, path, target, arguments, env):
@@ -414,7 +421,7 @@ class _Checker:
         left, right = self.known(a, parts[0]), self.known(b, parts[1])
         if dimension is None or left is None or right is None or (kind == "div" and right == 0):
             return Expr(kind, (a, b))
-        if not (id(a) in self.exact or id(b) in self.exact or dimension):
+        if not (self._is_exact(a) or self._is_exact(b) or dimension):
             return Expr(kind, (a, b))
         ops = {"add": lambda x, y: x + y, "sub": lambda x, y: x - y,
                "mul": lambda x, y: x * y, "div": lambda x, y: x / y}
