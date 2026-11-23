@@ -1,0 +1,39 @@
+use py:tariff as tariff
+use py:quote_helpers as helpers
+use py:json as json
+use js:"fastest-levenshtein" as words
+
+record Order { id: Text, product: Text, country: Text, express: Option[Bool], qty: Option[Int] }
+record Input { orders: List[Order], catalog: Dict[Text, Float] }
+
+foreign json.loads(Text) -> Input
+foreign helpers.zone_or_none(Text) -> Option[Int]
+
+let data = json.loads(read_line())
+let names = sorted(keys(data.catalog))
+
+fn find(name: Text) -> Option[Text] =
+    let near = if len(names) == 0 then "" else words.closest(name, names)
+    if name in data.catalog then name
+    else if len(names) > 0 and words.distance(name, near) <= 2 then near
+    else none
+
+fn total_sek(zone: Int, weight: Float, express: Bool) -> Float =
+    let base_incl_vat = tariff.base_price(zone, weight)
+    let express_fee = if express then 50.0 else 0.0
+    let fuel = if zone == 4 then 30.0 else 0.0
+    let price = round(base_incl_vat + (express_fee + fuel) * 1.25, 2)
+    if weight > 20.0 then round(price * 0.9, 2) else price
+
+fn quote(o: Order) -> Option[Float] =
+    let name = find(o.product)
+    let zone = helpers.zone_or_none(o.country)
+    if name == none then none
+    else if zone == none then none
+    else total_sek(zone, (o.qty ?? 1) * (data.catalog[name] ?? 0.0), o.express ?? false)
+
+let quoted = [o for o in data.orders where quote(o) != none]
+let quotes = {o.id: quote(o) ?? 0.0 for o in quoted}
+print to_json({
+    quotes = quotes,
+    unknown = sorted([o.id for o in data.orders where not (o.id in quotes)])})

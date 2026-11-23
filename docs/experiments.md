@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.28 a silent library upgrade (pre-registered)
+
+[A Python library starts returning VAT-inclusive prices](../experiments/upgrade/PREREGISTRATION.md) between two changes. Three Haiku solvers per language. No wrong quotes in either language: every solver noticed the upgrade during the next change. The hypothesis that B's library examples reduce wrong results failed.
+
 ## B 0.28 ambiguous changes (pre-registered)
 
 [Three ambiguous owner changes](../experiments/ambiguity/PREREGISTRATION.md), three Haiku solvers per language. No wrong totals and no questions in either language. The hypothesis that `also` and `b ask` reduce wrong totals failed its kill criterion.

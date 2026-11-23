@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
 
+## After B 0.28: the upgrade trial
+
+The [pre-registered upgrade trial](../experiments/upgrade/PREREGISTRATION.md) replaced a Python library between two changes with a version whose `base_price` includes VAT. Wrong quotes were 0 for B and 0 for Python. Every solver noticed the upgrade while making the next change, and none had written a library check. H2 fails. B used 1.03 times Python's output tokens. Most of B's extra cost came from one gap: B cannot handle an exception from a foreign function, so every B solver wrote a Python wrapper for `tariff.zone`. Next: close that gap in the grammar, so that a foreign call that can fail becomes an `Option`.
+
 ## After B 0.28: the ambiguity trial
 
 The [pre-registered ambiguity trial](../experiments/ambiguity/PREREGISTRATION.md) gave six Haiku solvers three changes with two reasonable readings each. B solvers had `also` and `b ask`. Wrong totals were 0 for B and 0 for Python, no solver asked a question, and B used 0.89 times Python's output tokens. H1 fails, and as the pre-registration requires, the roadmap drops the ambition that B reduces errors in changes. The ambiguity never reached the code: every first build put the free-child rule in one condition that covered both the ticket and the fee. `also` and `b ask` stay as tools, but they no longer drive the language's growth. Next: measure errors only where reading the code cannot prevent them. Library behavior that changes underneath a program is milestone 2, and units at a language border are milestone 1.
