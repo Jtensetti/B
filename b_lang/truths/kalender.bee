@@ -1,0 +1,6 @@
+domain dag: "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"
+group helg of dag: "lördag", "söndag"
+group vardag of dag: "måndag", "tisdag", "onsdag", "torsdag", "fredag"
+domain månad: "januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"
+group sommar of månad: "juni", "juli", "augusti"
+group vinter of månad: "december", "januari", "februari"

@@ -7,6 +7,7 @@ from lark import Lark, Transformer
 from lark.exceptions import LarkError, UnexpectedCharacters, UnexpectedToken, VisitError
 from importlib import resources
 import re
+import unicodedata
 
 @dataclass(frozen=True)
 class Expr:
@@ -149,6 +150,9 @@ class ToModel(Transformer):
         like = xs[2][1] if xs[2] is not None else None
         return Stmt("also", (str(xs[0]), xs[1] or (), tuple(xs[3] or ()), like))
     def domain_stmt(self, xs): return Stmt("domain", (str(xs[0]), xs[1]))
+    def group_stmt(self, xs): return Stmt("group", (str(xs[0]), str(xs[1]), xs[2]))
+    def know_stmt(self, xs): return Stmt("know", (str(xs[0]),))
+    def membership(self, xs): return Expr("member", (xs[0], str(xs[1])))
     def learned_stmt(self, xs):
         return Stmt("learn", (str(xs[0]), xs[1] or [], xs[2], xs[3] is not None))
     def example_stmt(self, xs):
@@ -196,6 +200,10 @@ def parse(source: str) -> list[Stmt]:
             raise LarkError(f"Expected a final 'else => result' row before '}}' "
                             f"at line {error.line}, column {error.column}") from error
         raise
+    for token in tree.scan_values(lambda t: getattr(t, "type", None) == "NAME"):
+        if not token.isidentifier() or unicodedata.normalize("NFKC", token) != token:
+            raise LarkError(f"Name {str(token)!r} at line {token.line} is not in normalized form; "
+                            "write it with ordinary letters")
     try:
         return ToModel().transform(tree)
     except VisitError as error:

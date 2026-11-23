@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.20
+# B language reference — implemented experimental v0.21
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -11,6 +11,8 @@ For source adoption and contract analysis across functions, see [source adoption
 `also free_entry(true, "sun") like (true, "sat")` additionally requires the new case to be indistinguishable from a case the rule already covered, for every pure function that shares an input name with the rule. `b ask` finds that case when the declaration omits it and turns a remaining difference into one question. See [precedent questions](precedent-questions.md).
 
 `fn price(child: Bool, day: Text) -> Int pure by examples` declares a pure function without a body. The compiler derives an ordered rule list from the `example price(true, "sat") == 0` statements for that name. `example` statements also check ordinary functions. A changed result must be written `... == 120 was 100`. `domain day: "mon", ..., "sun"` lists the values of any parameter named `day`. See [decisions as source](examples.md).
+
+`know kalender` includes domains and groups that ship with B. `group helg of dag: "lördag", "söndag"` names a subset, and `dag in helg` tests membership. Names may contain any letters in normalized Unicode form. See [what B knows](knowledge.md).
 
 ## 1. Source form and tokens
 

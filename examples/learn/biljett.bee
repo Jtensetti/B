@@ -1,0 +1,15 @@
+know kalender
+
+fn pris(barn: Bool, dag: Text) -> Int pure by examples
+example pris(false, "måndag") == 100
+example pris(true, "lördag") == 0
+example pris(true, "tisdag") == 100
+example pris(true, "söndag") == 100
+example pris(false, "lördag") == 100
+example pris(true, "fredag") == 100
+example pris(true, "söndag") == 0 was 100
+
+fn avgift(dag: Text) -> Int pure = if dag in helg then 20 else 10
+
+print pris(true, "söndag") + avgift("söndag")
+print pris(false, "onsdag") + avgift("onsdag")

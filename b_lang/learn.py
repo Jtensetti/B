@@ -41,14 +41,17 @@ class _Limit(Exception):
 @dataclass(frozen=True)
 class Atom:
     index: int
-    op: str  # "is", "==", "<", ">="
+    op: str  # "is", "==", "<", ">=", "in"
     value: object
+    label: str | None = None  # the group name for "in"
 
     def holds(self, argument) -> bool:
         if self.op == "is":
             return argument is self.value
         if argument is _FRESH:
             return False
+        if self.op == "in":
+            return argument in self.value
         if self.op == "==":
             return argument == self.value
         return argument < self.value if self.op == "<" else argument >= self.value
@@ -75,6 +78,8 @@ def _test_text(atom: Atom, names: list[str]) -> str:
     name = names[atom.index]
     if atom.op == "is":
         return name if atom.value else f"not {name}"
+    if atom.op == "in":
+        return f"{name} in {atom.label}"
     return f"{name} {atom.op} {literal(atom.value)}"
 
 
@@ -90,6 +95,8 @@ def to_expr(rule: Rule, names: list[str]) -> Expr:
         name = Expr("name", (names[atom.index],))
         if atom.op == "is":
             return name if atom.value else Expr("not", (name,))
+        if atom.op == "in":
+            return Expr("member", (name, atom.label))
         return Expr("cmp", (name, atom.op, Expr("literal", (atom.value,))))
 
     body = Expr("literal", (rule.fallback,))
@@ -116,10 +123,11 @@ class Learned:
     hints: dict = None
     domains: dict = None
     reason: str | None = None  # "readings" or "coverage"
+    groups: dict = None
 
     def with_example(self, arguments: tuple, value) -> "Learned":
         return learn(self.name, self.params, self.result, [*self.examples, (arguments, value)],
-                     self.hints, self.domains)
+                     self.hints, self.domains, self.groups)
 
     @property
     def determined(self) -> bool:
@@ -164,7 +172,7 @@ def resolve_examples(name: str, rows: list[Stmt]) -> list[tuple[tuple, object]]:
 
 def learn(name: str, params: list[tuple[str, str]], result: str,
           examples: list[tuple[tuple, object]], hints: dict[str, set] | None = None,
-          domains: dict[str, tuple] | None = None) -> Learned:
+          domains: dict[str, tuple] | None = None, groups: dict | None = None) -> Learned:
     names = [n for n, _ in params]
     types = [t for _, t in params]
     if not examples:
@@ -208,7 +216,11 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
             atoms.append([Atom(i, "is", True), Atom(i, "is", False)])
             grid_axes.append([False, True])
         elif type_name == "Text":
-            atoms.append([Atom(i, "==", v) for v in values[i]])
+            # A named group is one test: knowing "weekend" makes a weekend rule simple.
+            known_groups = [Atom(i, "in", frozenset(members), label)
+                            for label, (param, members) in sorted((groups or {}).items())
+                            if param == params[i][0]]
+            atoms.append(known_groups + [Atom(i, "==", v) for v in values[i]])
             grid_axes.append(values[i] if closed[i] else [*values[i], _FRESH])
         else:
             thresholds = {t for v in values[i] for t in (v, v + 1)}
@@ -341,10 +353,10 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
     for point in grid:
         candidates = wider if inner(point) else rules
         results = [r.apply(point) for r in candidates]
-        groups: dict = {}
+        tally: dict = {}
         for value in results:
-            groups[(type(value), value)] = groups.get((type(value), value), 0) + 1
-        if len(groups) < 2:
+            tally[(type(value), value)] = tally.get((type(value), value), 0) + 1
+        if len(tally) < 2:
             continue
         fresh = any(v is _FRESH for v in point)
         # Prefer a question that splits the simplest readings, then an even split.
@@ -354,7 +366,7 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
         distance = sum(1 for i, (a, b) in enumerate(zip(point, inputs[-1]))
                        if types[i] != "Int" and a is not b and a != b)
         gap = min(sum(abs(point[i] - row[i]) for i in range(len(types)) if types[i] == "Int") for row in inputs)
-        score = (fresh, not splits_simplest, max(groups.values()) / len(results), distance, -gap, -len(groups))
+        score = (fresh, not splits_simplest, max(tally.values()) / len(results), distance, -gap, -len(tally))
         if best is None or score < best[0]:
             best = (score, point, results)
     question, answers, unseen_only = None, [], False
@@ -378,7 +390,7 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
             question, answers = found_gap
             reason = "coverage"
     return Learned(name, names, examples, canonical, alternatives, question, answers, unseen_only,
-                   list(params), result, hints, domains, reason)
+                   list(params), result, hints, domains, reason, groups)
 
 
 def _single_witness_question(rule: Rule, examples, params, domains):
@@ -475,14 +487,81 @@ def collect_domains(statements: list[Stmt], hints: dict[str, set]) -> dict[str, 
     return domains
 
 
+def include_knowledge(statements: list[Stmt]) -> list[Stmt]:
+    """Replace `know calendar` with the domains and groups B ships in b_lang/truths."""
+    from importlib import resources
+    from .model import parse
+    result, seen = [], set()
+    for statement in statements:
+        if statement.kind != "know":
+            result.append(statement)
+            continue
+        topic, = statement.parts
+        if topic in seen:
+            continue
+        seen.add(topic)
+        source = resources.files("b_lang").joinpath("truths", f"{topic}.bee")
+        if not source.is_file():
+            available = sorted(p.name[:-4] for p in resources.files("b_lang").joinpath("truths").iterdir()
+                               if p.name.endswith(".bee"))
+            raise BError("E_KNOW", f"B knows no topic {topic!r}; available: {', '.join(available)}")
+        known = parse(source.read_text(encoding="utf-8"))
+        if any(s.kind not in ("domain", "group") for s in known):
+            raise BError("E_KNOW", f"Knowledge file {topic} may only declare domains and groups")
+        result.extend(known)
+    return result
+
+
+def collect_groups(statements: list[Stmt], domains: dict[str, tuple]) -> dict[str, tuple[str, tuple]]:
+    """`group weekend of day: "sat", "sun"` names a subset of an input's values."""
+    groups: dict[str, tuple[str, tuple]] = {}
+    for statement in statements:
+        if statement.kind != "group":
+            continue
+        name, param, members = statement.parts
+        if name in groups:
+            raise BError("E_DOMAIN", f"Duplicate group {name}")
+        if not members or len({type(v) for v in members}) != 1 or type(members[0]) is not str:
+            raise BError("E_DOMAIN", f"group {name} needs one or more Text literals")
+        if param in domains:
+            outside = [v for v in members if v not in domains[param]]
+            if outside:
+                raise BError("E_DOMAIN", f"group {name}: {literal(outside[0])} is not in domain {param}")
+        groups[name] = (param, tuple(members))
+    return groups
+
+
+def desugar_membership(node, groups: dict):
+    """Rewrite `x in weekend` as equality tests the type checker already understands."""
+    if isinstance(node, Expr):
+        if node.kind == "member":
+            subject, name = node.parts
+            if name not in groups:
+                raise BError("E_NAME", f"No group named {name!r}")
+            subject = desugar_membership(subject, groups)
+            tests = [Expr("cmp", (subject, "==", Expr("literal", (v,)))) for v in groups[name][1]]
+            result = tests[0]
+            for test in tests[1:]:
+                result = Expr("or", (result, test))
+            return result
+        return Expr(node.kind, tuple(desugar_membership(p, groups) for p in node.parts))
+    if isinstance(node, tuple):
+        return tuple(desugar_membership(p, groups) for p in node)
+    if isinstance(node, list):
+        return [desugar_membership(p, groups) for p in node]
+    return node
+
+
 def expand(statements: list[Stmt]) -> tuple[list[Stmt], dict[str, Learned]]:
     """Replace each `by examples` declaration with an ordinary pure function."""
+    statements = include_knowledge(statements)
     rows: dict[str, list[Stmt]] = {}
     for statement in statements:
         if statement.kind == "example":
             rows.setdefault(statement.parts[0], []).append(statement)
     hints = program_hints(statements)
     domains = collect_domains(statements, hints)
+    groups = collect_groups(statements, domains)
     learned = {}
     expanded = []
     for statement in statements:
@@ -493,10 +572,11 @@ def expand(statements: list[Stmt]) -> tuple[list[Stmt], dict[str, Learned]]:
         if any(type_args for _, (_, type_args) in params) or result[1]:
             raise BError("E_EXAMPLE", f"{name}: by examples supports scalar parameters and results")
         examples = resolve_examples(name, rows.get(name, []))
-        found = learn(name, [(n, t[0]) for n, t in params], result[0], examples, hints, domains)
+        found = learn(name, [(n, t[0]) for n, t in params], result[0], examples, hints, domains, groups)
         learned[name] = found
         expanded.append(Stmt("fn", (name, params, result, to_expr(found.rule, found.names), True, None, None)))
     for name in rows:
         if name not in learned and not any(s.kind == "fn" and s.parts[0] == name for s in statements):
             raise BError("E_EXAMPLE", f"example names no function {name!r}")
+    expanded = [Stmt(s.kind, desugar_membership(s.parts, groups)) for s in expanded]
     return expanded, learned

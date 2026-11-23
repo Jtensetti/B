@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **Decisions in, program out.** In B the source is the owner's decisions. The compiler derives the code, keeps every recorded decision true and asks only what the decisions leave open. [Vision, milestones and kill criteria](vision.md).
 
+## B 0.21
+
+B can [know shared truths](knowledge.md). `know kalender` and `know calendar` bring in weekdays, months and named groups written in B, and `x in group` tests membership. A known group counts as one test when B derives a rule, so a weekend rule becomes as simple as a Saturday rule. Names may now use Swedish and other letters. Next: relations such as the order of days and unit conversions, and checking imported Python and .NET functions against examples.
+
 ## B 0.20
 
 Functions can be [defined by examples](examples.md). B searches small ordered rule lists, asks for the input that separates plausible readings, checks examples on every compile and requires `was` for a changed result. `domain` names the values of an input. The [decision experiment](../experiments/decisions/README.md) hides six policies and compares B's own questions with random examples. Next: an owner trial over a sequence of changes, starting from an empty file (milestone 1 in the vision), and coverage questions for cases that rest on a single example (milestone 2).

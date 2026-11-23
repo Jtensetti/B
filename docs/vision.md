@@ -12,12 +12,19 @@ Most languages, including the ones models write best, treat code as the artifact
 | A model guesses the meaning of an ambiguous request | B finds the input where the meanings part and asks for one value |
 | Changing a result silently overwrites it | `was` must state the old value, so stale context fails |
 
-## What exists (B 0.18–0.20)
+## A related language, not a translation
+
+Think of Python and C# as two branches of a language family. B is a third. It does not speak either one, but it understands much of both because they share ancestry: functions, types, values and errors. BIR, B's typed intermediate form, plays the part of the shared root. The adapters read the "cognates": Python stubs, .NET metadata and npm declarations become typed B signatures without B executing or translating the foreign code. Related languages also have *false friends*. In Python `-7 // 2` is `-4`, while C# integer division `-7 / 2` gives `-3`. The [operator correspondence experiment](../experiments/operator-correspondence/README.md) looks for exactly these cases. B's rule is to treat a foreign word as understood only when its meaning has been checked, and as an assumption otherwise.
+
+A language can also know things its speakers take for granted. A week is Monday to Sunday, and the weekend is Saturday and Sunday. B ships such [knowledge](knowledge.md) as ordinary B declarations. Knowing a word makes a rule that uses it simpler, so the same examples settle sooner.
+
+## What exists (B 0.18–0.21)
 
 1. **Changes as declarations.** `also rule(case) keeping f, g` extends a rule and protects other results. `like (precedent)` requires the new case to behave like an existing one. See [executable changes](executable-changes.md).
 2. **Questions from context.** `b ask` compares a new case with the nearest existing one and asks when they still differ. See [precedent questions](precedent-questions.md).
 3. **Functions from examples.** `fn ... by examples` derives an ordered rule list from examples. It asks for the input that separates the plausible readings and asks about the domain neighbors of a case only one example supports. It checks `example` facts on every function and requires `was` for a changed result. `domain` names the values an input can take. See [decisions as source](examples.md).
 
+4. **Knowledge.** `know kalender` brings in domains and named groups written in B. A known group is one test for the learner. See [what B knows](knowledge.md).
 ## Measured so far
 
 The [decision experiment](../experiments/decisions/README.md) hides six policies and lets an oracle answer B's questions. B identifies four of them exactly with 7–13 answers on domains of 14–100 inputs. Random examples in the same number give the exact policy in at most 30% of trials, and need 1.4–2.9 times as many examples to get there. B settles on a wrong rule for an access policy two cases away from the simplest reading, and refuses a per-item price that is not a rule over literals. A requirement change took one or two owner lines and at most one further question. No model or human owner has used these tools yet.

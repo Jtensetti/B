@@ -1,4 +1,4 @@
-"""B 0.20 compiler: parse -> typed BIR -> Python backend.
+"""B 0.21 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -644,7 +644,7 @@ class Compiler:
         from .learn import expand
         parsed, self.learned = expand(parsed)
         self.additional_cases = additional_cases(parsed)
-        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain"))
+        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
         if self.permitted_effects is not None:
             denied = set(detected) - set(self.permitted_effects)

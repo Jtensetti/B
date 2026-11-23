@@ -10,6 +10,8 @@ _NL: NEWLINE
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? "by" "examples" -> learned_stmt
      | "domain" NAME ":" also_args                         -> domain_stmt
+     | "group" NAME "of" NAME ":" also_args                -> group_stmt
+     | "know" NAME                                         -> know_stmt
      | "example" NAME "(" [also_args] ")" COMP case_literal ["was" case_literal] -> example_stmt
      | "also" NAME "(" [also_args] ")" [also_like] ["keeping" names] -> also_stmt
      | "next" NAME "when" expr "=>" expr                   -> next_stmt
@@ -39,6 +41,7 @@ history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL
 ?and_expr: and_expr "and" cmp_expr -> and_op
          | cmp_expr
 ?cmp_expr: cmp_expr COMP sum_expr  -> comparison
+         | cmp_expr "in" NAME      -> membership
          | sum_expr
 ?sum_expr: sum_expr "+" mul_expr  -> add
          | sum_expr "-" mul_expr   -> subtract
@@ -100,7 +103,7 @@ EXTREMUM: "min" | "max"
 SUMMARY_INT: /0|[1-9][0-9]*/
 BACKEND: "py" | "net"
 COMP: "==" | "!=" | "<=" | ">=" | "<" | ">"
-NAME: /[A-Za-z_][A-Za-z0-9_]*/
+NAME: /(?!\d)\w+/
 NUMBER: /(?:0|[1-9][0-9]*)(?:\.[0-9]+)?/
 %import common.ESCAPED_STRING
 %import common.NEWLINE
