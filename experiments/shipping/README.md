@@ -35,7 +35,7 @@ The [journey trial](../journey/README.md) favored B because its semantics lived 
 | --- | --- | --- |
 | Errors, B vs Python | 0 vs 0 | 0 vs 0 |
 | Total output tokens, B ÷ Python | about 0.55 | about 3.6 |
-| Output tokens per change, B ÷ Python | about 1.8 | about 2.4 |
+| Output tokens per change, B ÷ Python | about 1.8 | about 2.5 |
 
 B pays off when a sibling language's library replaces hundreds of lines of reimplementation. Otherwise B is more expensive, because a model must learn it and does not yet trust it. Neither trial showed fewer errors. Two strong-enough models reached the ceiling in both languages, including the smaller one. The long-term goal is therefore **not met**: B has not been shown to produce fewer errors. It produces less total work only when borrowing across ecosystems is the bulk of the task.
 

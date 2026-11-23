@@ -27,11 +27,11 @@ The third trial was chosen before anything was measured, to mix both strengths. 
 
 | Trial | Model | Errors, B vs Python | Total output tokens, B ÷ Python | Build | Changes |
 | --- | --- | --- | ---: | ---: | ---: |
-| [Journey](../journey/README.md): npm semantics | Sonnet | 0 vs 0 | 0.55 | 0.14 | 1.8 |
-| [Shipping](../shipping/README.md): Python library | Haiku | 0 vs 0 | 3.6 | 7.7 | 2.4 |
+| [Journey](../journey/README.md): npm semantics | Sonnet | 0 vs 0 | 0.55 | 0.15 | 1.8 |
+| [Shipping](../shipping/README.md): Python library | Haiku | 0 vs 0 | 3.6 | 7.6 | 2.5 |
 | Releases: mixed, with the guide | Haiku | 0 vs 0 | 1.4 | 0.77 | 1.65 |
 
-The long-term goal requires fewer errors and less total work. Neither has been shown. In all twelve solver runs every hidden test passed, so the error criterion never separated the languages. The build got cheaper in B once a guide existed, and when B borrows a library that the other language lacks. Changes cost B 1.65–2.4 times as much in all three trials. Changes are what the goal is about, and they are where B must improve.
+The long-term goal requires fewer errors and less total work. Neither has been shown. In all twelve solver runs every hidden test passed, so the error criterion never separated the languages. The build got cheaper in B once a guide existed, and when B borrows a library that the other language lacks. Changes cost B 1.65–2.5 times as much in all three trials. Changes are what the goal is about, and they are where B must improve.
 
 ## What the changes need
 
