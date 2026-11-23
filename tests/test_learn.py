@@ -27,8 +27,8 @@ def codes(source):
 
 def test_syntax_keeps_old_identifiers():
     assert parse(HEAD)[0].parts == ("price", [("child", ("Bool", ())), ("day", ("Text", ()))], ("Int", ()), True)
-    assert parse('example price(true, "sat") == 0')[0].parts == ("price", (True, "sat"), 0, None, False)
-    assert parse("example g(-1) == -2 was 3")[0].parts == ("g", (-1,), -2, 3, True)
+    assert parse('example price(true, "sat") == 0')[0].parts == ("price", (True, "sat"), 0, None, False, None)
+    assert parse("example g(-1) == -2 was 3")[0].parts == ("g", (-1,), -2, 3, True, None)
     assert parse('domain day: "mon", "tue"')[0].parts == ("day", ("mon", "tue"))
     assert parse("let example = 1\nlet was = example\nfn by(examples: Int) -> Int = examples")
     with pytest.raises(Exception):

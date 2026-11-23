@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
 
+## B 0.24
+
+Milestone 2 of the [vision](vision.md) has started. An `example` on an imported function is type checked, units included, and runs where it stands. `b check --library-examples` reports each fact separately after an upgrade. A simulated upgrade of a Python VAT module is caught. Not done: .NET and npm runs (no SDK or packages here), properties over many inputs, and `keeping` on library functions.
+
 ## B 0.23
 
 Milestone 1 of the [vision](vision.md), units across the border, is partly done. `foreign f(Speed[knot]) -> Length[ft]` restates a Python or registered .NET signature with units. B converts at each call and rejects a wrong dimension at compile time. Missing unit names are borrowed from pint, with provenance in the assumptions. Not verified: real pint (the install was not permitted, so a stand-in was used), npm functions, and a realistic multi-library program for the kill criterion. Next: those three, then milestone 2, examples on imported functions.

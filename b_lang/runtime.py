@@ -17,6 +17,10 @@ _EXACT_BY_DESCRIPTOR = {typ.name: native for typ, native in _EXACT_SCALARS.items
 class BAssertionError(AssertionError):
     pass
 
+class BExampleError(AssertionError):
+    """A stated example of an imported function no longer holds."""
+    pass
+
 class BContractError(AssertionError):
     """A B function requires/ensures condition failed at execution."""
     pass

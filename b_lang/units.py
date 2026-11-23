@@ -636,6 +636,20 @@ def check(statements: list[Stmt]) -> list[Stmt]:
             plain = [FLOAT_SYNTAX if type_dimension(t) is not None else t for t in params]
             new_result = FLOAT_SYNTAX if type_dimension(result) is not None else result
             rewritten.append(Stmt("foreign_units", (path, plain, new_result)))
+        elif kind == "library_example":
+            call, expected, tolerance, text = parts
+            actual, dimension = checker.expr(call, env)
+            wanted, expected_dimension = checker.expr(expected, env)
+            if dimension != expected_dimension:
+                raise BError("E_UNIT", f"{text}: the library returns {describe(dimension)}, "
+                             f"the example states {describe(expected_dimension)}")
+            margin = None
+            if tolerance is not None:
+                margin, margin_dimension = checker.expr(tolerance, env)
+                if margin_dimension != dimension:
+                    raise BError("E_UNIT", f"{text}: the tolerance is {describe(margin_dimension)}, "
+                                 f"the result is {describe(dimension)}")
+            rewritten.append(Stmt(kind, (actual, wanted, margin, text)))
         elif kind in ("print", "assert"):
             label = "print" if kind == "print" else "assert"
             rewritten.append(Stmt(kind, (checker.plain(parts[0], env, f"{label}"),)))

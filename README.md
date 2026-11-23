@@ -2,7 +2,7 @@
 
 **B is an experimental programming language in which the source is the owner's decisions.** Examples, rule extensions and protections are declarations. The compiler derives code from them, checks that every recorded decision still holds after a change, and asks for the one concrete input a set of decisions leaves open. B also has ordinary typed functions, contracts and adapters for Python, .NET and Node.js libraries. [The long-term goal and its milestones](docs/vision.md).
 
-**Version 0.23 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
+**Version 0.24 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
 
@@ -21,6 +21,16 @@ fn total(child: Bool, day: Text) -> Int pure = price(child, day) + 10
 `price` has no body. B finds the simplest rules that fit the examples. `if child then 0 else 100` and `if day == "mon" then 100 else 0` both do, so `b ask` asks `price(false, "sat"): 100 or 0?` and shows what each answer makes of the function. `--answer 100 --apply` appends the example. Later it asks about Friday and Sunday, because only one example supports the Saturday case. After five answers the rule is `if child and day == "sat" then 0 else 100`.
 
 A requirement change is one line. B asked about Sunday, so the change must name the earlier answer: `example price(true, "sun") == 0 was 100`. B asks once more, whether adults ride free on Sundays, and derives a rule covering both weekend days. Every example is checked on every compile, including examples of ordinary functions such as `total`. A changed result must state its previous value (`... == 120 was 100`), so an edit based on stale context fails. In the [decision experiment](experiments/decisions/README.md), B's own questions identify four of six hidden policies exactly, with 7–13 answers. Random examples need 1.4–2.9 times as many. B gets one policy wrong and refuses one that is not a rule over literals. [Syntax, search and limits](docs/examples.md).
+
+## Decisions about the libraries you borrow
+
+```bee
+use py:b_examples.aviation as aviation
+foreign aviation.fuel_burn(Duration[h]) -> Volume[gal]
+example aviation.fuel_burn(2 h) == 19 gal within 0.001 gal
+```
+
+An example of an imported function states the behavior a program relies on. B checks its types and units while compiling. It checks the behavior when the program reaches the example, and `b check --library-examples` runs every such fact on its own after an upgrade. A library that changes its VAT rate is reported as `changed`, with the value it now returns. [Decisions about libraries](docs/library-examples.md).
 
 ## B knows what a week is
 

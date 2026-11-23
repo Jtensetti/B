@@ -49,7 +49,7 @@ So that the work can continue without check-ins:
 ## What exists
 
 - **Grammar:** executable changes (`also`, `keeping`, `like`), [precedent questions](precedent-questions.md), [functions from examples](examples.md) with questions, `was`, `domain`, `group`, [dimension checking](units.md), membership tests.
-- **Vocabulary through adapters:** typed Python, .NET and npm signatures ([interop](interop.md)), Python source adoption, unit-annotated foreign signatures, and units borrowed from pint ([units](units.md#across-language-borders)).
+- **Vocabulary through adapters:** typed Python, .NET and npm signatures ([interop](interop.md)), Python source adoption, unit-annotated foreign signatures, units borrowed from pint ([units](units.md#across-language-borders)), and examples of imported functions checked after upgrades ([decisions about libraries](library-examples.md)).
 - **Core words, plus copied vocabulary to shrink:** [`know calendar`, `know kalender`, `know physics`, `know currencies`](knowledge.md), and a 127-unit table.
 
 The most relevant measured results are the [hidden-policy experiment](../experiments/decisions/README.md), which compares B's questions with random examples, and the [knowledge comparison](knowledge.md). All experiments are listed in [experiments](experiments.md).

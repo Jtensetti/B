@@ -147,7 +147,10 @@ def resolve_examples(name: str, rows: list[Stmt]) -> list[tuple[tuple, object]]:
     current: dict = {}
     order = []
     for row in rows:
-        _, arguments, value, previous, has_previous = row.parts
+        _, arguments, value, previous, has_previous = row.parts[:5]
+        if row.parts[5] is not None or any(type(v).__name__ == "Quantity" for v in (*arguments, value)):
+            raise BError("E_EXAMPLE", f"example {name}: units and 'within' apply to examples of "
+                         "imported functions; write plain literals for a B function")
         key = tuple((type(v), v) for v in arguments)
         if key in current:
             old = current[key][1]
@@ -558,7 +561,7 @@ def expand(statements: list[Stmt]) -> tuple[list[Stmt], dict[str, Learned]]:
     statements = include_knowledge(statements)
     rows: dict[str, list[Stmt]] = {}
     for statement in statements:
-        if statement.kind == "example":
+        if statement.kind == "example" and "." not in statement.parts[0]:
             rows.setdefault(statement.parts[0], []).append(statement)
     hints = program_hints(statements)
     domains = collect_domains(statements, hints)

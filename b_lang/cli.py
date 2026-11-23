@@ -98,6 +98,8 @@ def main(argv: list[str] | None = None) -> int:
                            help="Explain open divisor and integer argument checks")
             p.add_argument("--require-proofs", action="store_true", help="Reject any reported contract or divisor obligation without a static proof")
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
+            p.add_argument("--library-examples", action="store_true",
+                           help="Run each example of an imported function on its own and report it")
     ir_command = sub.add_parser("ir", help="Emit the checked, backend-neutral BIR as JSON")
     ir_command.add_argument("file", type=Path)
     ir_command.add_argument("--strict", action="store_true")
@@ -323,6 +325,16 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps((result.optimized_ir if args.optimized else result.ir).to_dict(), ensure_ascii=False, indent=2, sort_keys=True))
         elif args.command == "build":
             print(result.source, end="")
+        elif args.command == "check" and args.library_examples and not rejection:
+            from .library_examples import run_each
+            results = run_each(result.ir)
+            if machine:
+                print(json.dumps({"status": "accepted", "library_examples": results}, ensure_ascii=False))
+            else:
+                for row in results:
+                    print(f"{row['status']}: {row['example']}" + (f"\n    {row['message']}" if "message" in row else ""))
+                print(f"B check: {sum(r['status'] == 'holds' for r in results)} of {len(results)} library example(s) hold")
+            return int(any(r["status"] != "holds" for r in results))
         elif args.command == "check":
             if machine:
                 print(json.dumps({

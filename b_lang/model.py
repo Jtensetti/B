@@ -15,6 +15,12 @@ class Expr:
     parts: tuple[Any, ...]
 
 @dataclass(frozen=True)
+class Quantity:
+    """A literal with a unit in an example, such as 9.5 gal."""
+    value: int | float
+    unit: tuple
+
+@dataclass(frozen=True)
 class Stmt:
     kind: str
     parts: tuple[Any, ...]
@@ -158,14 +164,20 @@ class ToModel(Transformer):
     def membership(self, xs): return Expr("member", (xs[0], str(xs[1])))
     def learned_stmt(self, xs):
         return Stmt("learn", (str(xs[0]), xs[1] or [], xs[2], xs[3] is not None))
+    def quantity_value(self, xs): return ("quantity", xs[0].parts[0], xs[1])
+    def example_args(self, xs): return tuple(self._example_value(x) for x in xs)
+    def _example_value(self, node):
+        if isinstance(node, tuple) and node and node[0] == "quantity":
+            return Quantity(node[1], node[2])
+        return self.also_args([node])[0]
     def example_stmt(self, xs):
-        name, arguments, operator, value, previous = xs
+        name, arguments, operator, value, tolerance, previous = xs
         if str(operator) != "==":
             raise LarkError(f"An example states one result with ==, found {operator} "
                             f"at line {operator.line}, column {operator.column}")
-        literal = lambda node: None if node is None else self.also_args([node])[0]
-        return Stmt("example", (str(name), arguments or (), literal(value), literal(previous),
-                                previous is not None))
+        optional = lambda node: None if node is None else self._example_value(node)
+        return Stmt("example", (str(name), arguments or (), self._example_value(value), optional(previous),
+                                previous is not None, optional(tolerance)))
     def print_stmt(self, xs): return Stmt("print", (xs[0],))
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 

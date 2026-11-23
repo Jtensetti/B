@@ -364,6 +364,25 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
         if s.op == "print":
             return ast.Expr(value=ast.Call(func=ast.Name(id="_b_print", ctx=ast.Load()),
                                            args=[self.expr(s.expr)], keywords=[]))
+        if s.op == "example_check":
+            actual, expected, *margin = s.expr.operands
+            value = ast.Name(id="_b_example_value", ctx=ast.Load())
+            if margin:
+                difference = ast.BinOp(left=value, op=ast.Sub(), right=self.expr(expected))
+                holds = ast.Compare(left=ast.Call(func=ast.Name(id="_b_abs", ctx=ast.Load()), args=[difference],
+                                                  keywords=[]), ops=[ast.LtE()], comparators=[self.expr(margin[0])])
+            else:
+                holds = ast.Compare(left=value, ops=[ast.Eq()], comparators=[self.expr(expected)])
+            text, _, unit = s.target.partition("\t")
+            message = ast.BinOp(left=ast.BinOp(left=ast.Constant(f"{text} no longer holds: the library returned "),
+                                op=ast.Add(), right=ast.Call(func=ast.Name(id="_b_repr", ctx=ast.Load()),
+                                                             args=[value], keywords=[])),
+                                op=ast.Add(), right=ast.Constant(unit))
+            return ast.If(test=ast.Constant(True), body=[
+                ast.Assign(targets=[ast.Name(id="_b_example_value", ctx=ast.Store())], value=self.expr(actual)),
+                ast.If(test=ast.UnaryOp(op=ast.Not(), operand=holds), body=[ast.Raise(
+                    exc=ast.Call(func=ast.Name(id="_b_example_error", ctx=ast.Load()), args=[message], keywords=[]),
+                    cause=None)], orelse=[])], orelse=[])
         if s.op == "assert":
             return ast.If(test=ast.UnaryOp(op=ast.Not(), operand=self.expr(s.expr)),
                 body=[ast.Raise(exc=ast.Call(func=ast.Name(id="_b_assertion_error", ctx=ast.Load()),
@@ -378,6 +397,8 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="len", asname="_b_len"),
             ast.alias(name="enumerate", asname="_b_enumerate"),
             ast.alias(name="range", asname="_b_range"),
+            ast.alias(name="abs", asname="_b_abs"),
+            ast.alias(name="repr", asname="_b_repr"),
         ], level=0)
         body = [builtins, ast.ImportFrom(module="b_lang.runtime", names=[
             ast.alias(name="py_module", asname="_b_py"),
@@ -385,6 +406,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="guard", asname="_b_guard"),
             ast.alias(name="BAssertionError", asname="_b_assertion_error"),
             ast.alias(name="BContractError", asname="_b_contract_error"),
+            ast.alias(name="BExampleError", asname="_b_example_error"),
         ], level=0)]
         if any(s.op == "import" and s.backend == "js" for s in program.statements):
             signatures = []

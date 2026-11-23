@@ -1,4 +1,4 @@
-"""B 0.23 compiler: parse -> typed BIR -> Python backend.
+"""B 0.24 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -606,6 +606,23 @@ class Compiler:
             return StmtIR("fn", name=name, typ=result_type, expr=self.guard(body.node, result_type),
                           params=tuple(zip(names, types)), effects=tuple(sorted(effects)),
                           requires=pre, ensures=post, verification=proof, declared_pure=declared_pure)
+        if kind == "library_example":
+            call, expected, tolerance, text = p
+            actual, wanted = self.infer(call), self.infer(expected)
+            operands = [actual.node, wanted.node]
+            if tolerance is not None:
+                margin = self.infer(tolerance)
+                for value, label in ((actual, "result"), (wanted, "expected value"), (margin, "tolerance")):
+                    if value.type not in NUMERIC + (ANY,):
+                        raise BError("E_TYPE", f"{text}: 'within' needs a numeric {label}, got {value.type}")
+                operands.append(margin.node)
+            elif actual.type != ANY and not (assignable(wanted.type, actual.type) or assignable(actual.type, wanted.type)):
+                raise BError("E_TYPE", f"{text}: the library returns {actual.type}, the example states {wanted.type}")
+            text = text.partition("\t")[0]
+            self.assumptions.append(f"{text}: checked when the program reaches it, not while type checking")
+            effects = expression_effects(actual.node, self.symbols)
+            return StmtIR("example_check", expr=ExprIR("example", BOOL, tuple(operands)), target=p[3],
+                          effects=tuple(sorted(effects)))
         if kind == "print":
             value = self.infer(p[0])
             return StmtIR("print", expr=value.node,
@@ -628,7 +645,7 @@ class Compiler:
         from .revision_witness import evaluate_scalar
         rows = {}
         for statement in parsed:
-            if statement.kind == "example":
+            if statement.kind == "example" and "." not in statement.parts[0]:
                 rows.setdefault(statement.parts[0], []).append(statement)
         for name, statements in rows.items():
             for arguments, expected in resolve_examples(name, statements):
@@ -651,8 +668,9 @@ class Compiler:
             raise BError("E_SYNTAX", str(exc)) from exc
         from .learn import expand
         parsed, self.learned = expand(parsed)
+        from .library_examples import to_checks
         from .units import BORROWED, check as check_units
-        parsed = check_units(parsed)
+        parsed = check_units(to_checks(parsed))
         for unit, provenance in sorted(BORROWED.items()):
             self.assumptions.append(f"unit {unit} from {provenance}: definition borrowed, not checked by B")
         self.additional_cases = additional_cases(parsed)

@@ -12,7 +12,7 @@ _NL: NEWLINE
      | "domain" NAME ":" also_args                         -> domain_stmt
      | "group" NAME "of" NAME ":" also_args                -> group_stmt
      | "know" NAME                                         -> know_stmt
-     | "example" NAME "(" [also_args] ")" COMP case_literal ["was" case_literal] -> example_stmt
+     | "example" path "(" [example_args] ")" COMP example_value ["within" example_value] ["was" case_literal] -> example_stmt
      | "also" NAME "(" [also_args] ")" [also_like] ["keeping" names] -> also_stmt
      | "next" NAME "when" expr "=>" expr                   -> next_stmt
      | "print" expr                                       -> print_stmt
@@ -71,6 +71,9 @@ number_literal: NUMBER               -> number
              | "-" number_literal    -> neg
 also_args: case_literal ("," case_literal)*
 also_like: "like" "(" [also_args] ")"
+example_args: example_value ("," example_value)*
+?example_value: case_literal
+              | number_literal unit   -> quantity_value
 case_row: COMP case_literal "=>" expr
 _ROW_SEMI: ";"
 _row_sep: _ROW_SEMI _NL* | _NL+
