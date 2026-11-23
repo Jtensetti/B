@@ -29,6 +29,8 @@ _MAX_CASES = 4
 _MAX_COST = 10
 _MAX_WORK = 400_000
 _MAX_GRID = 20_000
+_SLACK = 1  # plausible readings may use this many more cases or tests
+_COVERAGE = True  # ask about a domain neighbor of a value only one example supports
 _FRESH = object()  # a Text value no example or rule mentions
 
 
@@ -113,6 +115,7 @@ class Learned:
     result: str = ""
     hints: dict = None
     domains: dict = None
+    reason: str | None = None  # "readings" or "coverage"
 
     def with_example(self, arguments: tuple, value) -> "Learned":
         return learn(self.name, self.params, self.result, [*self.examples, (arguments, value)],
@@ -190,8 +193,11 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
         seen = {a[i] for a, _ in examples} | {v for v in hints.get(param, ()) if _exact(v, type_name)}
         if type_name == "Bool":
             values.append([False, True])
+        elif domain and type_name == "Text":
+            values.append(list(domain))  # keep the declared order
         elif domain:
-            values.append(domain if type_name == "Text" else sorted(domain))  # keep a named order
+            # Boundaries come from examples. The whole domain is compared.
+            values.append(sorted(seen & set(domain)))
         else:
             values.append(sorted(seen))
 
@@ -205,12 +211,22 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
             atoms.append([Atom(i, "==", v) for v in values[i]])
             grid_axes.append(values[i] if closed[i] else [*values[i], _FRESH])
         else:
-            thresholds = sorted({t for v in values[i] for t in (v, v + 1)})
+            thresholds = {t for v in values[i] for t in (v, v + 1)}
+            # A boundary may lie anywhere in a gap between known values. Its
+            # midpoint stands for the whole gap, so questions halve it.
+            known = sorted(values[i])
+            if closed[i]:
+                axis = sorted(v for v in domains[params[i][0]] if _exact(v, "Int"))
+                known = sorted({axis[0], *known, axis[-1]})
+            thresholds |= {(a + b + 1) // 2 for a, b in zip(known, known[1:]) if b - a > 1}
+            thresholds = sorted(thresholds)
             # Prefer a boundary to a single value when both explain the examples.
             atoms.append([Atom(i, op, t) for t in thresholds for op in ("<", ">=")]
                          + [Atom(i, "==", v) for v in values[i]])
             points = set(values[i])
-            if not closed[i]:
+            if closed[i]:
+                points = set(v for v in domains[params[i][0]] if _exact(v, "Int"))
+            else:
                 points |= {values[i][0] - 1, values[i][-1] + 1}
                 points |= {(a + b) // 2 for a, b in zip(values[i], values[i][1:]) if b - a > 1}
             grid_axes.append(sorted(points))
@@ -289,13 +305,15 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
     # One more test than the simplest rule is still a plausible reading. It
     # may raise a question, but only between values the examples span, so
     # that questions cannot wander off past the outermost example forever.
-    found.clear()
-    work[0] = 0
-    try:
-        search(everything, budget + 1, [])
-    except _Limit:
+    plausible = []
+    for extra in range(1, _SLACK + 1):
         found.clear()
-    plausible = found[:]
+        work[0] = 0
+        try:
+            search(everything, budget + extra, [])
+        except _Limit:
+            break
+        plausible.extend(found)
 
     # Among equally simple rules, the fallback most examples agree with comes first:
     # an input no example resembles then gets the most common result.
@@ -332,8 +350,11 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
         # Prefer a question that splits the simplest readings, then an even split.
         splits_simplest = len({(type(v), v) for v in (r.apply(point) for r in rules)}) > 1
         # Then stay near the newest example: a change raises questions about its neighbors.
-        distance = sum(1 for a, b in zip(point, inputs[-1]) if a is not b and a != b)
-        score = (fresh, not splits_simplest, max(groups.values()) / len(results), distance, -len(groups))
+        # On an integer axis, the point farthest from every example halves the gap.
+        distance = sum(1 for i, (a, b) in enumerate(zip(point, inputs[-1]))
+                       if types[i] != "Int" and a is not b and a != b)
+        gap = min(sum(abs(point[i] - row[i]) for i in range(len(types)) if types[i] == "Int") for row in inputs)
+        score = (fresh, not splits_simplest, max(groups.values()) / len(results), distance, -gap, -len(groups))
         if best is None or score < best[0]:
             best = (score, point, results)
     question, answers, unseen_only = None, [], False
@@ -350,8 +371,50 @@ def learn(name: str, params: list[tuple[str, str]], result: str,
                                for p in grid if inner(p) or r in rules)]
         canonical_value = canonical.apply(point)
         answers.sort(key=lambda v: not (type(v) is type(canonical_value) and v == canonical_value))
+    reason = "readings" if question is not None else None
+    if question is None and _COVERAGE:
+        found_gap = _single_witness_question(canonical, examples, params, domains)
+        if found_gap is not None:
+            question, answers = found_gap
+            reason = "coverage"
     return Learned(name, names, examples, canonical, alternatives, question, answers, unseen_only,
-                   list(params), result, hints, domains)
+                   list(params), result, hints, domains, reason)
+
+
+def _single_witness_question(rule: Rule, examples, params, domains):
+    """Ask whether a value that one example singled out has a neighbor in the same case.
+
+    A case such as `child and day == "sun"` that only one example supports
+    may have been meant for more values. B asks about the value next to it in
+    the declared domain order, keeping the witness's other arguments. The
+    order is the only notion of similarity B has here.
+    """
+    stated = {tuple((type(v), v) for v in arguments) for arguments, _ in examples}
+    for position, (tests, output) in enumerate(rule.cases):
+        witnesses = [a for a, _ in examples
+                     if Rule(rule.cases[position:position + 1], object()).apply(a) is output
+                     and all(Rule(rule.cases[k:k + 1], object()).apply(a) is not rule.cases[k][1]
+                             for k in range(position))]
+        if len(witnesses) != 1:
+            continue
+        witness = witnesses[0]
+        for atom in tests:
+            param, type_name = params[atom.index]
+            domain = domains.get(param) if domains else None
+            if atom.op != "==" or type_name != "Text" or not domain or atom.value not in domain:
+                continue
+            at = domain.index(atom.value)
+            for neighbor in (domain[at - 1] if at > 0 else None, domain[at + 1] if at + 1 < len(domain) else None):
+                if neighbor is None:
+                    continue
+                point = tuple(neighbor if i == atom.index else v for i, v in enumerate(witness))
+                if tuple((type(v), v) for v in point) in stated:
+                    continue
+                current = rule.apply(point)
+                if type(current) is type(output) and current == output:
+                    continue
+                return point, [current, output]
+    return None
 
 
 def program_hints(statements: list[Stmt]) -> dict[str, set]:

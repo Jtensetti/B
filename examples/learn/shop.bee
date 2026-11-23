@@ -1,0 +1,24 @@
+domain day: "mon", "tue", "wed", "thu", "fri", "sat", "sun"
+
+fn shipping(express: Bool, weight: Int) -> Int pure by examples
+example shipping(false, 1) == 30
+example shipping(false, 25) == 60
+example shipping(true, 1) == 90
+example shipping(true, 25) == 90
+example shipping(false, 13) == 60
+example shipping(false, 7) == 30
+example shipping(false, 10) == 60
+example shipping(false, 9) == 30
+
+fn member_discount(member: Bool, day: Text) -> Int pure by examples
+example member_discount(false, "mon") == 0
+example member_discount(true, "mon") == 20
+example member_discount(true, "sat") == 20
+example member_discount(false, "sat") == 0
+
+fn total(goods: Int, member: Bool, day: Text, express: Bool, weight: Int) -> Int pure =
+    goods - member_discount(member, day) + shipping(express, weight)
+example total(200, true, "mon", false, 3) == 210
+
+print total(200, true, "mon", false, 3)
+print total(500, false, "sun", true, 40)

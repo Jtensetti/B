@@ -132,10 +132,23 @@ def test_a_change_asks_about_its_neighbours_in_a_domain():
     assert found.question == (False, "sun")
     found = found.with_example((False, "sun"), 100)
     assert found.question == (True, "wed")
-    found = found.with_example((True, "wed"), 100)
-    assert found.determined
+    asked = []
+    while not found.determined:
+        asked.append(found.question)
+        found = found.with_example(found.question, 0 if found.question[0] and found.question[1] in ("sat", "sun") else 100)
+    assert asked == [(True, "wed"), (True, "fri")]
     assert all(found.rule.apply((c, d)) == (0 if c and d in ("sat", "sun") else 100)
                for c in (False, True) for d in domains["day"])
+
+
+def test_a_value_only_one_example_supports_raises_a_neighbour_question():
+    params = [("child", "Bool"), ("day", "Text")]
+    domains = {"day": ("mon", "tue", "wed", "thu", "fri", "sat", "sun")}
+    rows = [((False, "mon"), 100), ((True, "sun"), 0), ((False, "sun"), 100), ((True, "mon"), 100),
+            ((True, "tue"), 100)]
+    found = learn("price", params, "Int", rows, {}, domains)
+    assert render(found.rule, found.names) == 'if child and day == "sun" then 0 else 100'
+    assert found.reason == "coverage" and found.question == (True, "sat") and found.answers == [100, 0]
 
 
 def test_rules_the_search_cannot_express_are_refused():
@@ -151,9 +164,15 @@ def test_ask_answers_by_appending_one_example(tmp_path, capsys):
     assert main(["ask", str(path)]) == 2
     out = capsys.readouterr().out
     assert 'question: price(true, "tue"): 100 or 0?' in out
-    assert "then: if child and day == \"sat\" then 0 else 100 (settled)" in out
+    assert 'then: if child and day == "sat" then 0 else 100' in out
     assert main(["ask", str(path), "--answer", "100", "--apply"]) == 0
     assert 'example price(true, "tue") == 100' in path.read_text()
+    capsys.readouterr()
+    assert main(["ask", str(path)]) == 2
+    out = capsys.readouterr().out
+    assert 'question: price(true, "fri"): 100 or 0?' in out and "why: only one example" in out
+    for _ in range(2):  # Friday and Sunday, the neighbors of Saturday
+        assert main(["ask", str(path), "--answer", "100", "--apply"]) == 0
     capsys.readouterr()
     assert main(["ask", str(path)]) == 0
     assert "settled" in capsys.readouterr().out
@@ -165,3 +184,19 @@ def test_answer_rejects_values_that_were_not_offered():
     with pytest.raises(BError):
         answer(ask(source), 50)
     assert 'example price(false, "sat") == 0' in answer(ask(source), 0)["file"]
+
+
+def test_decision_experiment_b_side_is_reproducible():
+    import importlib.util
+    import json
+    spec = importlib.util.spec_from_file_location("decisions", ROOT / "experiments/decisions/check.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    recorded = {row["policy"]: row for row in json.loads(
+        (ROOT / "experiments/decisions/results.json").read_text())["identification"]}
+    for policy in module.POLICIES[:5]:
+        seeds = [(x, policy["truth"](*x)) for x in (policy["inputs"][0], policy["inputs"][-1])]
+        found, _, asked = module.ask_until_settled(policy, seeds)
+        row = recorded[policy["name"]]
+        assert (asked, module.accuracy(policy, found.rule)) == (row["questions"], row["b_accuracy"])
+    assert recorded[module.POLICIES[5]["name"]]["b"].startswith("refused")

@@ -2,6 +2,14 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## Long-term goal
+
+**Decisions in, program out.** In B the source is the owner's decisions. The compiler derives the code, keeps every recorded decision true and asks only what the decisions leave open. [Vision, milestones and kill criteria](vision.md).
+
+## B 0.20
+
+Functions can be [defined by examples](examples.md). B searches small ordered rule lists, asks for the input that separates plausible readings, checks examples on every compile and requires `was` for a changed result. `domain` names the values of an input. The [decision experiment](../experiments/decisions/README.md) hides six policies and compares B's own questions with random examples. Next: an owner trial over a sequence of changes, starting from an empty file (milestone 1 in the vision), and coverage questions for cases that rest on a single example (milestone 2).
+
 ## B 0.19
 
 `b ask` uses a case a rule already covered as context for a new one. It asks a question only when the two cases still differ, and writes the answer back as `keeping` or as a checked `like` clause. The [fixture study](../experiments/precedent-questions/README.md) covers seven variants of one request. The mechanism was written by the same author as the fixtures, and nobody has used it on an unseen program yet.

@@ -1,0 +1,134 @@
+{
+  "identification": [
+    {
+      "policy": "weekend children",
+      "domain": 14,
+      "questions": 7,
+      "without_neighbor_questions": {
+        "questions": 3,
+        "accuracy": 0.929
+      },
+      "with_two_extra_tests": {
+        "questions": 8,
+        "accuracy": 1.0
+      },
+      "b_accuracy": 1.0,
+      "rule": "if not child then 100 else if day == \"sat\" then 0 else if day == \"sun\" then 0 else 100",
+      "random_same_count_mean_accuracy": 0.896,
+      "random_same_count_exact": 0.0,
+      "random_examples_until_exact": {
+        "median": 12.5,
+        "reached": "10/10"
+      }
+    },
+    {
+      "policy": "age bands",
+      "domain": 100,
+      "questions": 12,
+      "without_neighbor_questions": {
+        "questions": 12,
+        "accuracy": 1.0
+      },
+      "with_two_extra_tests": {
+        "questions": 14,
+        "accuracy": 1.0
+      },
+      "b_accuracy": 1.0,
+      "rule": "if age < 12 then 50 else if age >= 65 then 70 else 100",
+      "random_same_count_mean_accuracy": 0.883,
+      "random_same_count_exact": 0.0,
+      "random_examples_until_exact": {
+        "median": 40.0,
+        "reached": "10/10"
+      }
+    },
+    {
+      "policy": "shipping",
+      "domain": 62,
+      "questions": 13,
+      "without_neighbor_questions": {
+        "questions": 13,
+        "accuracy": 1.0
+      },
+      "with_two_extra_tests": {
+        "questions": 20,
+        "accuracy": 1.0
+      },
+      "b_accuracy": 1.0,
+      "rule": "if express then 90 else if weight < 10 then 30 else 60",
+      "random_same_count_mean_accuracy": 0.94,
+      "random_same_count_exact": 0.3,
+      "random_examples_until_exact": {
+        "median": 32.5,
+        "reached": "10/10"
+      }
+    },
+    {
+      "policy": "dispatch",
+      "domain": 21,
+      "questions": 8,
+      "without_neighbor_questions": {
+        "questions": 8,
+        "accuracy": 1.0
+      },
+      "with_two_extra_tests": {
+        "questions": 9,
+        "accuracy": 1.0
+      },
+      "b_accuracy": 1.0,
+      "rule": "if days < 0 then \"overdue\" else if days < 1 then \"today\" else if days < 4 then \"priority\" else \"standard\"",
+      "random_same_count_mean_accuracy": 0.91,
+      "random_same_count_exact": 0.25,
+      "random_examples_until_exact": {
+        "median": 17.0,
+        "reached": "10/10"
+      }
+    },
+    {
+      "policy": "access",
+      "domain": 72,
+      "questions": 6,
+      "without_neighbor_questions": {
+        "questions": 6,
+        "accuracy": 0.806
+      },
+      "with_two_extra_tests": {
+        "questions": 17,
+        "accuracy": 1.0
+      },
+      "b_accuracy": 0.8055555555555556,
+      "rule": "if role == \"guest\" then false else true",
+      "random_same_count_mean_accuracy": 0.777,
+      "random_same_count_exact": 0.0,
+      "random_examples_until_exact": {
+        "median": 65.0,
+        "reached": "10/10"
+      }
+    },
+    {
+      "policy": "per item (outside the rule language)",
+      "domain": 10,
+      "b": "refused: f: no rule with up to 4 cases of at most two tests fits the examples; write the function"
+    }
+  ],
+  "changes": [
+    {
+      "change": "children free on Sundays too",
+      "questions_to_build": 5,
+      "owner_lines": 1,
+      "uses_was": true,
+      "questions_after_change": 1,
+      "accuracy": 1.0,
+      "rule": "if not child then 100 else if day == \"sat\" then 0 else if day == \"sun\" then 0 else 100"
+    },
+    {
+      "change": "child rate up to and including 13",
+      "questions_to_build": 12,
+      "owner_lines": 2,
+      "examples_restated_with_was": 1,
+      "questions_after_change": 0,
+      "accuracy": 1.0,
+      "rule": "if age < 14 then 50 else if age < 65 then 100 else 70"
+    }
+  ]
+}

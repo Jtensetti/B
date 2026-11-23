@@ -23,6 +23,8 @@ def _render_examples(entry: dict) -> list[str]:
         lines.append(f"  settled: {entry['reason']}")
         return lines
     lines.append(f"  question: {entry['question']}")
+    if entry.get("why"):
+        lines.append(f"  why: {entry['why']}")
     if entry["status"] == "unseen":
         lines.append(f"  {entry['reason']}")
         return lines

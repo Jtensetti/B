@@ -161,6 +161,9 @@ def _learned_entries(session: Session) -> list[dict]:
             options.append({"value": value, "meaning": "example", "declaration": line, "applicable": True,
                             "repairs": [], "rule": render(after.rule, after.names),
                             "settled": after.determined})
+        if found.reason == "coverage":
+            entry["why"] = ("only one example supports this case; asking whether the next value "
+                            "in its domain belongs to it")
         entries.append({**entry, "status": "question", "question": text, "options": options,
                         "_insert": {"origin": anchor[0], "offset": anchor[1]}})
     return entries

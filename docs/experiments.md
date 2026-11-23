@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.20 decisions as source
+
+[Hidden policies](../experiments/decisions/README.md) compare how many examples B needs when it chooses its own questions with the same number of random examples. Two requirement changes count the owner's lines and answers.
+
 ## B 0.19 precedent questions
 
 [Seven booking programs](../experiments/precedent-questions/README.md) receive the same request to extend a rule. The study records when `b ask` settles the meaning from an existing case, which question it asks otherwise and whether each answer runs.

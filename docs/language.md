@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.19
+# B language reference — implemented experimental v0.20
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -9,6 +9,8 @@ For source adoption and contract analysis across functions, see [source adoption
 `also free_entry(true, "sun") keeping seats, recipient` adds a ground input tuple to a pure native Boolean predicate. The optional `keeping` clause protects named functions against a transitive dependency on that predicate. Source order does not change the meaning of a fact. See the [grammar, examples and revision checker](executable-changes.md).
 
 `also free_entry(true, "sun") like (true, "sat")` additionally requires the new case to be indistinguishable from a case the rule already covered, for every pure function that shares an input name with the rule. `b ask` finds that case when the declaration omits it and turns a remaining difference into one question. See [precedent questions](precedent-questions.md).
+
+`fn price(child: Bool, day: Text) -> Int pure by examples` declares a pure function without a body. The compiler derives an ordered rule list from the `example price(true, "sat") == 0` statements for that name. `example` statements also check ordinary functions. A changed result must be written `... == 120 was 100`. `domain day: "mon", ..., "sun"` lists the values of any parameter named `day`. See [decisions as source](examples.md).
 
 ## 1. Source form and tokens
 
