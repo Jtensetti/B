@@ -1,0 +1,1 @@
+Change 2 of the trial. The owner says: "Norwegian customers pay Norwegian VAT instead of Swedish: standard 25 %, food 15 %, books 0 %. Shipping is taxed at the standard rate. An invoice lists a VAT amount for every class on it, even when it is 0. Swedish customers are unchanged."

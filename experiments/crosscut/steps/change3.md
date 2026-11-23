@@ -1,0 +1,1 @@
+Change 3 of the trial. The owner says: "From now on the catalog prices include Swedish VAT. A product's net unit price is its catalog price divided by 1 plus its Swedish VAT rate. Everything else is unchanged."
