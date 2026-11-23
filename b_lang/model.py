@@ -172,7 +172,11 @@ class ToModel(Transformer):
     def unit(self, xs): return (str(xs[0]), None if xs[1] is None else str(xs[1]))
     def quantity(self, xs): return Expr("quantity", (xs[0].parts[0], xs[1]))
     def convert(self, xs): return Expr("convert", (xs[0], xs[1]))
-    def membership(self, xs): return Expr("member", (xs[0], str(xs[1])))
+    def membership(self, xs):
+        container = xs[1]
+        if isinstance(container, Expr) and container.kind == "name":
+            return Expr("member", (xs[0], container.parts[0]))  # a group, or a collection by name
+        return Expr("contains", (xs[0], container))
     def learned_stmt(self, xs):
         return Stmt("learn", (str(xs[0]), xs[1] or [], xs[2], xs[3] is not None))
     def quantity_value(self, xs): return ("quantity", xs[0].parts[0], xs[1])
@@ -193,13 +197,35 @@ class ToModel(Transformer):
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 
 _GRAMMAR = resources.files("b_lang").joinpath("syntax.lark").read_text()
-_PARSER = Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True)
+
+
+class _JoinLines:
+    """Python's implicit line joining: a newline inside () or [] continues the line.
+
+    Braces keep their newlines, because records, decision tables and summaries
+    use a newline as a separator between their entries.
+    """
+    always_accept = ("_NL",)
+
+    def process(self, stream):
+        stack = []
+        for token in stream:
+            kind = token.type
+            if kind in ("LPAR", "LSQB", "LBRACE"):
+                stack.append(kind)
+            elif kind in ("RPAR", "RSQB", "RBRACE") and stack:
+                stack.pop()
+            elif kind == "_NL" and stack and stack[-1] in ("LPAR", "LSQB"):
+                continue
+            yield token
+_PARSER = Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, postlex=_JoinLines())
 
 
 @cache
 def positioned_parser():
     """Only source-rewriting callers need token offsets."""
-    return Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, propagate_positions=True)
+    return Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, propagate_positions=True,
+                postlex=_JoinLines())
 
 
 def parser_input(source: str) -> str:

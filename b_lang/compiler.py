@@ -330,6 +330,22 @@ class Compiler:
             return self._summarize(ex, symbols)
         if kind == "each":
             return self._each(ex, symbols)
+        if kind == "contains":
+            item, container = self.infer(p[0], symbols), self.infer(p[1], symbols)
+            kind_ = container.type.name
+            if kind_ == "List":
+                element = container.type.args[0]
+            elif kind_ == "Dict" or container.type == TEXT:
+                element = TEXT
+            else:
+                raise BError("E_TYPE", f"in needs a List, Dict, Text or a group, got {container.type}")
+            if not (assignable(item.type, element) or assignable(element, item.type)):
+                raise BError("E_TYPE", f"Cannot look for {item.type} in {container.type}")
+            return self.val(BOOL, "contains", item.node, container.node)
+        if kind == "lookup" and self.infer(p[0], symbols).type.name == "List":
+            sequence, index = self.infer(p[0], symbols), self.infer(p[1], symbols)
+            self._check_type(index, INT, "list index")
+            return self.val(option(sequence.type.args[0]), "index", sequence.node, index.node)
         if kind == "lookup":
             dictionary = self.infer(p[0], symbols)
             if dictionary.type.name != "Dict":

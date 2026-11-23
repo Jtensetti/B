@@ -80,6 +80,10 @@ Expressions also allow literals (`true`, `false`, `none`, numbers, strings), ref
 
 `record Booking { child: Bool, day: Text, note: Option[Text] }` declares a structural record type, as in TypeScript. `{child = true, day = "sat"}` builds a record, and `b.day` reads a field. An `Option` field may be left out and then reads as `none`. At runtime a record is a dictionary, so JSON from Python or JavaScript enters through the usual border check. A missing required field stops the program there, and undeclared fields are not carried along. Records may refer to records declared later, but not to themselves.
 
+`xs[0]` reads a list item as an `Option`. A position outside the list gives `none`, and `xs[-1]` is the last item. `x in xs` tests whether a list contains an item, a dictionary a key, or a text a substring. If the name after `in` is a declared group, it tests group membership instead.
+
+A newline inside `(...)` or `[...]` continues the expression, as in Python. Inside `{...}`, newlines are allowed after commas and around the parts of a dictionary transform.
+
 `len`, `sorted`, `keys`, `values`, `text` and `join` are typed core words. Python's builtins run them, but B types them for any element type. `text(true)` is `"true"`. A program's own function of the same name takes precedence.
 
 ### Collection expressions

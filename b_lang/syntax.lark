@@ -42,7 +42,7 @@ history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL
 ?and_expr: and_expr "and" cmp_expr -> and_op
          | cmp_expr
 ?cmp_expr: cmp_expr COMP sum_expr  -> comparison
-         | cmp_expr "in" NAME      -> membership
+         | cmp_expr "in" sum_expr  -> membership
          | cmp_expr "as" unit      -> convert
          | sum_expr
 ?sum_expr: sum_expr "+" mul_expr  -> add
@@ -63,7 +63,7 @@ args: expr ("," expr)*
 binders: NAME ["," NAME]
 record_field: NAME ":" type_expr
 record_entry: NAME "=" expr
-pairs: pair ("," pair)*
+pairs: pair ("," _NL* pair)* ","?
 pair: expr ":" expr
 ?scalar: number_literal
        | ESCAPED_STRING              -> string
@@ -102,9 +102,10 @@ unit: NAME ["per" NAME]
      | NAME                          -> identifier
      | "[" expr "for" binders "in" expr ["where" expr] "]"          -> list_each
      | "{" _NL* record_entry ("," _NL* record_entry)* ","? _NL* "}" -> record_literal
-     | "{" expr ":" expr "for" binders "in" expr ["where" expr] "}" -> dict_each
+     | "{" _NL* expr ":" expr _NL* "for" binders "in" expr _NL* ["where" expr _NL*] "}" -> dict_each
      | "[" [args] "]"                -> list_literal
-     | "{" [pairs] "}"               -> dict_literal
+     | "{" _NL* pairs _NL* "}"       -> dict_literal
+     | "{" "}"                       -> dict_literal
      | "(" expr ")"                  -> grouped
 
 // Both words can also be ordinary variables and functions. Recognize a

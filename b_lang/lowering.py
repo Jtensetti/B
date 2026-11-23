@@ -292,6 +292,11 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return self._summarize(e)
         if op == "each":
             return self._each(e)
+        if op == "contains":
+            return ast.Compare(left=self.expr(children[0]), ops=[ast.In()], comparators=[self.expr(children[1])])
+        if op == "index":
+            # xs[i] is none outside the list, as a missing key is for a dictionary.
+            return ast.Call(func=_load("_b_index"), args=[self.expr(children[0]), self.expr(children[1])], keywords=[])
         if op == "core":
             args = [self.expr(x) for x in children]
             if data == "len":
@@ -450,6 +455,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="BContractError", asname="_b_contract_error"),
             ast.alias(name="BExampleError", asname="_b_example_error"),
             ast.alias(name="text", asname="_b_text"),
+            ast.alias(name="index", asname="_b_index"),
         ], level=0)]
         if any(s.op == "import" and s.backend == "js" for s in program.statements):
             signatures = []

@@ -541,7 +541,8 @@ def desugar_membership(node, groups: dict):
         if node.kind == "member":
             subject, name = node.parts
             if name not in groups:
-                raise BError("E_NAME", f"No group named {name!r}")
+                # Not a group: an ordinary collection, as in Python's `x in xs`.
+                return Expr("contains", (desugar_membership(subject, groups), Expr("name", (name,))))
             subject = desugar_membership(subject, groups)
             tests = [Expr("cmp", (subject, "==", Expr("literal", (v,)))) for v in groups[name][1]]
             result = tests[0]

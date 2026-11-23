@@ -21,6 +21,13 @@ class BExampleError(AssertionError):
     """A stated example of an imported function no longer holds."""
     pass
 
+def index(sequence, position):
+    """B's xs[i]: an Option. Negative positions count from the end, as in Python and JavaScript's at()."""
+    if -len(sequence) <= position < len(sequence):
+        return sequence[position]
+    return None
+
+
 def text(value) -> str:
     """B's spelling of a scalar: true/false in lower case, as B source writes them."""
     if value is True:
