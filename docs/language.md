@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.25
+# B language reference — implemented experimental v0.26
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -83,6 +83,19 @@ Expressions also allow literals (`true`, `false`, `none`, numbers, strings), ref
 `xs[0]` reads a list item as an `Option`. A position outside the list gives `none`, and `xs[-1]` is the last item. `x in xs` tests whether a list contains an item, a dictionary a key, or a text a substring. If the name after `in` is a declared group, it tests group membership instead.
 
 A newline inside `(...)` or `[...]` continues the expression, as in Python. Inside `{...}`, newlines are allowed after commas and around the parts of a dictionary transform.
+
+A function body may start with local bindings, one per line, before its result:
+
+```bee
+fn describe(prices: Dict[Text, Int], item: Text) -> Text =
+    let price = prices[item]
+    let label: Text = "item " + item
+    if price != none then label + " costs " + text(price) else label + " is unknown"
+```
+
+Each binding is evaluated once. A binding may not hide a function.
+
+After a test `x != none`, `x` has its inner type wherever the test is known to hold. That includes the `then` branch, the `else` branch of `x == none`, both sides of `and`, under `not`, and the item expression of `[... for ... where x != none]`. Only plain names narrow.
 
 `len`, `sorted`, `keys`, `values`, `text` and `join` are typed core words. Python's builtins run them, but B types them for any element type. `text(true)` is `"true"`. A program's own function of the same name takes precedence.
 

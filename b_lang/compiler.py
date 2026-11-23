@@ -1,4 +1,4 @@
-"""B 0.25 compiler: parse -> typed BIR -> Python backend.
+"""B 0.26 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -39,6 +39,37 @@ from .types import (
 NOT_CONST = object()
 NUMERIC = (INT, FLOAT)
 CORE_WORDS = frozenset({"len", "sorted", "keys", "values", "text", "join"})
+
+
+def _narrowed(test: Expr, scope: dict, outcome: bool) -> dict:
+    """Names a test proves are not none: `x != none` when true, `x == none` when false.
+
+    `a and b` proves both when true, `a or b` proves both when false, and
+    `not t` swaps the outcome. Only plain names with an Option type narrow.
+    """
+    proven: set[str] = set()
+
+    def visit(node, when):
+        if node.kind == "not":
+            visit(node.parts[0], not when)
+        elif node.kind == "and" and when or node.kind == "or" and not when:
+            visit(node.parts[0], when)
+            visit(node.parts[1], when)
+        elif node.kind == "cmp":
+            left, op, right = node.parts
+            for a, b in ((left, right), (right, left)):
+                if (a.kind == "name" and b.kind == "literal" and b.parts[0] is None
+                        and (op == "!=" and when or op == "==" and not when)):
+                    proven.add(a.parts[0])
+
+    visit(test, outcome)
+    narrowed = None
+    for name in proven:
+        symbol = scope.get(name)
+        if symbol is not None and symbol.type.name == "Option" and symbol.signature is None:
+            narrowed = narrowed or dict(scope)
+            narrowed[name] = Symbol(symbol.type.args[0])
+    return narrowed or scope
 
 
 def _record_label(typ: Type) -> str:
@@ -274,15 +305,18 @@ class Compiler:
                 raise BError("E_NAME", f"for cannot bind {name}: name is already in scope or reserved")
             elements[name] = Symbol(typ)
         operands = [collection.node]
+        condition = None
+        if raw_condition is not None:
+            condition = self.infer(raw_condition, elements)
+            self._check_type(condition, BOOL, "where")
+            elements = _narrowed(raw_condition, elements, True)
         if raw_key is not None:
             key = self.infer(raw_key, elements)
             self._check_type(key, TEXT, "dictionary key")
             operands.append(key.node)
         value = self.infer(raw_value, elements)
         operands.append(value.node)
-        if raw_condition is not None:
-            condition = self.infer(raw_condition, elements)
-            self._check_type(condition, BOOL, "where")
+        if condition is not None:
             operands.append(condition.node)
         result = Type("List", (value.type,)) if shape == "list" else Type("Dict", (TEXT, value.type))
         return self.val(result, "each", *operands,
@@ -330,6 +364,28 @@ class Compiler:
             return self._summarize(ex, symbols)
         if kind == "each":
             return self._each(ex, symbols)
+        if kind == "locals":
+            bindings, result = p
+            scope = dict(symbols)
+            nodes = []
+            for name, annotation, raw in bindings:
+                if name in scope and scope[name].type.name == "Function" or name.startswith("_b_"):
+                    raise BError("E_NAME", f"let {name} would hide a function or runtime name")
+                value = self.infer(raw, scope)
+                if annotation is not None:
+                    wanted = from_syntax(annotation)
+                    self._check_type(value, wanted, f"let {name}")
+                    value = self._widen(value, wanted)
+                    typ = wanted
+                else:
+                    typ = value.type
+                scope = {**scope, name: Symbol(typ)}
+                nodes.append((name, typ, value.node))
+            body = self.infer(result, scope)
+            node = body.node
+            for name, typ, value_node in reversed(nodes):
+                node = ExprIR("bind", body.type, (value_node, node), data=name)
+            return Value(body.type, node, NOT_CONST)
         if kind == "contains":
             item, container = self.infer(p[0], symbols), self.infer(p[1], symbols)
             kind_ = container.type.name
@@ -382,7 +438,8 @@ class Compiler:
         if kind == "conditional":
             cv = self.infer(p[0], symbols)
             self._check_type(cv, BOOL, "if condition")
-            yv, nv = self.infer(p[1], symbols), self.infer(p[2], symbols)
+            yv = self.infer(p[1], _narrowed(p[0], symbols, True))
+            nv = self.infer(p[2], _narrowed(p[0], symbols, False))
             typ = unify(yv.type, nv.type)
             if typ == ANY and yv.type != ANY and nv.type != ANY:
                 raise BError("E_TYPE", f"if branches have incompatible types: {yv.type} versus {nv.type}")
@@ -571,6 +628,10 @@ class Compiler:
         if node.op == "history_count":
             self._pure_captures(node.operands[0], locals_)
             self._pure_captures(node.operands[1], locals_ | {node.data["past"], node.data["current"]})
+            return
+        if node.op == "bind":
+            self._pure_captures(node.operands[0], locals_)
+            self._pure_captures(node.operands[1], locals_ | {node.data})
             return
         if node.op == "each":
             self._pure_captures(node.operands[0], locals_)

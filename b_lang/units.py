@@ -537,6 +537,20 @@ class _Checker:
             target = self._children(target, env, "A called value")
             return Expr(kind, (target, tuple(self.plain(a, env, "An argument to a foreign or computed call")
                                              for a in arguments))), ()
+        if kind == "locals":
+            bindings, result = parts
+            scope = dict(env)
+            rewritten = []
+            for name, annotation, raw in bindings:
+                value, dimension = self.expr(raw, scope)
+                declared = type_dimension(annotation) if annotation is not None else None
+                if annotation is not None and dimension != (declared or ()):
+                    raise BError("E_UNIT", f"let {name} is declared {describe(declared or ())}, "
+                                 f"but its value is {describe(dimension)}")
+                scope[name] = dimension
+                rewritten.append((name, FLOAT_SYNTAX if declared is not None else annotation, value))
+            body, dimension = self.expr(result, scope)
+            return Expr(kind, (tuple(rewritten), body)), dimension
         if kind == "each":
             shape, key, value, binders, source, condition = parts
             inner = {k: v for k, v in env.items() if k not in binders}

@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
 
+## B 0.26
+
+The [journey trial](../experiments/journey/README.md) ran four Sonnet solvers through a build and seven changes. Correctness was equal: every solver passed every hidden test. B's total output tokens were about 0.55 times Python's, entirely because B borrowed npm semver at build time. Each change cost B about 1.8 times as much. This release removes the friction the B programs showed: local bindings in function bodies, `Option` narrowing after a none test, a 21-function semver catalog and a typed catalog for fastest-levenshtein. Next: a second trial on a new task with fresh solvers, to see whether the cost of a change drops and whether errors separate the languages.
+
 ## B 0.25
 
 Milestone 3, the building blocks a real program needs. Collection transforms (`[x for x in xs where c]`, `{k: v for k, v in d}`), structural records that JSON enters through a border check, and the typed core words `len`, `sorted`, `keys`, `values`, `text` and `join`. Until now B could not map over a list. Next: the journey trial (milestone 5).

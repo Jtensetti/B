@@ -110,3 +110,43 @@ def test_core_word_errors(source, fragment):
     with pytest.raises(BError) as exc:
         compile_b(source)
     assert fragment in exc.value.message
+
+
+def test_local_bindings_in_function_bodies():
+    source = ("fn describe(prices: Dict[Text, Int], item: Text) -> Text =\n"
+              "    let price = prices[item]\n"
+              "    let label: Text = \"item \" + item\n"
+              "    if price != none then label + \" costs \" + text(price) else label + \" is unknown\"\n"
+              "let x = 1\n"
+              "print describe({\"tea\": 30}, \"tea\")\nprint describe({\"bun\": 25}, \"cake\")\n")
+    assert output(source) == ["item tea costs 30", "item cake is unknown"]
+
+
+def test_a_local_is_evaluated_once():
+    source = ("use py:b_examples.demo_lib as demo\n"
+              "fn twice(v: Float) -> Float =\n    let c = demo.clamp(v, 0.0, 3.0)\n    c + c\nprint twice(5.0)\n")
+    assert output(source, strict=False) == ["6.0"]
+
+
+@pytest.mark.parametrize(("source", "fragment"), [
+    ("fn f(x: Int) -> Int =\n    let y: Text = x\n    1", "let y: expected Text"),
+    ("fn g() -> Int = 1\nfn f(x: Int) -> Int =\n    let g = x\n    g", "would hide a function"),
+])
+def test_local_binding_errors(source, fragment):
+    with pytest.raises(BError) as exc:
+        compile_b(source)
+    assert fragment in exc.value.message
+
+
+def test_option_narrowing_after_a_none_test():
+    assert output('fn f(o: Option[Int]) -> Int = if o != none then o + 1 else 0\n'
+                  'fn g(o: Option[Int]) -> Int = if o == none then 0 else o * 2\n'
+                  'fn h(a: Option[Int], b: Option[Int]) -> Int = if a != none and b != none then a + b else -1\n'
+                  'fn k(a: Option[Int]) -> Int = if not (a == none) then a else 0\n'
+                  'print [f(2), f(none), g(3), h(1, 2), h(1, none), k(4)]\n'
+                  'print {key: v + 1 for key, v in {"a": 1, "b": none} where v != none}\n') == [
+        "[3, 0, 6, 3, -1, 4]", "{'a': 2}"]
+    with pytest.raises(BError):
+        compile_b("fn f(o: Option[Int]) -> Int = if o == none then o + 1 else 0\n")
+    with pytest.raises(BError):
+        compile_b("fn f(a: Option[Int], b: Option[Int]) -> Int = if a != none or b != none then a + b else 0\n")

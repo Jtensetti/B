@@ -152,6 +152,10 @@ class ToModel(Transformer):
         flags = {key: value for item in xs[3:-1] if item is not None for key, value in (item,)}
         return Stmt("fn", (str(xs[0]), xs[1] or [], xs[2], xs[-1],
                             bool(flags.get("pure", False)), flags.get("requires"), flags.get("ensures")))
+    def local(self, xs): return (str(xs[0]), xs[1], xs[2])
+    def fn_body(self, xs):
+        *bindings, result = xs
+        return Expr("locals", (tuple(bindings), result)) if bindings else result
     def next_stmt(self, xs): return Stmt("next", (str(xs[0]), xs[1], xs[2]))
     def also_args(self, xs):
         values = []

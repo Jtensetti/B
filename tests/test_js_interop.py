@@ -45,7 +45,8 @@ def test_bir_and_inspect_record_assumptions_without_node(monkeypatch, tmp_path, 
     assert row["provenance"] == "curated-semver-7" and c.assumptions
     assert main(["inspect", "js:semver", "--json"]) == 0
     data = json.loads(capsys.readouterr().out)
-    assert {s["name"] for s in data["signatures"]} == {"valid", "maxSatisfying", "satisfies", "compare"}
+    assert {"valid", "maxSatisfying", "satisfies", "compare", "clean", "prerelease", "rsort"} <= {
+        s["name"] for s in data["signatures"]}
     assert data["installed_version_checked"] is False
     assert main(["inspect", "js:other-pkg", "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["provenance"] == "declaration-required"

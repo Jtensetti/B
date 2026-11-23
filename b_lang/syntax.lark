@@ -7,7 +7,7 @@ _NL: NEWLINE
      | "use" BACKEND ":" path "as" NAME                   -> use_stmt
      | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
      | "let" NAME [":" type_expr] "=" _NL* expr          -> let_stmt
-     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
+     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* fn_body -> fn_stmt
      | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? "by" "examples" -> learned_stmt
      | "domain" NAME ":" also_args                         -> domain_stmt
      | "record" NAME "{" _NL* record_field ((","|_NL) _NL* record_field)* ","? _NL* "}" -> record_stmt
@@ -20,6 +20,8 @@ _NL: NEWLINE
      | "assert" expr                                      -> assert_stmt
      | "foreign" path "(" [type_list] ")" "->" type_expr -> foreign_stmt
 
+?fn_body: local* expr
+local: "let" NAME [":" type_expr] "=" _NL* expr _NL+
 fn_pure: "pure"
 fn_requires: "requires" expr
 fn_ensures: "ensures" expr

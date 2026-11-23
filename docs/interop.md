@@ -39,7 +39,7 @@ The .NET 10 host has a narrow allowlist of static functions. `B.NetHost --descri
 
 ## Node.js and npm (B 0.12)
 
-`use js:"node:path/posix" as path` gives B six static signatures for POSIX path operations. `use js:semver as versions` provides signatures for `satisfies`, `compare`, `valid` and `maxSatisfying`. The latter two can return `Option[Text]`. At execution B checks that the installed semver package is version 7. Inspect the catalog with `b inspect js:semver --json`. The catalog is available during compilation without starting Node or loading npm code.
+`use js:"node:path/posix" as path` gives B six static signatures for POSIX path operations. `use js:semver as versions` provides typed signatures for 21 functions: `satisfies`, `compare`, `valid`, `maxSatisfying`, `minSatisfying`, `clean`, `validRange`, `prerelease`, `gt`, `gte`, `lt`, `lte`, `eq`, `major`, `minor`, `patch`, `sort`, `rsort`, `diff`, `inc` and `intersects`. `use js:"fastest-levenshtein" as words` provides `distance` and `closest`. At execution B checks that the installed semver package is version 7. Inspect the catalog with `b inspect js:semver --json`. The catalog is available during compilation without starting Node or loading npm code.
 
 For a different installed package, quote scoped or hyphenated names and declare the synchronous export to be called:
 

@@ -292,6 +292,15 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return self._summarize(e)
         if op == "each":
             return self._each(e)
+        if op == "bind":
+            # let x = v ... as an expression: (lambda x: rest)(v), so later uses see one evaluation.
+            name = _python_name(data)
+            value = self.expr(children[0])
+            with self._bind([name]):
+                rest = self.expr(children[1])
+            arguments = ast.arguments(posonlyargs=[], args=[ast.arg(arg=name)], vararg=None, kwonlyargs=[],
+                                      kw_defaults=[], kwarg=None, defaults=[])
+            return ast.Call(func=ast.Lambda(args=arguments, body=rest), args=[value], keywords=[])
         if op == "contains":
             return ast.Compare(left=self.expr(children[0]), ops=[ast.In()], comparators=[self.expr(children[1])])
         if op == "index":

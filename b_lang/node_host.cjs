@@ -6,6 +6,13 @@ const { Worker, isMainThread, workerData, parentPort } = require('node:worker_th
 function serialize(value, type) {
     const [kind, inner, itemType] = type;
     if (kind === 'Option') return value === null ? null : serialize(value, inner);
+    if (kind === 'Any') {
+        // Plain JSON data only: B checks the shape where the value is used.
+        if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
+        if (Number.isSafeInteger(value)) return value;
+        if (Array.isArray(value)) return value.map((item) => serialize(item, ['Any']));
+        throw Error('Export did not return plain JSON data for Any');
+    }
     if (kind === 'Int' && Number.isSafeInteger(value)) return value;
     if (kind === 'Float' && Number.isFinite(value)) return Object.is(value, -0) ? '-0' : String(value);
     if (kind === 'Bool' && typeof value === 'boolean') return value;
