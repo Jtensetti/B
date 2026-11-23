@@ -25,7 +25,7 @@ The [journey trial](../journey/README.md) favored B because its semantics lived 
 **B lost clearly.** It took about 3.6 times the output tokens and 8 times the wall time, with equal correctness.
 
 - **The build cost** is mostly learning B: reading the documentation and trying out syntax. There was no library to borrow that Python lacked.
-- **Each change** still cost B about 2.4 times as much as Python. The B solvers kept writing randomized Python references to check their B programs. In effect they used Python as the trusted language and B as the one under suspicion.
+- **Each change** still cost B about 2.5 times as much as Python. The B solvers kept writing randomized Python references to check their B programs. In effect they used Python as the trusted language and B as the one under suspicion.
 - **Neither B solver used units**, even though the task is a unit conversion problem and the B documentation describes `Mass[lb]` at a foreign border. Both wrote the same arithmetic as the Python solvers. Neither used `example` either. B's distinctive grammar went unused, so it could not prevent anything.
 - **Friction reported by a solver:** a newline before `else` is rejected outside parentheses.
 
