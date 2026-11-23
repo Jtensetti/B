@@ -102,5 +102,6 @@ def test_records_lists_and_containment_work_in_a_program_with_units():
               'let parcels = [{id = "a", kg = 2.0}, {id = "b", kg = 0.5}]\n'
               'print {p.id: mass(p) as lb for p in parcels where "a" in [p.id]}\n'
               'print 1 inch3 as cm3\n')
-    assert output(source)[0].startswith("{'a': 4.40924")
-    assert output(source)[1] == "16.387064"
+    words = output(source)
+    assert words[:2] == ["{'a':", words[1]] and words[1].startswith("4.40924")
+    assert words[-1] == "16.387064"
