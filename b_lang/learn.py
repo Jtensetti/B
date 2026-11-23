@@ -488,7 +488,7 @@ def collect_domains(statements: list[Stmt], hints: dict[str, set]) -> dict[str, 
 
 
 def include_knowledge(statements: list[Stmt]) -> list[Stmt]:
-    """Replace `know calendar` with the domains and groups B ships in b_lang/truths."""
+    """Replace `know calendar` with the declarations B ships in b_lang/truths."""
     from importlib import resources
     from .model import parse
     result, seen = [], set()
@@ -506,8 +506,9 @@ def include_knowledge(statements: list[Stmt]) -> list[Stmt]:
                                if p.name.endswith(".bee"))
             raise BError("E_KNOW", f"B knows no topic {topic!r}; available: {', '.join(available)}")
         known = parse(source.read_text(encoding="utf-8"))
-        if any(s.kind not in ("domain", "group") for s in known):
-            raise BError("E_KNOW", f"Knowledge file {topic} may only declare domains and groups")
+        if any(s.kind not in ("domain", "group", "fn", "let", "example") for s in known):
+            raise BError("E_KNOW", f"Knowledge file {topic} may only declare domains, groups, "
+                         "pure functions, bindings and examples")
         result.extend(known)
     return result
 

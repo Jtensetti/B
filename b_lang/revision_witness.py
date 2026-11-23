@@ -88,7 +88,7 @@ class _Fragment:
         elif op == "cmp" and node.data in _COMPARE and args[0].typ == args[1].typ:
             if node.data not in ("==", "!="):
                 self.domain.ordered_or_computed.add(args[0].typ)
-        elif (op in _INT_OPS or op == "neg") and typ == INT:
+        elif (op in _INT_OPS or op in ("neg", "mod")) and typ == INT:
             self.domain.ordered_or_computed.add(INT)
         elif op not in ("conditional", "and", "or", "not"):
             raise _Outside(f"{op} outside scalar comparison")
@@ -128,6 +128,11 @@ class _Fragment:
             return not at(0)
         if op == "cmp":
             return _COMPARE[node.data](at(0), at(1))
+        if op == "mod":
+            divisor = at(1)
+            if divisor == 0:
+                raise _Outside("remainder by zero")
+            return at(0) % divisor  # the Python backend's floor remainder
         value = -at(0) if op == "neg" else _INT_OPS[op](at(0), at(1))
         if value.bit_length() > _MAX_INT_BITS:
             raise _Outside("integer comparison work limit reached")

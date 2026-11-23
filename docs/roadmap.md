@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **Decisions in, program out.** In B the source is the owner's decisions. The compiler derives the code, keeps every recorded decision true and asks only what the decisions leave open. [Vision, milestones and kill criteria](vision.md).
 
+## B 0.22
+
+[Units](units.md) are part of the language: about 130 units with exact factors, dimension types including `Money[SEK]` and `Rate[SEK, USD]`, affine temperatures and compile-time exact folding. Knowledge files can now carry functions and examples: calendar relations, exact SI constants and currency identities. Next: exact decimal money at runtime, quantities in lists and in functions defined by examples, and unit annotations on foreign signatures, so that a Python function taking feet cannot receive meters.
+
 ## B 0.21
 
 B can [know shared truths](knowledge.md). `know kalender` and `know calendar` bring in weekdays, months and named groups written in B, and `x in group` tests membership. A known group counts as one test when B derives a rule, so a weekend rule becomes as simple as a Saturday rule. Names may now use Swedish and other letters. Next: relations such as the order of days and unit conversions, and checking imported Python and .NET functions against examples.

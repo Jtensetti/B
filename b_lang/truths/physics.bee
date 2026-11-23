@@ -1,0 +1,7 @@
+let speed_of_light: Speed = 299792458 m per s
+let standard_gravity: Acceleration = 9.80665 m per s / 1 s
+let elementary_charge: Charge = 0.0000000000000000001602176634 C
+let avogadro: Float = 602214076000000000000000.0
+let boltzmann: Float = 0.00000000000000000000001380649
+let water_freezes: Temperature = 0 degC
+let water_boils_at_one_atmosphere: Temperature = 100 degC

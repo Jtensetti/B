@@ -48,10 +48,24 @@ def test_invalid_knowledge(source, code):
 
 
 def test_knowledge_files_are_written_in_b():
-    for name in ("calendar", "kalender"):
+    for name in ("calendar", "kalender", "physics", "currencies"):
         statements = parse((ROOT / "b_lang/truths" / f"{name}.bee").read_text(encoding="utf-8"))
-        assert {s.kind for s in statements} == {"domain", "group"}
-    assert compile_b("know calendar\nknow kalender\nknow calendar\n")
+        assert {s.kind for s in statements} <= {"domain", "group", "fn", "let", "example"}
+    # Every shipped example is checked at compile time; --strict leaves nothing unchecked.
+    assert compile_b("know calendar\nknow kalender\nknow physics\nknow currencies\nknow calendar\n", strict=True)
+
+
+def test_calendar_relations_hold_for_every_year_in_four_centuries():
+    import calendar as python_calendar
+    names = run("know calendar\n")
+    months = ["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"]
+    for year in range(1600, 2401):
+        assert names["leap_year"](year) == python_calendar.isleap(year)
+        for number, month in enumerate(months, 1):
+            assert names["days_in_month"](month, year) == python_calendar.monthrange(year, number)[1]
+    days = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"]
+    assert [names["next_day"](d) for d in days] == days[1:] + days[:1]
+    assert [names["previous_day"](d) for d in days] == days[-1:] + days[:-1]
 
 
 def test_a_known_group_is_one_test_for_the_learner():

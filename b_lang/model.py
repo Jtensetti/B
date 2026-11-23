@@ -152,6 +152,9 @@ class ToModel(Transformer):
     def domain_stmt(self, xs): return Stmt("domain", (str(xs[0]), xs[1]))
     def group_stmt(self, xs): return Stmt("group", (str(xs[0]), str(xs[1]), xs[2]))
     def know_stmt(self, xs): return Stmt("know", (str(xs[0]),))
+    def unit(self, xs): return (str(xs[0]), None if xs[1] is None else str(xs[1]))
+    def quantity(self, xs): return Expr("quantity", (xs[0].parts[0], xs[1]))
+    def convert(self, xs): return Expr("convert", (xs[0], xs[1]))
     def membership(self, xs): return Expr("member", (xs[0], str(xs[1])))
     def learned_stmt(self, xs):
         return Stmt("learn", (str(xs[0]), xs[1] or [], xs[2], xs[3] is not None))

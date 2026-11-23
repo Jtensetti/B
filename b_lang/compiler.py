@@ -1,4 +1,4 @@
-"""B 0.21 compiler: parse -> typed BIR -> Python backend.
+"""B 0.22 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -643,6 +643,8 @@ class Compiler:
             raise BError("E_SYNTAX", str(exc)) from exc
         from .learn import expand
         parsed, self.learned = expand(parsed)
+        from .units import check as check_units
+        parsed = check_units(parsed)
         self.additional_cases = additional_cases(parsed)
         statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))

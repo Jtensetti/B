@@ -42,6 +42,7 @@ history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL
          | cmp_expr
 ?cmp_expr: cmp_expr COMP sum_expr  -> comparison
          | cmp_expr "in" NAME      -> membership
+         | cmp_expr "as" unit      -> convert
          | sum_expr
 ?sum_expr: sum_expr "+" mul_expr  -> add
          | sum_expr "-" mul_expr   -> subtract
@@ -84,7 +85,10 @@ summary_field: NAME ":" summary_reduction
                 | "+" SUMMARY_INT -> default_int
                 | "-" SUMMARY_INT -> default_negative_int
 
+unit: NAME ["per" NAME]
+
 ?atom: case_table
+     | number_literal unit           -> quantity
      | CASES                         -> identifier
      | summary
      | scalar

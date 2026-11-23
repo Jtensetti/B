@@ -44,12 +44,23 @@ Each run starts from the same two examples, `price(false, "mon") == 100` and `pr
 
 - `group NAME of PARAM: "a", "b"` takes Text values. When `PARAM` has a domain, every member must be in it. Group names are unique.
 - `x in NAME` works on any Text expression. The compiler rewrites it as equality tests before type checking, so it adds nothing to BIR.
-- `know TOPIC` may appear more than once. A knowledge file may only declare domains and groups.
+- `know TOPIC` may appear more than once.
 - As everywhere in B, a parameter name is the input's identity. `know kalender` gives any parameter called `dag` the seven Swedish weekdays.
 - Names may use any letters, including Swedish ones, provided they are already in normalized Unicode form.
 
+## Topics
+
+| Topic | Contents |
+| --- | --- |
+| `know calendar` | `day`, `month`, `weekend`, `weekday`, quarters, `summer`, `winter`; `next_day`, `previous_day`, `leap_year`, `days_in_month`, `days_in_year` |
+| `know kalender` | `dag`, `månad`, `helg`, `vardag`, `sommar`, `vinter`; `nästa_dag`, `föregående_dag`, `skottår`, `dagar_i_månad` |
+| `know physics` | the speed of light, standard gravity and the elementary charge as quantities; the Avogadro and Boltzmann numbers; the freezing and boiling points of water |
+| `know currencies` | the 24 currency codes B knows as a `currency` domain, `currency_name` and the group `nordic` |
+
+A knowledge file may declare domains, groups, pure functions, bindings and examples. The examples are the tests: `example leap_year(1900) == false` is checked on every compile. A test compares the calendar functions with Python's `calendar` module for every year from 1600 to 2400. Units are not a topic. They are part of the language and always available ([units](units.md)).
+
 ## Limits and next steps
 
-- **Two topics only.** Calendar facts in English and Swedish. Units, currencies, countries and holidays are obvious next candidates, but each needs a source and a maintenance story. Holidays change every year.
-- **No relations yet.** B knows the order of the days and that Sunday is a weekend day. It does not know that Monday follows Sunday, that a month has 28–31 days, or that 60 minutes make an hour. Relations like these need more than groups: functions that B ships and checks, with examples as their tests.
+- **Only facts that never change.** The Gregorian leap-year rule, the order of weekdays, the SI constants that are exact since 2019, and currency identities qualify. Holidays, exchange rates and time zones change, and need a dated source.
+- **The physical constants are those exactly defined.** Measured constants such as the gravitational constant are left out, since their values are revised.
 - **Shared names are a convention.** A parameter called `dag` that holds something else will get a weekday domain anyway.

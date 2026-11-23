@@ -2,7 +2,7 @@
 
 **B is an experimental programming language in which the source is the owner's decisions.** Examples, rule extensions and protections are declarations. The compiler derives code from them, checks that every recorded decision still holds after a change, and asks for the one concrete input a set of decisions leaves open. B also has ordinary typed functions, contracts and adapters for Python, .NET and Node.js libraries. [The long-term goal and its milestones](docs/vision.md).
 
-**Version 0.21 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
+**Version 0.22 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
 
@@ -33,6 +33,18 @@ example pris(true, "lördag") == 0
 ```
 
 `know kalender` brings in the weekdays, months and the groups `helg` and `vardag`, all written in B. A known group counts as one test when B derives a rule. Once the Saturday rule is settled, the change `example pris(true, "söndag") == 0 was 100` needs no further question: B derives `if barn and dag in helg then 0 else 100`. [What B knows and the limits](docs/knowledge.md).
+
+## Units that never change, money that never mixes
+
+```bee
+fn speed(distance: Length, time: Duration) -> Speed pure = distance / time
+
+print speed(1 mil, 45 min) as km per h      # 13.333333333333332
+print (20 degC + 5 dK) as degF              # 77.0
+print 10 USD * (10.5 SEK per USD) as kr     # 105.0
+```
+
+B knows about 130 units and their exact relations, including mil, hg and dl. `5 km + 2 kg`, `100 SEK + 5 USD` and `20 degC + 20 degC` are compile errors. Every currency is its own dimension, so money only changes currency through a rate the program states. `1 month` is refused because a month has no fixed length. The units are erased after checking, and values known at compile time are computed exactly. [Units and their limits](docs/units.md) · `know calendar`, `know physics` and `know currencies` add leap years, month lengths, exact SI constants and currency names, all written in B and checked by their own examples.
 
 ## Ask about the one booking a change leaves open
 
