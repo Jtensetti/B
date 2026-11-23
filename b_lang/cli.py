@@ -132,7 +132,17 @@ def main(argv: list[str] | None = None) -> int:
     revision.add_argument("after", type=Path)
     revision.add_argument("--delta", type=Path, help="Pin the authorized change from a separate .bee file")
     revision.add_argument("--json", action="store_true")
+    ask_command = sub.add_parser("ask", help="Find the input an also declaration leaves ambiguous and ask one question")
+    ask_command.add_argument("file", type=Path)
+    ask_command.add_argument("--with", dest="delta", type=Path, metavar="DELTA.bee",
+                             help="Examine the also declarations in a separate file")
+    ask_command.add_argument("--answer", metavar="VALUE", help="Answer the open question with one of the offered values")
+    ask_command.add_argument("--apply", action="store_true", help="Write the answered revision back to the files")
+    ask_command.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "ask":
+        from . import ask_cli
+        return ask_cli.run(args, read_source)
     if args.command == "revision":
         return show_revision(args)
     if args.command == "next":

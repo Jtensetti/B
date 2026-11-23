@@ -1,0 +1,93 @@
+[
+  {
+    "variant": "A repeated Saturday waiver",
+    "status": "question",
+    "sunday_total_after_rule_only": 10,
+    "saturday_total": 0,
+    "question": "total(true, \"sun\"): 10 or 0?",
+    "answers": {
+      "10": {
+        "declaration": "also free_entry(true, \"sun\") keeping fee",
+        "repairs": [],
+        "sunday_total": 10,
+        "follow_up": "answered"
+      },
+      "0": {
+        "declaration": "also free_entry(true, \"sun\") like (true, \"sat\")",
+        "repairs": [
+          "fee: child and day == \"sat\" -> free_entry(child, day)"
+        ],
+        "sunday_total": 0,
+        "follow_up": "checked"
+      }
+    }
+  },
+  {
+    "variant": "B flat booking fee",
+    "status": "settled",
+    "sunday_total_after_rule_only": 10,
+    "saturday_total": 10,
+    "recorded_as": "also free_entry(true, \"sun\") like (true, \"sat\")",
+    "recorded_compiles_strict": true
+  },
+  {
+    "variant": "C waiver calls the rule",
+    "status": "settled",
+    "sunday_total_after_rule_only": 0,
+    "saturday_total": 0,
+    "recorded_as": "also free_entry(true, \"sun\") like (true, \"sat\")",
+    "recorded_compiles_strict": true
+  },
+  {
+    "variant": "D waiver already covers the weekend",
+    "status": "settled",
+    "sunday_total_after_rule_only": 0,
+    "saturday_total": 0,
+    "recorded_as": "also free_entry(true, \"sun\") like (true, \"sat\")",
+    "recorded_compiles_strict": true
+  },
+  {
+    "variant": "E Sunday surcharge",
+    "status": "question",
+    "sunday_total_after_rule_only": 30,
+    "saturday_total": 10,
+    "question": "total(true, \"sun\"): 30 or 10?",
+    "answers": {
+      "30": {
+        "declaration": "also free_entry(true, \"sun\") keeping surcharge",
+        "repairs": [],
+        "sunday_total": 30,
+        "follow_up": "answered"
+      },
+      "10": {
+        "declaration": "also free_entry(true, \"sun\") like (true, \"sat\")",
+        "refused": "B cannot write 'like free_entry(true, \"sat\")' automatically: edit surcharge so it agrees, then add also free_entry(true, \"sun\") like (true, \"sat\")"
+      }
+    }
+  },
+  {
+    "variant": "F Saturday souvenir",
+    "status": "question",
+    "sunday_total_after_rule_only": 10,
+    "saturday_total": 10,
+    "question": "souvenir(true, \"sun\"): \"none\" or \"pin\"?",
+    "answers": {
+      "\"none\"": {
+        "declaration": "also free_entry(true, \"sun\") keeping souvenir",
+        "repairs": [],
+        "sunday_total": 10,
+        "follow_up": "answered"
+      },
+      "\"pin\"": {
+        "declaration": "also free_entry(true, \"sun\") like (true, \"sat\")",
+        "refused": "B cannot write 'like free_entry(true, \"sat\")' automatically: edit souvenir so it agrees, then add also free_entry(true, \"sun\") like (true, \"sat\")"
+      }
+    }
+  },
+  {
+    "variant": "G rule never true before",
+    "status": "no-precedent",
+    "sunday_total_after_rule_only": 10,
+    "saturday_total": 110
+  }
+]

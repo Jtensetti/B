@@ -2,6 +2,12 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## B 0.19
+
+`b ask` uses a case a rule already covered as context for a new one. It asks a question only when the two cases still differ, and writes the answer back as `keeping` or as a checked `like` clause. The [fixture study](../experiments/precedent-questions/README.md) covers seven variants of one request. The mechanism was written by the same author as the fixtures, and nobody has used it on an unseen program yet.
+
+Next, test the whole journey rather than a single edit. Start a solver from an empty file and a short brief, then send four or five requirement changes one at a time, some of them ambiguous in the way the Sunday fee is. Compare B with typed Python plus an equivalent test harness. Count wrong outcomes delivered, questions asked and how many of them an owner would consider necessary, retries, model tokens and wall time. Include a program where the precedent is misleading, as in the flat-fee variant, so that a settled answer can be wrong. Kill criterion: if the B group does not deliver fewer wrong totals or cheaper revisions over the whole sequence, keep the precedent search as a standalone tool and stop extending the syntax.
+
 ## B 0.18
 
 One executable declaration now extends a rule and can protect other results from that change. The [experiment](../experiments/executable-changes/README.md) compares two working implementations against the same booking and sensor outcomes. A [paired author trial](../experiments/executable-changes/first-use/README.md) showed how strongly the result depends on the supplied interface. Test the next revision on an unfamiliar change where the right function to protect must be discovered, and count context retrieval, incorrect assumptions, repairs, checking and execution. Include tasks that cannot be expressed by adding a single tuple.

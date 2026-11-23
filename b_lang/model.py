@@ -144,7 +144,10 @@ class ToModel(Transformer):
             else:
                 values.append(literal.parts[0])
         return tuple(values)
-    def also_stmt(self, xs): return Stmt("also", (str(xs[0]), xs[1] or (), tuple(xs[2] or ())))
+    def also_like(self, xs): return ("like", xs[0] or ())
+    def also_stmt(self, xs):
+        like = xs[2][1] if xs[2] is not None else None
+        return Stmt("also", (str(xs[0]), xs[1] or (), tuple(xs[3] or ()), like))
     def print_stmt(self, xs): return Stmt("print", (xs[0],))
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 

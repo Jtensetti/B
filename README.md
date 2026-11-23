@@ -2,9 +2,28 @@
 
 **B is an experimental programming language for making small, checked changes to programs.** A declaration can extend an existing rule, execute as part of the new program and constrain which results the change may affect. B also has typed functions, contracts and adapters for Python, .NET and Node.js libraries.
 
-**Version 0.18 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
+**Version 0.19 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Ask about the one booking a change leaves open
+
+A child's ticket costs 100 and the booking fee is 10. Children already ride free on Saturdays. The request *"children ride free on Sundays"* can mean a Sunday total of 0 or 10. B uses the Saturday case as context and finds where the two readings part:
+
+```sh
+b ask examples/ask/booking.bee --with examples/ask/sunday.bee
+```
+
+```text
+  nearest existing case: free_entry(true, "sat")
+  fee: 10 here, 0 in the existing case
+  question: total(true, "sun"): 10 or 0?
+    10 (as declared): also free_entry(true, "sun") keeping seats, recipient, fee
+    0 (like free_entry(true, "sat")): also free_entry(true, "sun") like (true, "sat") keeping seats, recipient
+        and in fee: child and day == "sat" -> free_entry(child, day)
+```
+
+`--answer 0 --apply` writes the second program. The fee waiver had copied the Saturday condition, so B replaces it with a call to the rule after checking that nothing else changes. From then on every compilation checks the `like` clause: a Sunday child must be indistinguishable from a Saturday child. When the Saturday case already settles the meaning, B asks nothing. [Semantics and limits](docs/precedent-questions.md) · [Seven-program fixture study](experiments/precedent-questions/README.md).
 
 ## Extend a rule and protect the rest of a booking
 

@@ -1,4 +1,4 @@
-"""B 0.18 compiler: parse -> typed BIR -> Python backend.
+"""B 0.19 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -93,6 +93,7 @@ class Compiler:
         self.permitted_effects: tuple[str, ...] | None = None
         self.started_statements = False
         self.additional_cases: dict[str, list[tuple]] = {}
+        self.original_rules: dict = {}
 
     def warn(self, code: str, message: str):
         d = Diagnostic("warning", code, message)
@@ -589,6 +590,7 @@ class Compiler:
             if cases := self.additional_cases.get(name):
                 if not declared_pure or result_type != BOOL:
                     raise BError("E_ALSO", f"also requires {name} to declare a pure Bool result")
+                self.original_rules[name] = body.node
                 body.node = extend_predicate(name, dict(zip(names, types)), cases, pre, post, body.node)
             if post is not None:
                 proof = verify_post(pre, body.node, post, dict(zip(names, types)), result_type)
@@ -628,6 +630,10 @@ class Compiler:
         if self.additional_cases:
             from .preservation import validate_preservation
             validate_preservation(program, [s for s in parsed if s.kind == "also"])
+            from .precedent import validate_likeness
+            for code, message in validate_likeness(program, self.original_rules,
+                                                   [s for s in parsed if s.kind == "also"]):
+                self.warn(code, message)
         analysis = analyze(program, conditional_guarantees=conditional_guarantees)
         upgraded = {}
         for item in analysis.obligations:

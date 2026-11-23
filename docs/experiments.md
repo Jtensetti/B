@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.19 precedent questions
+
+[Seven booking programs](../experiments/precedent-questions/README.md) receive the same request to extend a rule. The study records when `b ask` settles the meaning from an existing case, which question it asks otherwise and whether each answer runs.
+
 ## B 0.18 executable changes
 
 [Bookings and sensor readings](../experiments/executable-changes/README.md) exercise the same declaration as running code and as a constraint on a revision. The comparison measures mutations caught, state across two events, text tokens and local execution time. [A two-edit author trial](../experiments/executable-changes/first-use/README.md) records first submissions in B and Python.

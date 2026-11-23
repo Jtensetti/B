@@ -19,12 +19,14 @@ class _Declaration:
     name: str
     arguments: tuple
     keeping: tuple[str, ...]
+    like: tuple | None
     source: str
 
     @property
     def key(self):
         # Python conflates True, 1 and 1.0. B checks the exact declared type.
-        return self.name, tuple((type(v), v) for v in self.arguments), frozenset(self.keeping)
+        like = None if self.like is None else tuple((type(v), v) for v in self.like)
+        return self.name, tuple((type(v), v) for v in self.arguments), frozenset(self.keeping), like
 
 
 def _read(text: str, *, spans: bool = False) -> tuple[list[Stmt], list[_Declaration]]:
@@ -225,7 +227,7 @@ def check_revision(base_text: str, candidate_text: str, delta: str | None = None
             # An independently implemented candidate can omit the declaration
             # text but must meet the same structural keeping constraints.
             validate_preservation(candidate.ir, [
-                Stmt("also", (row.name, row.arguments, row.keeping)) for row in authorized
+                Stmt("also", (row.name, row.arguments, row.keeping, row.like)) for row in authorized
             ])
         expected = {s.name: s for s in reference.optimized_ir.statements if s.op == "fn"}
         report["functions"] = list(expected)

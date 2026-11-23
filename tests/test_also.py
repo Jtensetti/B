@@ -31,7 +31,7 @@ def test_exact_literals_and_snapshot_order():
     base = 'fn also(keeping: Int, f: Float, s: Text) -> Bool pure = false\n'
     one = 'also also(-2, -0.5, "ändra#")\n'
     two = 'also also(4, 0.125, "")\n'
-    assert parse(one)[0].parts == ("also", (-2, -0.5, "ändra#"), ())
+    assert parse(one)[0].parts == ("also", (-2, -0.5, "ändra#"), (), None)
     assert compile_b(base + one + two).ir == compile_b(two + base + one).ir
     rule = execute(base + one + two)["also"]
     assert rule(-2, -0.5, "ändra#") and rule(4, 0.125, "")
@@ -41,7 +41,7 @@ def test_exact_literals_and_snapshot_order():
 
 def test_zero_argument_predicate_and_keeping_ast():
     assert execute('also gate()\nfn gate() -> Bool pure = false')['gate']() is True
-    assert parse('also gate() keeping quota, owner')[0].parts == ("gate", (), ("quota", "owner"))
+    assert parse('also gate() keeping quota, owner')[0].parts == ("gate", (), ("quota", "owner"), None)
 
 
 @pytest.mark.parametrize(("base", "change", "code"), [
