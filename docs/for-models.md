@@ -95,6 +95,30 @@ Then `dt.date.fromisoformat(day).isocalendar()` is a typed call, and a Python tu
 
 B reads Python type hints and `.pyi` stubs on its own. The npm packages `semver` and `fastest-levenshtein` are already typed. Declare a function with `foreign` when B says it has no signature. Calls to other languages are not `pure`, so leave `pure` off functions that make them.
 
+## Changing a rule
+
+When a request widens a rule that already exists ("children ride free on Sundays too"), do not edit the condition by hand. Declare the extension and ask B what it means:
+
+```bee
+fn free_entry(child: Bool, day: Text) -> Bool pure = child and day == "sat"
+fn ticket(child: Bool, day: Text) -> Int pure = if free_entry(child, day) then 0 else 100
+fn fee(child: Bool, day: Text) -> Int pure = if child and day == "sat" then 0 else 10
+fn total(child: Bool, day: Text) -> Int pure = ticket(child, day) + fee(child, day)
+
+also free_entry(true, "sun")
+```
+
+Running `b ask change.bee` compares the new case with the nearest case the rule already covered, Saturday. It then reports every result that still differs:
+
+```text
+  question: total(true, "sun"): 10 or 0?
+    10 (as declared): also free_entry(true, "sun") keeping fee
+    0 (like free_entry(true, "sat")): also free_entry(true, "sun") like (true, "sat")
+        and in fee: child and day == "sat" -> free_entry(child, day)
+```
+
+That is exactly the question to put to the owner. Then write the answer back with `b ask change.bee --answer 0 --apply`. When the existing case already settles the meaning, `b ask` says so and asks nothing. Rules used with `also` must be `pure` functions returning `Bool`, and the functions `b ask` compares must be `pure` with plain parameters.
+
 ## Checks worth using
 
 - **Units at a border.** Write `foreign lib.f(Mass[lb]) -> Length[ft]` when a library uses particular units. Then pass `2 kg` or `x * 1 kg`, and B converts. Read a result with `as m`. Adding kilograms to meters, or kronor to dollars, is a compile error. Units: `kg g lb oz m km cm mm inch ft mi l dl ml inch3 s min h day USD SEK EUR kr` and [more](units.md).

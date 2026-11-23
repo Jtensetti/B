@@ -195,3 +195,13 @@ def test_a_fallback_may_name_what_a_transform_iterates_over():
     # Regression: ?? once lowered to :=, which Python forbids in a comprehension's iterable.
     assert output('fn f(d: Option[Dict[Text, Int]]) -> List[Text] = [k for k, v in d ?? {"none": 0} where v >= 0]\n'
                   'print f(none)\nprint f({"a": 1})\nprint text(1.5)\n') == ["['none']", "['a']", "1.5"]
+
+
+def test_the_guide_change_example_asks_the_sunday_question():
+    from pathlib import Path
+    from b_lang.ask import ask
+    root = Path(__file__).resolve().parents[1]
+    source = (root / "examples/for-models/change.bee").read_text()
+    assert source in (root / "docs/for-models.md").read_text()
+    entry, = ask(source)["declarations"]
+    assert entry["question"] == 'total(true, "sun"): 10 or 0?'
