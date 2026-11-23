@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.29 cross-cutting changes, Python calibration (pre-registered)
+
+[Three changes that reach several modules](../experiments/crosscut/PREREGISTRATION.md) of an inherited invoicing program. Three typed-Python Haiku solvers. Every amount was right. The only graded errors came from how one solver read a sentence. The B stage was not run.
+
 ## B 0.28 a silent library upgrade (pre-registered)
 
 [A Python library starts returning VAT-inclusive prices](../experiments/upgrade/PREREGISTRATION.md) between two changes. Three Haiku solvers per language. No wrong quotes in either language: every solver noticed the upgrade during the next change. The hypothesis that B's library examples reduce wrong results failed.

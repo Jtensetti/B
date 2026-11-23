@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
 
+## After B 0.29: the cross-cutting calibration
+
+The [cross-cutting trial](../experiments/crosscut/PREREGISTRATION.md) first ran three typed-Python solvers on an inherited invoicing program of 169 lines in seven modules. They made three changes that each reach several modules: Norwegian invoices in NOK while the report stays in SEK, Norwegian VAT, and prices that include VAT. Every amount was right in all nine steps. The only graded errors came from one solver's reading of a sentence in change 2. The B stage was not run, because there was nothing for B's dimension types to prevent. Seven trials with 31 runs show that today's models make no substantive errors on tasks of this size in either language.
+
 ## B 0.29
 
 A foreign call that can fail is declared as one: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` when the library raises `KeyError`, matched by class name along the exception's hierarchy. This removes the gap that made every B solver in the upgrade trial write a Python wrapper. Record fields can now hold quantities, `Money[SEK]` or `Mass`, so an order line can carry its currency. A quantity field keeps one dimension under its name in every record. `sum`, `min` and `max` over a comprehension keep the dimension. The declaration only restates the signature B read, with an `Option` result. Python only. npm and .NET errors are not mapped yet.
