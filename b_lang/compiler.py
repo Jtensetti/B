@@ -302,7 +302,7 @@ class Compiler:
                 raise BError("E_TYPE", f"{word} needs a Dict[Text, T], got {first.type}")
             result = Type("List", (TEXT,)) if word == "keys" else Type("List", (first.type.args[1],))
         elif word == "text":
-            if first.type not in (INT, FLOAT, TEXT, BOOL):
+            if first.type not in (INT, FLOAT, TEXT, BOOL, ANY):
                 raise BError("E_TYPE", f"text needs an Int, Float, Text or Bool, got {first.type}")
             result = TEXT
         else:  # join

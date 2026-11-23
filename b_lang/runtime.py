@@ -26,6 +26,11 @@ def to_json(value) -> str:
     return json.dumps(value, ensure_ascii=False)
 
 
+def coalesce(value, fallback):
+    """B's `value ?? fallback`: the fallback is evaluated only when the value is none."""
+    return fallback() if value is None else value
+
+
 def read_line() -> str:
     """One line of standard input without its line break; an empty text at the end of input."""
     import sys

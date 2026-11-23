@@ -189,3 +189,9 @@ def test_the_guide_for_models_program_passes_strict_checks(monkeypatch):
     monkeypatch.setattr(sys, "path", [str(program.parent), *sys.path])
     assert compile_b(program.read_text(), strict=True)
     assert program.read_text() in (root / "docs/for-models.md").read_text()
+
+
+def test_a_fallback_may_name_what_a_transform_iterates_over():
+    # Regression: ?? once lowered to :=, which Python forbids in a comprehension's iterable.
+    assert output('fn f(d: Option[Dict[Text, Int]]) -> List[Text] = [k for k, v in d ?? {"none": 0} where v >= 0]\n'
+                  'print f(none)\nprint f({"a": 1})\nprint text(1.5)\n') == ["['none']", "['a']", "1.5"]

@@ -354,13 +354,12 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return ast.IfExp(test=test or self.expr(children[0]), body=self.expr(children[1]),
                              orelse=self.expr(children[2]))
         if op == "coalesce":
-            # NamedExpr ensures that potentially impure foreign calls are evaluated ONCE.
-            self._tmp += 1
-            temp = f"_b_coalesce_{self._tmp}"
-            test = ast.Compare(left=ast.NamedExpr(
-                target=ast.Name(id=temp, ctx=ast.Store()), value=self.expr(children[0])),
-                ops=[ast.IsNot()], comparators=[ast.Constant(None)])
-            return ast.IfExp(test=test, body=ast.Name(id=temp, ctx=ast.Load()), orelse=self.expr(children[1]))
+            # The left side runs once and the fallback only when needed. A helper call, not
+            # :=, because Python forbids := where a comprehension names what it iterates over.
+            fallback = ast.Lambda(args=ast.arguments(posonlyargs=[], args=[], vararg=None, kwonlyargs=[],
+                                                     kw_defaults=[], kwarg=None, defaults=[]),
+                                  body=self.expr(children[1]))
+            return ast.Call(func=_load("_b_coalesce"), args=[self.expr(children[0]), fallback], keywords=[])
         if op in _BINARY:
             return ast.BinOp(left=self.expr(children[0]), op=_BINARY[op](), right=self.expr(children[1]))
         if op == "cmp":
@@ -477,6 +476,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="BExampleError", asname="_b_example_error"),
             ast.alias(name="text", asname="_b_text"),
             ast.alias(name="index", asname="_b_index"),
+            ast.alias(name="coalesce", asname="_b_coalesce"),
             ast.alias(name="read_line", asname="_b_read_line"),
             ast.alias(name="to_json", asname="_b_to_json"),
             ast.alias(name="min_of", asname="_b_min_of"),
