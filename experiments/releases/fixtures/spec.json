@@ -1,0 +1,1 @@
+{"releases": [{"package": "a", "version": "1.9.0", "date": "2026-01-05"}, {"package": "a", "version": "1.10.0", "date": "2026-02-01"}, {"package": "a", "version": "2.0.0-rc.1", "date": "2026-03-01"}, {"package": "b", "version": "0.1.0-beta", "date": "2026-01-01"}], "today": "2026-03-02", "stale_days": 30, "watch": {"a": "^1.0.0"}}

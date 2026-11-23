@@ -1,0 +1,39 @@
+{"step": 1, "passed": 12, "total": 12}
+py2 {"step": 1, "passed": 12, "total": 12}
+[]
+py1 {"step": 1, "passed": 12, "total": 12}
+[]
+py2 {"step": 2, "passed": 12, "total": 12}
+[]
+b1 {"step": 1, "passed": 12, "total": 12}
+[]
+py2 {"step": 3, "passed": 12, "total": 12}
+[]
+py1 {"step": 2, "passed": 12, "total": 12}
+[]
+py1 {"step": 3, "passed": 12, "total": 12}
+[]
+py2 {"step": 4, "passed": 12, "total": 12}
+[]
+py1 {"step": 4, "passed": 12, "total": 12}
+[]
+py2 {"step": 5, "passed": 12, "total": 12}
+[]
+py1 {"step": 5, "passed": 12, "total": 12}
+[]
+b2 {"step": 2, "passed": 12, "total": 12}
+[]
+b2 {"step": 3, "passed": 12, "total": 12}
+[]
+b1 {"step": 2, "passed": 12, "total": 12}
+[]
+b2 {"step": 4, "passed": 12, "total": 12}
+[]
+b1 {"step": 3, "passed": 12, "total": 12}
+[]
+b2 {"step": 5, "passed": 12, "total": 12}
+[]
+b1 {"step": 4, "passed": 12, "total": 12}
+[]
+b1 {"step": 5, "passed": 12, "total": 12}
+[]
