@@ -1,0 +1,81 @@
+use py:json as json
+use py:builtins as bi
+use py:operator as op
+use js:semver as semver
+
+record Release { package: Text, version: Text, date: Text }
+record Input { releases: List[Release], today: Text, stale_days: Int, watch: Option[Dict[Text, Text]], stale_overrides: Option[Dict[Text, Int]] }
+
+foreign json.loads(Text) -> Input
+foreign bi.list(Text) -> List[Text]
+foreign bi.int(Text) -> Int
+foreign op.floordiv(Int, Int) -> Int
+
+let data = json.loads(read_line())
+let known = [r for r in data.releases where r.date <= data.today]
+let stable = [r for r in known where semver.prerelease(r.version) == none]
+let names = sorted(keys({r.package: 1 for r in stable}))
+
+fn best(p: Text) -> Text =
+    let versions = [r.version for r in stable where r.package == p]
+    semver.rsort(versions)[0] ?? ""
+
+fn date_of(p: Text, v: Text) -> Text =
+    [r.date for r in stable where r.package == p and r.version == v][0] ?? ""
+
+let latest = {p: {"version": best(p), "date": date_of(p, best(p))} for p in names}
+
+fn dig(cs: List[Text], i: Int) -> Int = bi.int(cs[i] ?? "0")
+
+fn days(y: Int, m: Int, d: Int) -> Int =
+    let yy = if m <= 2 then y - 1 else y
+    let era = op.floordiv(yy, 400)
+    let yoe = yy - era * 400
+    let mp = if m > 2 then m - 3 else m + 9
+    let doy = op.floordiv(153 * mp + 2, 5) + d - 1
+    let doe = yoe * 365 + op.floordiv(yoe, 4) - op.floordiv(yoe, 100) + doy
+    era * 146097 + doe - 719468
+
+fn day_number(s: Text) -> Int =
+    let cs = bi.list(s)
+    days(1000 * dig(cs, 0) + 100 * dig(cs, 1) + 10 * dig(cs, 2) + dig(cs, 3), 10 * dig(cs, 5) + dig(cs, 6), 10 * dig(cs, 8) + dig(cs, 9))
+
+fn iso_week(y: Int, m: Int, d: Int) -> Text =
+    let off = 7000000
+    let n = days(y, m, d) + off
+    let thu = n - (n + 3) % 7 + 3
+    let iso_year = if thu < days(y, 1, 1) + off then y - 1
+        else if thu >= days(y + 1, 1, 1) + off then y + 1
+        else y
+    let w = op.floordiv(thu - (days(iso_year, 1, 1) + off), 7) + 1
+    text(iso_year) + "-W" + (if w < 10 then "0" else "") + text(w)
+
+fn week_of(s: Text) -> Text =
+    let cs = bi.list(s)
+    iso_week(1000 * dig(cs, 0) + 100 * dig(cs, 1) + 10 * dig(cs, 2) + dig(cs, 3), 10 * dig(cs, 5) + dig(cs, 6), 10 * dig(cs, 8) + dig(cs, 9))
+
+let weeks = keys({week_of(r.date): 1 for r in stable})
+let weekly = {w: len([r for r in stable where week_of(r.date) == w]) for w in weeks}
+
+let overrides: Dict[Text, Int] = data.stale_overrides ?? {}
+
+fn is_stale(p: Text) -> Bool =
+    let days_allowed = overrides[p] ?? data.stale_days
+    day_number(date_of(p, best(p))) < day_number(data.today) - days_allowed
+
+let stale = [p for p in names where is_stale(p)]
+
+let watch: Dict[Text, Text] = data.watch ?? {"": ""}
+let wnames = sorted([p for p in keys(watch) where p != ""])
+
+fn matching(p: Text) -> Text =
+    let vers = [r.version for r in known where r.package == p]
+    semver.maxSatisfying(vers, watch[p] ?? "") ?? ""
+
+let watched = {p: matching(p) for p in wnames where matching(p) != ""}
+
+let majors = {p: len(keys({text(semver.major(r.version)): 1 for r in stable where r.package == p})) for p in names}
+
+let since = {p: day_number(data.today) - day_number(date_of(p, best(p))) for p in names}
+
+print to_json({latest = latest, since = since, weekly = weekly, stale = stale, watched = watched, majors = majors})

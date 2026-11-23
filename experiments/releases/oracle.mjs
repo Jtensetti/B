@@ -16,8 +16,9 @@ export function isoWeek(text) {
 const days = (a, b) => (Date.parse(b + "T00:00:00Z") - Date.parse(a + "T00:00:00Z")) / 86400000;
 
 export function report(input, step) {
+  const kept = step >= 7 ? input.releases.filter((r) => days(r.date, input.today) >= 0) : input.releases;
   const byPackage = {};
-  for (const r of input.releases) (byPackage[r.package] ??= []).push(r);
+  for (const r of kept) (byPackage[r.package] ??= []).push(r);
   const latest = {}, majors = {};
   for (const [name, rs] of Object.entries(byPackage)) {
     const stable = rs.filter((r) => !semver.prerelease(r.version));
@@ -29,10 +30,14 @@ export function report(input, step) {
   const out = { latest };
   if (step >= 2) {
     const weekly = {};
-    for (const r of input.releases) { const w = isoWeek(r.date); weekly[w] = (weekly[w] ?? 0) + 1; }
+    for (const r of kept) {
+      if (step >= 6 && semver.prerelease(r.version)) continue;
+      const w = isoWeek(r.date); weekly[w] = (weekly[w] ?? 0) + 1;
+    }
     out.weekly = weekly;
   }
-  if (step >= 3) out.stale = Object.keys(latest).filter((n) => days(latest[n].date, input.today) > input.stale_days).sort();
+  const limit = (n) => (step >= 8 && Object.hasOwn(input.stale_overrides ?? {}, n) ? input.stale_overrides[n] : input.stale_days);
+  if (step >= 3) out.stale = Object.keys(latest).filter((n) => days(latest[n].date, input.today) > limit(n)).sort();
   if (step >= 4) {
     const watched = {};
     for (const [name, range] of Object.entries(input.watch ?? {})) {
@@ -42,6 +47,7 @@ export function report(input, step) {
     out.watched = watched;
   }
   if (step >= 5) out.majors = majors;
+  if (step >= 9) out.since = Object.fromEntries(Object.keys(latest).map((n) => [n, days(latest[n].date, input.today)]));
   return out;
 }
 
@@ -51,10 +57,11 @@ if (process.argv[2]) {
   for (const f of readdirSync(dir).filter((f) => f.endsWith(".json") && !f.startsWith("_")).sort()) {
     const input = JSON.parse(readFileSync(`${dir}/${f}`, "utf8"));
     expected[f] = {};
-    for (let s = 1; s <= 5; s++) {
+    for (let s = 1; s <= 9; s++) {
       const fed = { ...input };
       if (s < 3) { delete fed.today; delete fed.stale_days; }
       if (s < 4) delete fed.watch;
+      if (s < 8) delete fed.stale_overrides;
       expected[f][s] = report(fed, s);
     }
   }

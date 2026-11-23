@@ -1,0 +1,1 @@
+{"releases": [{"package": "p", "version": "1.0.0-a", "date": "2026-01-05"}, {"package": "p", "version": "1.0.0", "date": "2026-01-12"}, {"package": "p", "version": "1.1.0-b", "date": "2026-01-19"}], "today": "2026-02-01", "stale_days": 30, "stale_overrides": {"p": 0}}

@@ -26,6 +26,10 @@ Python and C# each check their own code. Neither can see that a Python function 
 - **Decisions about libraries.** An `example` on an imported function becomes a fact checked on every build, so a library upgrade that changes behavior fails visibly.
 - **Questions instead of guesses.** When a request leaves a case open, B finds the concrete input and asks, whatever language the implementation lives in.
 
+## Measured so far
+
+Four trials ([journey](../experiments/journey/README.md), [shipping](../experiments/shipping/README.md), [releases and changes](../experiments/releases/README.md)), with 16 solver runs, produced no wrong output in either language. B's total output tokens ranged from 0.55 times Python's, when it borrowed an npm library that Python had to reimplement, to 3.6 times, when it had nothing to borrow and the model first had to learn B. The goal is not met. Fewer errors has not been shown, because these tasks produced no errors to prevent.
+
 ## Milestones
 
 Each milestone has a kill criterion. If it fails, the mechanism stays a standalone tool and the language does not grow.
