@@ -123,7 +123,7 @@ That is exactly the question to put to the owner. Then write the answer back wit
 
 ## Checks worth using
 
-- **Units at a border.** Write `foreign lib.f(Mass[lb]) -> Length[ft]` when a library uses particular units. Then pass `2 kg` or `x * 1 kg`, and B converts. Read a result with `as m`. Adding kilograms to meters, or kronor to dollars, is a compile error. Units: `kg g lb oz m km cm mm inch ft mi l dl ml inch3 s min h day USD SEK EUR kr` and [more](units.md).
+- **Units at a border.** Write `foreign lib.f(Mass[lb]) -> Length[ft]` when a library uses particular units. Then pass `2 kg` or `x * 1 kg`, and B converts. Read a result with `as m`. Adding kilograms to meters, or kronor to dollars, is a compile error. A record field may hold a quantity (`net: Money[SEK]`), and `sum([l.net for l in lines])` keeps the currency. Units: `kg g lb oz m km cm mm inch ft mi l dl ml inch3 s min h day USD SEK EUR kr` and [more](units.md).
 - **Examples.** `example f(2) == 4` is checked on every compile. `example lib.f(1 h) == 9.5 gal within 0.01 gal` checks a library function where the program reaches it.
 - **Strictness.** `b check --strict` rejects warnings such as untyped foreign calls.
 

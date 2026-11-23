@@ -986,7 +986,10 @@ class Compiler:
                 for used in names(field_type):
                     if used in declared:
                         resolve(used, (*visiting, name))
-            RECORDS[name] = record_type([(n, from_syntax(t)) for n, t in declared[name]])
+            # A quantity field is checked by the units pass and holds a Float at runtime.
+            from .units import type_dimension
+            RECORDS[name] = record_type([(n, from_syntax(("Float", ()) if type_dimension(t) is not None else t))
+                                         for n, t in declared[name]])
 
         for name in declared:
             resolve(name)

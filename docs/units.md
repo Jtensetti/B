@@ -87,6 +87,6 @@ The units are checked and then erased. Every quantity becomes a Float in its SI 
 ## Limits
 
 - **Money is Float at runtime.** That is fine for estimates but wrong for bookkeeping. Exact decimal money is the most important next step.
-- **No quantities in lists, dictionaries or functions defined by examples yet.** Convert with `as` first.
+- **Quantities in records, not yet in lists or dictionaries.** A record field may be a quantity: `record Line { sku: Text, net: Money[SEK] }`. A quantity field keeps one dimension under its name in every record, and a plain field may not share its name, so `x.net` always means the same thing. `sum`, `min` and `max` over a list comprehension keep the dimension of its items: `sum([l.net for l in lines])` is `Money[SEK]`. Other lists, dictionaries and functions defined by examples still need plain numbers, so convert with `as` first.
 - Foreign functions without a unit declaration see plain numbers, so `as` is required at their border.
 - **Copied vocabulary to shrink.** About half the built-in table (imperial units, calories, atmospheres, horsepower) belongs in a borrowed vocabulary. It stays built in until pint, or .NET's UnitsNet, can be relied on to be present.

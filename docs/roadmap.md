@@ -8,7 +8,7 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 ## B 0.29
 
-A foreign call that can fail is declared as one: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` when the library raises `KeyError`, matched by class name along the exception's hierarchy. This removes the gap that made every B solver in the upgrade trial write a Python wrapper. The declaration only restates the signature B read, with an `Option` result. Python only. npm and .NET errors are not mapped yet.
+A foreign call that can fail is declared as one: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` when the library raises `KeyError`, matched by class name along the exception's hierarchy. This removes the gap that made every B solver in the upgrade trial write a Python wrapper. Record fields can now hold quantities, `Money[SEK]` or `Mass`, so an order line can carry its currency. A quantity field keeps one dimension under its name in every record. `sum`, `min` and `max` over a comprehension keep the dimension. The declaration only restates the signature B read, with an `Option` result. Python only. npm and .NET errors are not mapped yet.
 
 ## After B 0.28: the upgrade trial
 

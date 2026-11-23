@@ -360,10 +360,13 @@ class _Checker:
 
     HANDLED = {"quantity", "convert", "name", "literal", "add", "sub", "mul", "div", "mod", "neg", "cmp",
                "conditional", "coalesce", "and", "or", "not", "invoke", "each", "locals",
-               "summarize", "history_count"}
+               "summarize", "history_count", "attr", "record"}
 
-    def __init__(self, signatures: dict[str, tuple[list[Dim | None], Dim | None]], foreign=None):
+    def __init__(self, signatures: dict[str, tuple[list[Dim | None], Dim | None]], foreign=None,
+                 fields=None, aliases=frozenset()):
         self.signatures = signatures
+        self.fields = fields or {}  # quantity field name -> its dimension, the same in every record
+        self.aliases = aliases  # imported module aliases, whose attributes are never record fields
         self.foreign = foreign or {}  # "alias.member" -> ([unit or None per parameter], unit or None)
         # id of a rewritten literal -> (that literal, its exact value). The node is kept so its
         # id cannot be reused by another object; identity is checked on every lookup.
@@ -525,6 +528,16 @@ class _Checker:
             return Expr(kind, (a, b)), dimension
         if kind in ("and", "or", "not"):
             return Expr(kind, tuple(self.plain(p, env, f"'{kind}'") for p in parts)), ()
+        if (kind == "invoke" and isinstance(parts[0], Expr) and parts[0].kind == "name"
+                and parts[0].parts[0] in ("sum", "min", "max") and parts[0].parts[0] not in self.signatures
+                and len(parts[1]) == 1 and isinstance(parts[1][0], Expr) and parts[1][0].kind == "each"
+                and parts[1][0].parts[0] == "list"):
+            shape, key, value, binders, source, condition = parts[1][0].parts
+            inner = {k: v for k, v in env.items() if k not in binders}
+            item, dimension = self.expr(value, inner)
+            each = Expr("each", (shape, key, item, binders, self.plain(source, inner, "A collection"),
+                                 None if condition is None else self.plain(condition, inner, "where")))
+            return Expr(kind, (parts[0], (each,))), dimension
         if kind == "invoke":
             target, arguments = parts
             if isinstance(target, Expr) and target.kind == "name" and target.parts[0] in self.signatures:
@@ -545,6 +558,22 @@ class _Checker:
             target = self._children(target, env, "A called value")
             return Expr(kind, (target, tuple(self.plain(a, env, "An argument to a foreign or computed call")
                                              for a in arguments))), ()
+        if kind == "attr" and self.fields:
+            base, field = parts
+            if _dotted(base) is None or _dotted(base).split(".")[0] not in self.aliases:
+                return Expr(kind, (self._children(base, env, "A record"), field)), self.fields.get(field, ())
+            return self._children(node, env, "A value"), ()
+        if kind == "attr":
+            return self._children(node, env, "A value"), ()
+        if kind == "record":
+            entries = []
+            for field, raw in parts:
+                value, dimension = self.expr(raw, env)
+                wanted = self.fields.get(field, ())
+                if dimension != wanted and not (_is_zero(raw) and wanted):
+                    raise BError("E_UNIT", f"Field {field} must be {describe(wanted)}, got {describe(dimension)}")
+                entries.append((field, value))
+            return Expr(kind, tuple(entries)), ()
         if kind == "locals":
             bindings, result = parts
             scope = dict(env)
@@ -611,6 +640,8 @@ def _uses_units(statements) -> bool:
             return True
         if statement.kind == "let" and statement.parts[1] is not None and type_dimension(statement.parts[1]) is not None:
             return True
+        if statement.kind == "record" and any(type_dimension(t) is not None for _, t in statement.parts[1]):
+            return True
         if visit(statement.parts):
             return True
     return False
@@ -638,7 +669,26 @@ def check(statements: list[Stmt]) -> list[Stmt]:
                 specs.append(boundary_unit(t))
             if any(specs):
                 foreign[path] = (specs[:-1], specs[-1])
-    checker = _Checker(signatures, foreign)
+    fields: dict[str, Dim] = {}
+    plain_fields: dict[str, str] = {}
+    for statement in statements:
+        if statement.kind == "record":
+            record, entries = statement.parts
+            for field, t in entries:
+                d = type_dimension(t)
+                if d is None:
+                    plain_fields.setdefault(field, record)
+                elif field in fields and fields[field] != d:
+                    raise BError("E_UNIT", f"Field {field} is {describe(fields[field])} in one record and "
+                                 f"{describe(d)} in {record}; a quantity field keeps one dimension in every record")
+                else:
+                    fields[field] = d
+    for field in fields:
+        if field in plain_fields:
+            raise BError("E_UNIT", f"Field {field} is a quantity in one record and a plain value in "
+                         f"{plain_fields[field]}; give the quantity field a name of its own")
+    aliases = {s.parts[2] for s in statements if s.kind == "use" and len(s.parts) > 2}
+    checker = _Checker(signatures, foreign, fields, aliases)
     env: dict[str, Dim] = {}
     rewritten = []
     for statement in statements:
@@ -697,6 +747,10 @@ def check(statements: list[Stmt]) -> list[Stmt]:
                     raise BError("E_UNIT", f"{text}: the tolerance is {describe(margin_dimension)}, "
                                  f"the result is {describe(dimension)}")
             rewritten.append(Stmt(kind, (actual, wanted, margin, text)))
+        elif kind == "record":
+            record, entries = parts
+            rewritten.append(Stmt(kind, (record, tuple((f, FLOAT_SYNTAX if type_dimension(t) is not None else t)
+                                                       for f, t in entries))))
         elif kind in ("print", "assert"):
             label = "print" if kind == "print" else "assert"
             rewritten.append(Stmt(kind, (checker.plain(parts[0], env, f"{label}"),)))
