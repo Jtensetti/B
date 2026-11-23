@@ -129,3 +129,31 @@ def test_unit_mistake_study_is_current():
     run = subprocess.run([sys.executable, "experiments/border-units/check.py"], capture_output=True,
                          text=True, cwd=root, check=True)
     assert json.loads(run.stdout) == json.loads((root / "experiments/border-units/results.json").read_text())
+
+
+def test_methods_of_a_foreign_object_are_typed():
+    source = ("use py:datetime as dt\nforeign type Date = dt.date\n"
+              "foreign dt.date.fromisoformat(Text) -> Date\nforeign Date.isocalendar() -> List[Int]\n"
+              "foreign Date.toordinal() -> Int\n"
+              "fn week(day: Text) -> Text =\n    let iso = dt.date.fromisoformat(day).isocalendar()\n"
+              "    text(iso[0] ?? 0) + \"-W\" + text(iso[1] ?? 0)\n"
+              "fn gap(a: Text, b: Text) -> Int = dt.date.fromisoformat(b).toordinal() - dt.date.fromisoformat(a).toordinal()\n"
+              "print week(\"2027-01-01\")\nprint gap(\"2024-02-28\", \"2024-03-01\")\n")
+    checked = compile_b(source, strict=True)
+    assert any("method Date.isocalendar" in a for a in checked.assumptions)
+    import io, contextlib
+    buffer = io.StringIO()
+    with contextlib.redirect_stdout(buffer):
+        exec(checked.code, {})
+    assert buffer.getvalue().split() == ["2026-W53", "2"]
+    for bad, fragment in (("print dt.date.fromisoformat(\"2026-01-01\").year", "declared method"),
+                          ("print dt.date.fromisoformat(\"2026-01-01\").weekday()", "no declared method weekday"),
+                          ("let x: Int = dt.date.fromisoformat(\"2026-01-01\").isocalendar()", "expected Int")):
+        with pytest.raises(BError) as exc:
+            compile_b(source + bad + "\n")
+        assert fragment in exc.value.message
+
+
+def test_an_empty_fallback_takes_its_type_from_the_other_side():
+    assert compile_b("fn f(d: Option[Dict[Text, Int]]) -> Int = len(d ?? {})\n"
+                     "fn g(xs: Option[List[Text]]) -> List[Text] = sorted(xs ?? [])\n", strict=True)

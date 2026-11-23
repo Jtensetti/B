@@ -45,6 +45,9 @@ def option(inner: Type) -> Type:
 # Named records declared by the program being compiled: name -> structural Type.
 # A record is structural, as in TypeScript: Record[field[T], ...] with fields sorted.
 RECORDS: dict[str, Type] = {}
+# Named types for objects of another language, such as Python's datetime.date.
+# B never looks inside them; it only calls their declared methods.
+OPAQUE: dict[str, Type] = {}
 
 
 def record_type(fields) -> Type:
@@ -64,6 +67,10 @@ def from_syntax(node) -> Type:
         return record_type([(field, from_syntax(inner[0])) for field, inner in raw_args])
     if name in RECORDS and not raw_args:
         return RECORDS[name]
+    if name in OPAQUE and not raw_args:
+        return OPAQUE[name]
+    if name == "Opaque" and len(raw_args) == 1 and not raw_args[0][1]:
+        return Type("Opaque", (Type(raw_args[0][0]),))
     args = tuple(from_syntax(n) for n in raw_args)
     if name in KNOWN:
         if args:

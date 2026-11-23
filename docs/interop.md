@@ -84,3 +84,8 @@ The discovery reader now supports a **small explicit subset** of `@overload` set
 ## Checked source adoption (B 0.7)
 
 Separate from `use`, the `adopt py:MODULE.function as local` operation may statically translate a tiny single-expression Python function into an ordinary native B function. No Python module import is emitted. A source SHA-256 appears in the BIR function origin; unsupported constructs are rejected. The tool does not claim that arbitrary Python code is pure or behaviorally verified. See [source adoption and coverage](source-adoption.md).
+
+## Objects from another language
+
+`foreign type Date = dt.date` names a Python class as an opaque B type. `foreign Date.isocalendar() -> List[Int]` declares a method. B type checks every call to a declared method and guards its result at runtime. It never reads the object's attributes directly. Each method appears in the compiler's assumptions, because its signature is declared, not read. A Python tuple returned at the border becomes a `List`.
+

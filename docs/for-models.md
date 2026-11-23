@@ -58,7 +58,7 @@ print to_json({
 | A function | `fn f(a: Int, b: Text) -> Text = expression` |
 | Local steps | lines `let y = ...` after `=`, then the result expression on the last line |
 | A condition | `if c then a else b`. Lines may start with `then` or `else`. Every `if` needs an `else` |
-| A missing value | `x ?? fallback`. After `if x != none then ...`, `x` is no longer optional |
+| A missing value | `x ?? fallback`, also `x ?? {}` and `x ?? []`. After `if x != none then ...`, `x` is no longer optional |
 | A list from a list | `[f(x) for x in xs where cond]` |
 | A dictionary from anything | `{key: value for k, v in d where cond}` (keys are Text) |
 | An item, a key | `xs[0]` and `d["key"]` both give an `Option`; use `??` |
@@ -80,6 +80,18 @@ foreign m.function(Int, Text) -> Float
 ```
 
 `use py:` imports from Python's standard library, installed packages and files next to the program. `use js:` imports npm packages from `node_modules`. `foreign` declares a signature that B could not read.
+
+Objects of another language get a name and typed methods:
+
+```bee
+use py:datetime as dt
+foreign type Date = dt.date
+foreign dt.date.fromisoformat(Text) -> Date
+foreign Date.isocalendar() -> List[Int]
+foreign Date.toordinal() -> Int
+```
+
+Then `dt.date.fromisoformat(day).isocalendar()` is a typed call, and a Python tuple arrives as a `List`.
 
 B reads Python type hints and `.pyi` stubs on its own. The npm packages `semver` and `fastest-levenshtein` are already typed. Declare a function with `foreign` when B says it has no signature. Calls to other languages are not `pure`, so leave `pure` off functions that make them.
 

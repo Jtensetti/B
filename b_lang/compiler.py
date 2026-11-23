@@ -1,4 +1,4 @@
-"""B 0.27 compiler: parse -> typed BIR -> Python backend.
+"""B 0.28 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -71,6 +71,11 @@ def _narrowed(test: Expr, scope: dict, outcome: bool) -> dict:
             narrowed = narrowed or dict(scope)
             narrowed[name] = Symbol(symbol.type.args[0])
     return narrowed or scope
+
+
+def OPAQUE_TYPES():
+    from .types import OPAQUE
+    return OPAQUE
 
 
 def _record_label(typ: Type) -> str:
@@ -445,6 +450,10 @@ class Compiler:
                 raise BError("E_TYPE", "Left side of ?? must be Option[T]")
             right = self.infer(p[1], symbols)
             inner = left.type.args[0]
+            empty = p[1].kind in ("list", "dict") and not p[1].parts
+            if empty and inner.name == ("List" if p[1].kind == "list" else "Dict"):
+                # An empty [] or {} takes its element type from the other side of ??.
+                right = Value(inner, ExprIR(p[1].kind, inner), NOT_CONST)
             if right.type == NONE:
                 typ = left.type
             elif right.type.name == "Option":
@@ -537,6 +546,9 @@ class Compiler:
                     raise BError("E_TYPE", f"No field {name} in {_record_label(bv.type)}; "
                                  f"fields: {', '.join(sorted(fields))}")
                 return self.val(fields[name], "field", bv.node, data=name)
+            if bv.type.name == "Opaque":
+                raise BError("E_TYPE", f"Call a declared method of {bv.type.args[0].name}; "
+                             f"B does not read its attribute {name} directly")
             if bv.type not in (MODULE, ANY):
                 raise BError("E_TYPE", f"Cannot access attribute {name} on {bv.type}")
             path = self._foreign_path(ex, symbols)
@@ -552,12 +564,31 @@ class Compiler:
                 raise BError("E_FOREIGN", f"Unregistered Node export {path}; declare its foreign signature")
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
-            if path and path.startswith("py:"):
+            declared_below = path and any(key.startswith(path + ".") for key in self.registry.symbols)
+            if path and path.startswith("py:") and not declared_below:
                 self.warn("W_UNCHECKED_FOREIGN", f"Unspecified Python symbol {path}; no static signature available")
             return self.val(ANY, "attr", bv.node, data=name, foreign=path)
         if kind == "invoke" and p[0].kind == "name" and p[0].parts[0] in CORE_WORDS \
                 and p[0].parts[0] not in symbols:
             return self._core_word(p[0].parts[0], [self.infer(a, symbols) for a in p[1]])
+        if kind == "invoke" and p[0].kind == "attr":
+            owner = self.infer(p[0].parts[0], symbols)
+            if owner.type.name == "Opaque":
+                typename, method = owner.type.args[0].name, p[0].parts[1]
+                sig = self.methods.get((typename, method))
+                if sig is None:
+                    raise BError("E_FOREIGN", f"{typename} has no declared method {method}; "
+                                 f"declare it with foreign {typename}.{method}(...) -> T")
+                values = [self.infer(a, symbols) for a in p[1]]
+                if len(values) != len(sig.params):
+                    raise BError("E_ARITY", f"{typename}.{method} expects {len(sig.params)} arguments, got {len(values)}")
+                for i, (v, t) in enumerate(zip(values, sig.params), 1):
+                    self._check_type(v, t, f"argument {i} to {typename}.{method}")
+                attr = ExprIR("attr", Type("Function"), (owner.node,), data=method)
+                call = self.val(sig.result, "call", attr, *(self.guard(v.node, t) for v, t in zip(values, sig.params)),
+                                foreign=f"method:{typename}.{method}")
+                call.node = self.guard(call.node, sig.result)
+                return call
         if kind == "invoke":
             target, raw_args = p
             tv = self.infer(target, symbols)
@@ -703,6 +734,17 @@ class Compiler:
                 raise BError("E_ADOPT", "Adopted code must be a pure B function")
             return replace(native, backend="py-source", target=(
                 f"py:{fullname}@sha256:{adopted.sha256}"))
+        if kind in ("foreign", "foreign_units") and p[0].split(".")[0] in OPAQUE_TYPES():
+            path, params, result = p
+            owner, *member = path.split(".")
+            if len(member) != 1:
+                raise BError("E_FOREIGN", f"Declare a method as {owner}.name(...) -> T")
+            key = (owner, member[0])
+            if key in self.methods:
+                raise BError("E_FOREIGN", f"Method {owner}.{member[0]} is declared twice")
+            self.methods[key] = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
+            self.assumptions.append(f"method {owner}.{member[0]}: signature declared, not behavior proved")
+            return StmtIR("foreign", target=f"method:{owner}.{member[0]}")
         if kind in ("foreign", "foreign_units"):
             path, params, result = p
             parts = path.split(".")
@@ -872,8 +914,16 @@ class Compiler:
             parsed = parse(source)
         except LarkError as exc:
             raise BError("E_SYNTAX", str(exc)) from exc
-        from .types import RECORDS, record_type
+        from .types import OPAQUE, RECORDS, record_type
         RECORDS.clear()
+        OPAQUE.clear()
+        self.methods = {}
+        for statement in parsed:
+            if statement.kind == "foreign_type":
+                name, path = statement.parts
+                if name in OPAQUE or name in KNOWN or name in ("List", "Dict", "Option", "Record", "Opaque"):
+                    raise BError("E_TYPE", f"Type {name} is already defined")
+                OPAQUE[name] = Type("Opaque", (Type(name),))
         declared = {}
         for statement in parsed:
             if statement.kind == "record":
@@ -910,7 +960,8 @@ class Compiler:
         for unit, provenance in sorted(BORROWED.items()):
             self.assumptions.append(f"unit {unit} from {provenance}: definition borrowed, not checked by B")
         self.additional_cases = additional_cases(parsed)
-        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know", "record"))
+        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know", "record",
+                                                                 "foreign_type"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
         if self.permitted_effects is not None:
             denied = set(detected) - set(self.permitted_effects)

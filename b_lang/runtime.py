@@ -96,7 +96,11 @@ def _guard_type(value: Any, typ: Type) -> Any:
         return result
     if typ.name == "Option":
         return None if value is None else _guard_type(value, typ.args[0])
+    if typ.name == "Opaque":
+        return value  # another language's object, used only through declared methods
     if typ.name == "List":
+        if isinstance(value, tuple):
+            value = list(value)  # a Python tuple crosses the border as a list
         if type(value) is not list:
             raise _type_mismatch(value, typ)
         # Snapshots prevent mutation of the foreign value through B's binding.
