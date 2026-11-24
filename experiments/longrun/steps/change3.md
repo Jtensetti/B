@@ -1,0 +1,1 @@
+Change 3 of the trial. The owner says: "New customers get a 14-day free trial: the start day and the 13 days after it are never billable. Example: start 2026-02-20 means 20 February to 5 March are free, and 6 March is the first billable day."

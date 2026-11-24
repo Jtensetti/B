@@ -1,0 +1,1 @@
+Change 8 of the trial. The owner says: "SEK and NOK invoices are now in whole kronor: net is rounded to a whole number, halves rounded up. vat is still net times the VAT rate rounded to 2 decimals, and total is net plus vat. EUR invoices are unchanged. The 10 SEK limit applies to the final total."
