@@ -27,3 +27,7 @@ Each solver runs the whole trial in one agent run. It gets the build brief and i
 - A trial is not re-run or re-graded to change its result. A grading or oracle bug is fixed only under the rule in the trial's pre-registration, and the fix is reported.
 - B's guide for models is frozen at the commit of each pre-registration.
 - Results go below the line in each pre-registration, whatever they are.
+
+## Which tasks count (fixed before task C)
+
+Conditions 1–3 of the goal are judged on exactly three tasks: A, B and C. No task is added, re-run or dropped to change the sums, whatever A and B showed. Task C uses the same scale as A and B: five libraries of 40–120 lines each, a build and five changes. B may improve between tasks. Each task records the B version it ran, and every task's result counts as measured.
