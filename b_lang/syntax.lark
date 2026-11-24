@@ -3,6 +3,8 @@ _NL: NEWLINE
 
 ?stmt: "permit" "[" [names] "]"                          -> permit_stmt
      | "use" "js" ":" ESCAPED_STRING "as" NAME            -> js_string_use
+     | "use" "go" ":" ESCAPED_STRING "as" NAME            -> go_use
+     | "use" "rust" ":" ESCAPED_STRING "as" NAME          -> rust_use
      | "use" "js" ":" path "as" NAME                     -> js_use
      | "use" BACKEND ":" path "as" NAME                   -> use_stmt
      | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt

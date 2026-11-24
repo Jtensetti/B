@@ -19,7 +19,7 @@ class ForeignCatalog:
         if path in self.symbols:
             raise BError("E_FOREIGN", f"Duplicate foreign binding for {path}")
         backend = path.split(":", 1)[0]
-        if backend not in ("py", "net", "js"):
+        if backend not in ("py", "net", "js", "go", "rust"):
             raise BError("E_FOREIGN", f"Unsupported foreign backend {backend}")
         self.symbols[path] = ForeignSymbol(path, backend, binding, provenance, backend)
 

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import sys
 from pathlib import Path
@@ -148,6 +149,7 @@ def main(argv: list[str] | None = None) -> int:
         folder = str(program.resolve().parent)
         if folder not in sys.path:
             sys.path.insert(0, folder)
+        os.environ["B_PROGRAM_DIR"] = folder  # local go: and rust: packages are found from here
     if args.command == "ask":
         from . import ask_cli
         return ask_cli.run(args, read_source)

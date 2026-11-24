@@ -31,6 +31,16 @@ def coalesce(value, fallback):
     return fallback() if value is None else value
 
 
+def go_module(path: str):
+    from .goadapter import go_module as load
+    return load(path)
+
+
+def rust_module(path: str):
+    from .rustadapter import rust_module as load
+    return load(path)
+
+
 def catch(call, names):
     """A foreign call declared `on E`: none when it raises an exception named in names.
 
@@ -40,6 +50,8 @@ def catch(call, names):
         return call()
     except Exception as exc:
         if any(cls.__name__ in names for cls in type(exc).__mro__):
+            return None
+        if "error" in names and isinstance(exc, ForeignError):
             return None
         raise
 
@@ -159,6 +171,10 @@ def guard(value: Any, btype: str) -> Any:
     if type(value) is _EXACT_BY_DESCRIPTOR.get(btype):
         return value
     return _guard_type(value, _descriptor(btype))
+
+class ForeignError(BBoundaryError):
+    """An error value returned by a Go or Rust function. `foreign ... on error` turns it into none."""
+
 
 def py_module(path: str):
     return importlib.import_module(path)

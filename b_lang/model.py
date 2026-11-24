@@ -148,6 +148,12 @@ class ToModel(Transformer):
     def js_string_use(self, xs):
         import json
         return Stmt("use", ("js", json.loads(str(xs[0])), str(xs[1])))
+    def go_use(self, xs):
+        import json
+        return Stmt("use", ("go", json.loads(str(xs[0])), str(xs[1])))
+    def rust_use(self, xs):
+        import json
+        return Stmt("use", ("rust", json.loads(str(xs[0])), str(xs[1])))
     def adopt_stmt(self, xs): return Stmt("adopt", (str(xs[0]), str(xs[1])))
     def let_stmt(self, xs): return Stmt("let", (str(xs[0]), xs[1], xs[2]))
     def fn_stmt(self, xs):
