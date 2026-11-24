@@ -1,0 +1,1 @@
+b3 build: asks whether to add a Python helper to catch KeyError from tariff.zone (B cannot catch exceptions). Answer: "Any approach is fine, as long as orders to unserved countries are listed as unknown."

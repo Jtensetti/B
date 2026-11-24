@@ -11,7 +11,7 @@ def additional_cases(statements: list[Stmt]) -> dict[str, list[tuple]]:
     cases = {}
     for statement in statements:
         if statement.kind == "also":
-            name, values, _ = statement.parts
+            name, values = statement.parts[:2]
             cases.setdefault(name, []).append(values)
     if cases:
         functions = {s.parts[0] for s in statements if s.kind == "fn"}

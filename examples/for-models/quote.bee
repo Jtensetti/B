@@ -1,0 +1,39 @@
+use py:carrier as carrier
+use py:json as json
+use js:"fastest-levenshtein" as words
+
+record Item { weight_kg: Float, volume_l: Option[Float] }
+record Order { id: Text, product: Text, qty: Int, express: Option[Bool] }
+record Input { orders: List[Order], catalog: Dict[Text, Item], usd_to_sek: Float }
+
+foreign json.loads(Text) -> Input
+foreign carrier.rate(Mass[lb], Bool) -> Money[USD]
+
+let data = json.loads(read_line())
+let names = sorted(keys(data.catalog))
+
+fn find(name: Text) -> Option[Text] =
+    let near = if len(names) == 0 then "" else words.closest(name, names)
+    if name in data.catalog then name
+    else if len(names) > 0 and words.distance(name, near) <= 2 then near
+    else none
+
+fn billable(o: Order, item: Item) -> Mass =
+    let actual = o.qty * (item.weight_kg * 1 kg)
+    let volume = o.qty * ((item.volume_l ?? 0.0) * 1 l)
+    let dimensional = (volume as inch3) / 139 * 1 lb
+    max(actual as kg, dimensional as kg) * 1 kg
+
+fn price(o: Order, name: Text) -> Float =
+    let item = data.catalog[name]
+    if item != none
+    then round((carrier.rate(billable(o, item), o.express ?? false) as USD) * data.usd_to_sek, 2)
+    else 0.0
+
+let found = {o.id: find(o.product) ?? "" for o in data.orders where find(o.product) != none}
+let quotes = {o.id: price(o, found[o.id] ?? "") for o in data.orders where o.id in found}
+print to_json({
+    quotes_sek = quotes,
+    total_sek = round(sum(values(quotes)), 2),
+    unknown = sorted([o.id for o in data.orders where not (o.id in found)]),
+    matched = {o.id: found[o.id] ?? "" for o in data.orders where o.id in found and not (o.product in data.catalog)}})

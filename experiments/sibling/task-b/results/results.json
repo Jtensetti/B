@@ -1,0 +1,892 @@
+{
+ "b1": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 45048
+ },
+ "b2": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 39531
+ },
+ "b3": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 96401
+ },
+ "cs1": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 80425
+ },
+ "cs2": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 144465
+ },
+ "cs3": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 41159
+ },
+ "go1": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 112070
+ },
+ "go2": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 49314
+ },
+ "go3": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 34794
+ },
+ "py1": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 41767
+ },
+ "py2": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 78766
+ },
+ "py3": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 78727
+ },
+ "rs1": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 74026
+ },
+ "rs2": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 112060
+ },
+ "rs3": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 53742
+ },
+ "ts1": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 55985
+ },
+ "ts2": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 0,
+  "units": 42,
+  "output_tokens": 68143
+ },
+ "ts3": {
+  "steps": {
+   "0": {
+    "task": "task-b",
+    "step": 0,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "1": {
+    "task": "task-b",
+    "step": 1,
+    "wrong": 7,
+    "of": 7,
+    "examples": [
+     "e1",
+     "e2",
+     "e3",
+     "e4",
+     "e5",
+     "e6"
+    ],
+    "error": "///tmp/bgrade-ts3-mj3imq8n/ts3/main.ts:6:35\n    at ModuleJob.run (node:internal/modules/esm/module_job:343:25)\n    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:681:26)\n    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:117:5)\n\nNode.js v22.23.5\n"
+   },
+   "2": {
+    "task": "task-b",
+    "step": 2,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "3": {
+    "task": "task-b",
+    "step": 3,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "4": {
+    "task": "task-b",
+    "step": 4,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   },
+   "5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  "wrong": 7,
+  "units": 42,
+  "output_tokens": 71458
+ }
+}

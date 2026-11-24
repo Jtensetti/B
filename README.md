@@ -1,10 +1,79 @@
 # B
 
-**B is an experimental programming language for making small, checked changes to programs.** A declaration can extend an existing rule, execute as part of the new program and constrain which results the change may affect. B also has typed functions, contracts and adapters for Python, .NET and Node.js libraries.
+**B is an experimental programming language in which the source is the owner's decisions.** Examples, rule extensions and protections are declarations. The compiler derives code from them, checks that every recorded decision still holds after a change, and asks for the one concrete input a set of decisions leaves open. B also has ordinary typed functions, contracts and adapters for Python, .NET and Node.js libraries. [The long-term goal and its milestones](docs/vision.md).
 
-**Version 0.18 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
+**Version 0.28 (research prototype).** Writing B for the first time? Start with [B for models](docs/for-models.md), one page with a complete program. The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
 
 > **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+
+## Write decisions; B writes the rule and asks what is missing
+
+```bee
+domain day: "mon", "tue", "wed", "thu", "fri", "sat", "sun"
+
+fn price(child: Bool, day: Text) -> Int pure by examples
+example price(false, "mon") == 100
+example price(true, "sat") == 0
+
+fn total(child: Bool, day: Text) -> Int pure = price(child, day) + 10
+```
+
+`price` has no body. B finds the simplest rules that fit the examples. `if child then 0 else 100` and `if day == "mon" then 100 else 0` both do, so `b ask` asks `price(false, "sat"): 100 or 0?` and shows what each answer makes of the function. `--answer 100 --apply` appends the example. Later it asks about Friday and Sunday, because only one example supports the Saturday case. After five answers the rule is `if child and day == "sat" then 0 else 100`.
+
+A requirement change is one line. B asked about Sunday, so the change must name the earlier answer: `example price(true, "sun") == 0 was 100`. B asks once more, whether adults ride free on Sundays, and derives a rule covering both weekend days. Every example is checked on every compile, including examples of ordinary functions such as `total`. A changed result must state its previous value (`... == 120 was 100`), so an edit based on stale context fails. In the [decision experiment](experiments/decisions/README.md), B's own questions identify four of six hidden policies exactly, with 7–13 answers. Random examples need 1.4–2.9 times as many. B gets one policy wrong and refuses one that is not a rule over literals. [Syntax, search and limits](docs/examples.md).
+
+## Decisions about the libraries you borrow
+
+```bee
+use py:b_examples.aviation as aviation
+foreign aviation.fuel_burn(Duration[h]) -> Volume[gal]
+example aviation.fuel_burn(2 h) == 19 gal within 0.001 gal
+```
+
+An example of an imported function states the behavior a program relies on. B checks its types and units while compiling. It checks the behavior when the program reaches the example, and `b check --library-examples` runs every such fact on its own after an upgrade. A library that changes its VAT rate is reported as `changed`, with the value it now returns. [Decisions about libraries](docs/library-examples.md).
+
+## B knows what a week is
+
+```bee
+know kalender
+
+fn pris(barn: Bool, dag: Text) -> Int pure by examples
+example pris(false, "måndag") == 100
+example pris(true, "lördag") == 0
+```
+
+`know kalender` brings in the weekdays, months and the groups `helg` and `vardag`, all written in B. A known group counts as one test when B derives a rule. Once the Saturday rule is settled, the change `example pris(true, "söndag") == 0 was 100` needs no further question: B derives `if barn and dag in helg then 0 else 100`. [What B knows and the limits](docs/knowledge.md).
+
+## Units that never change, money that never mixes
+
+```bee
+fn speed(distance: Length, time: Duration) -> Speed pure = distance / time
+
+print speed(1 mil, 45 min) as km per h      # 13.333333333333332
+print (20 degC + 5 dK) as degF              # 77.0
+print 10 USD * (10.5 SEK per USD) as kr     # 105.0
+```
+
+Units also cross language borders. `foreign aviation.takeoff_distance(Speed[knot], Mass[lb]) -> Length[ft]` lets a Python library keep working in knots, pounds and feet, while B converts at every call and rejects a mass passed as a speed. Units B lacks are borrowed from pint when it is installed. B knows about 130 units and their exact relations, including mil, hg and dl. `5 km + 2 kg`, `100 SEK + 5 USD` and `20 degC + 20 degC` are compile errors. Every currency is its own dimension, so money only changes currency through a rate the program states. `1 month` is refused because a month has no fixed length. The units are erased after checking, and values known at compile time are computed exactly. [Units and their limits](docs/units.md) · `know calendar`, `know physics` and `know currencies` add leap years, month lengths, exact SI constants and currency names, all written in B and checked by their own examples.
+
+## Ask about the one booking a change leaves open
+
+A child's ticket costs 100 and the booking fee is 10. Children already ride free on Saturdays. The request *"children ride free on Sundays"* can mean a Sunday total of 0 or 10. B uses the Saturday case as context and finds where the two readings part:
+
+```sh
+b ask examples/ask/booking.bee --with examples/ask/sunday.bee
+```
+
+```text
+  nearest existing case: free_entry(true, "sat")
+  fee: 10 here, 0 in the existing case
+  question: total(true, "sun"): 10 or 0?
+    10 (as declared): also free_entry(true, "sun") keeping seats, recipient, fee
+    0 (like free_entry(true, "sat")): also free_entry(true, "sun") like (true, "sat") keeping seats, recipient
+        and in fee: child and day == "sat" -> free_entry(child, day)
+```
+
+`--answer 0 --apply` writes the second program. The fee waiver had copied the Saturday condition, so B replaces it with a call to the rule after checking that nothing else changes. From then on every compilation checks the `like` clause: a Sunday child must be indistinguishable from a Saturday child. When the Saturday case already settles the meaning, B asks nothing. [Semantics and limits](docs/precedent-questions.md) · [Seven-program fixture study](experiments/precedent-questions/README.md).
 
 ## Extend a rule and protect the rest of a booking
 

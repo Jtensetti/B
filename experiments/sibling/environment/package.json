@@ -1,0 +1,10 @@
+{
+  "name": "b-sibling-trial",
+  "private": true,
+  "dependencies": {
+    "@types/node": "22.20.5",
+    "fastest-levenshtein": "1.0.16",
+    "semver": "7.8.5",
+    "typescript": "5.9.3"
+  }
+}

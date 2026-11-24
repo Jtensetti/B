@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import json
 import sys
 from pathlib import Path
@@ -98,6 +99,8 @@ def main(argv: list[str] | None = None) -> int:
                            help="Explain open divisor and integer argument checks")
             p.add_argument("--require-proofs", action="store_true", help="Reject any reported contract or divisor obligation without a static proof")
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
+            p.add_argument("--library-examples", action="store_true",
+                           help="Run each example of an imported function on its own and report it")
     ir_command = sub.add_parser("ir", help="Emit the checked, backend-neutral BIR as JSON")
     ir_command.add_argument("file", type=Path)
     ir_command.add_argument("--strict", action="store_true")
@@ -132,7 +135,24 @@ def main(argv: list[str] | None = None) -> int:
     revision.add_argument("after", type=Path)
     revision.add_argument("--delta", type=Path, help="Pin the authorized change from a separate .bee file")
     revision.add_argument("--json", action="store_true")
+    ask_command = sub.add_parser("ask", help="Find the input an also declaration leaves ambiguous and ask one question")
+    ask_command.add_argument("file", type=Path)
+    ask_command.add_argument("--with", dest="delta", type=Path, metavar="DELTA.bee",
+                             help="Examine the also declarations in a separate file")
+    ask_command.add_argument("--answer", metavar="VALUE", help="Answer the open question with one of the offered values")
+    ask_command.add_argument("--apply", action="store_true", help="Write the answered revision back to the files")
+    ask_command.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    program = getattr(args, "file", None)
+    if isinstance(program, Path):
+        # As Python does for a script: modules next to the program can be imported.
+        folder = str(program.resolve().parent)
+        if folder not in sys.path:
+            sys.path.insert(0, folder)
+        os.environ["B_PROGRAM_DIR"] = folder  # local go: and rust: packages are found from here
+    if args.command == "ask":
+        from . import ask_cli
+        return ask_cli.run(args, read_source)
     if args.command == "revision":
         return show_revision(args)
     if args.command == "next":
@@ -313,6 +333,16 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps((result.optimized_ir if args.optimized else result.ir).to_dict(), ensure_ascii=False, indent=2, sort_keys=True))
         elif args.command == "build":
             print(result.source, end="")
+        elif args.command == "check" and args.library_examples and not rejection:
+            from .library_examples import run_each
+            results = run_each(result.ir)
+            if machine:
+                print(json.dumps({"status": "accepted", "library_examples": results}, ensure_ascii=False))
+            else:
+                for row in results:
+                    print(f"{row['status']}: {row['example']}" + (f"\n    {row['message']}" if "message" in row else ""))
+                print(f"B check: {sum(r['status'] == 'holds' for r in results)} of {len(results)} library example(s) hold")
+            return int(any(r["status"] != "holds" for r in results))
         elif args.command == "check":
             if machine:
                 print(json.dumps({

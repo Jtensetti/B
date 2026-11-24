@@ -1,0 +1,1 @@
+Breaks. A shift may have "break": "H:MM". The worked time is Parse(hours) minus Parse(break), and that is what round_up is applied to. A shift whose break cannot be parsed, or whose break is longer than its hours, is rejected.

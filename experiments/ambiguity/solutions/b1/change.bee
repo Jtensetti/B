@@ -1,0 +1,16 @@
+use py:json as json
+
+record Booking { id: Text, child: Bool, day: Text, member: Bool }
+record Input { bookings: List[Booking] }
+
+foreign json.loads(Text) -> Input
+
+fn free_entry(child: Bool, day: Text) -> Bool pure = child and day == "sat"
+fn ticket(child: Bool, member: Bool, day: Text) -> Int pure = if free_entry(child, day) then 0 else max(0, 100 - (if member then 20 else 0))
+fn fee(child: Bool, day: Text) -> Int pure = if free_entry(child, day) then 0 else 10
+fn total(b: Booking) -> Int pure = ticket(b.child, b.member, b.day) + fee(b.child, b.day)
+
+let data = json.loads(read_line())
+print to_json({totals = {b.id: total(b) for b in data.bookings}})
+
+also free_entry(true, "sun")

@@ -1,0 +1,1 @@
+Change 1 of the trial. The owner says: "Customers on an app version lower than 2.0.0 keep legacy pricing: 20 % off the plan price. Versions compare by semantic versioning, so 1.10.0 is higher than 1.9.0, and a prerelease such as 2.0.0-beta.1 is lower than 2.0.0. The npm package semver is installed in your workspace if you want it."

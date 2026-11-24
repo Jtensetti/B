@@ -1,0 +1,36 @@
+use py:json as json
+use py:datetime as dt
+use py:libs.payroll.withholding as tax
+use go:"./libs/hours" as hours
+use rust:"./libs/quarter" as quarter
+use cs:"./libs/Rules" as rules
+use js:semver as semver
+
+foreign type Date = dt.date
+foreign dt.date.fromisoformat(Text) -> Date
+foreign Date.weekday() -> Int
+foreign hours.Parse(Text) -> Option[Float] on error
+
+record Employee { id: Text, hourly: Float, table: Int, contract: Text }
+record Shift { id: Text, employee: Text, date: Text, hours: Text }
+record Input { month: Text, employees: List[Employee], shifts: List[Shift] }
+record Slip { hours: Float, gross: Float, tax: Int, net: Float }
+foreign json.loads(Text) -> Input
+
+let data = json.loads(read_line())
+let days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+let ids = [e.id for e in data.employees]
+let valid = [s for s in data.shifts where s.employee in ids and hours.Parse(s.hours) != none]
+
+fn worked(s: Shift) -> Float = quarter.round_up(hours.Parse(s.hours) ?? 0.0)
+fn pay(s: Shift, e: Employee) -> Float =
+    worked(s) * e.hourly * rules.Overtime.Multiplier(days[dt.date.fromisoformat(s.date).weekday()] ?? "Mon")
+
+fn slip(e: Employee) -> Slip =
+    let gross = round(sum([pay(s, e) for s in valid where s.employee == e.id]), 2)
+    let t = tax.withholding(gross, e.table)
+    Slip { hours = sum([worked(s) for s in valid where s.employee == e.id]), gross = gross, tax = t, net = round(gross - t, 2) }
+
+print to_json({
+    payslips = {e.id: slip(e) for e in data.employees},
+    rejected = sorted([s.id for s in data.shifts where not (s in valid)])})

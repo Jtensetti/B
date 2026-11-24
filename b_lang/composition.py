@@ -79,7 +79,41 @@ def _refine(test: ExprIR, env: dict[str, Fact], when: bool) -> dict[str, Fact] |
         if exc.code != "E_PRECONDITION_EMPTY":
             raise
         return None
-    return {**env, **{name: replace(env[name], interval=value) for name, value in bounds.items()}}
+    refined = {**env, **{name: replace(env[name], interval=value) for name, value in bounds.items()}}
+    for expression in _nonzero_tests(test, when):
+        refined[_NONZERO + expression] = Fact(boolean=True)
+    return refined
+
+
+_NONZERO = "\0nonzero:"  # env keys that cannot clash with B names
+
+
+def _nonzero_tests(test: ExprIR, when: bool):
+    """Expressions a branch condition proves nonzero: x > 0.0, x != 0, 0 < x.y, and conjunctions of them."""
+    if test.op == "not":
+        yield from _nonzero_tests(test.operands[0], not when)
+        return
+    if (when and test.op == "and") or (not when and test.op == "or"):
+        for operand in test.operands:
+            yield from _nonzero_tests(operand, when)
+        return
+    if test.op != "cmp":
+        return
+    left, right = test.operands
+    op = test.data
+    if left.op == "literal" and right.op != "literal":
+        left, right = right, left
+        op = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "==": "==", "!=": "!="}[op]
+    if right.op != "literal" or type(right.data) not in (int, float) or left.op not in ("name", "field"):
+        return
+    if "<" in _render(left):  # a placeholder rendering is not specific enough to stand for one expression
+        return
+    if not when:
+        op = {"<": ">=", "<=": ">", ">": "<=", ">=": "<", "==": "!=", "!=": "=="}[op]
+    k = right.data
+    if (op == ">" and k >= 0) or (op == ">=" and k > 0) or (op == "<" and k <= 0) or (op == "<=" and k < 0) \
+            or (op == "!=" and k == 0) or (op == "==" and k != 0):
+        yield _render(left)
 
 
 def _join(left: Fact, right: Fact) -> Fact:
@@ -117,6 +151,8 @@ def _render(node: ExprIR) -> str:
         return f"{prefix}{_render(args[0])}"
     if op == "guard":
         return _render(args[0])
+    if op == "field":
+        return f"{_render(args[0])}.{node.data}"
     if op == "call":
         return f"{_render(args[0])}({', '.join(_render(a) for a in args[1:])})"
     if op == "list":
@@ -311,6 +347,8 @@ class _Pass:
         if self.collect and op in ("div", "mod"):
             denominator = children[1].interval
             nonzero = compare_intervals("!=", denominator, Interval(0, 0))
+            if nonzero is None and (_NONZERO + _render(args[1])) in env:
+                nonzero = True  # an enclosing condition tests this very expression
             if nonzero is None:
                 # Closed built-in scalar expressions have Python backend semantics.
                 # The whitelist excludes calls and guards, including Float widening.

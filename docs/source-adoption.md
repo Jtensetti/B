@@ -56,3 +56,14 @@ This negative result matters: the initial subset is useful for small, typed, pur
 **Hypothesis:** Reusing a checked expression subtree from an existing library, under B's strict type domain, can reduce newly generated code and external effect assumptions for AI-written B programs while preserving a meaningful, pre-execution validation boundary.
 
 **Kill criterion:** On held-out tasks, if source adoption rarely matches useful functions, changes behavior unexpectedly, or costs more in build complexity than it saves in generated code and review effort, reject or narrow the feature. Compare B `adopt`, ordinary B `use`, and direct native B functions under the same task, runtime and model budget. No such end-to-end AI benchmark has been performed yet.
+
+## Examples checked against an adopted implementation
+
+B 0.33 can check a concrete example of an adopted function during ordinary compilation. For a supplier module containing `def seconds(minutes: int) -> int: return minutes * 60`, a caller can write
+
+```bee
+adopt py:provider.seconds as seconds
+example seconds(3) == 180
+```
+
+The compiler interprets the translated B expression at the stated input. A changed result gives `E_EXAMPLE` before the application runs. The bounded evaluator accepts a subset over Int, Bool and Text. An example outside that subset produces `W_EXAMPLE_UNCHECKED`, which fails a strict check. Ordinary dynamic imports retain the runtime behavior described in [library examples](library-examples.md).

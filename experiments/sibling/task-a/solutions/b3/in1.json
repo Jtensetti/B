@@ -1,0 +1,8 @@
+{"depot": {"lat": 59.33, "lon": 18.06}, "catalog": {"Sofa": 40.0, "Table": 12.5, "Chair": 5.0}, "orders": [
+{"id": "o1", "product": "Sofa", "country": "SE", "lat": 59.4, "lon": 18.0, "date": "2026-12-24", "business": false},
+{"id": "o2", "product": "Tabel", "country": "DE", "lat": 52.5, "lon": 13.4, "date": "2026-06-05", "business": true},
+{"id": "o3", "product": "Lamp", "country": "SE", "lat": 59.3, "lon": 18.1, "date": "2026-06-05", "business": false},
+{"id": "o4", "product": "Chair", "country": "US", "lat": 40.7, "lon": -74.0, "date": "2026-06-05", "business": false},
+{"id": "o5", "product": "Chiar", "country": "FR", "lat": 48.85, "lon": 2.35, "date": "2026-11-24", "business": false},
+{"id": "o6", "product": "Sofa", "country": "NO", "lat": 69.6, "lon": 18.9, "date": "2026-11-27", "business": false}
+]}

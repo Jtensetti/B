@@ -1,0 +1,37 @@
+use py:json as json
+use py:quote_helpers as helpers
+use js:"fastest-levenshtein" as words
+
+record Order { id: Text, product: Text, country: Text, express: Option[Bool], qty: Option[Int] }
+record Input { orders: List[Order], catalog: Dict[Text, Float] }
+
+foreign json.loads(Text) -> Input
+foreign helpers.zone_code(Text) -> Int
+foreign helpers.money(Float) -> Float
+foreign helpers.base_ex_vat(Int, Float) -> Float
+
+let data = json.loads(read_line())
+let names = sorted(keys(data.catalog))
+
+fn find(product: Text) -> Option[Text] =
+    let dist = {n: words.distance(product, n) for n in names}
+    let best = if len(names) == 0 then 99 else min(values(dist)) ?? 99
+    let ties = [n for n in names where (dist[n] ?? 99) == best]
+    if best <= 2 and len(ties) > 0 then ties[0] else none
+
+fn ok(o: Order) -> Bool =
+    find(o.product) != none and helpers.zone_code(o.country) > 0
+
+fn price(o: Order) -> Float =
+    let weight = (o.qty ?? 1) * (data.catalog[find(o.product) ?? ""] ?? 0.0)
+    let zone = helpers.zone_code(o.country)
+    let base = helpers.base_ex_vat(zone, weight)
+    let express = if (o.express ?? false) then 50.0 else 0.0
+    let fuel = if zone == 4 then 30.0 else 0.0
+    let extra = express + fuel
+    let gross = helpers.money((base + extra) * 1.25)
+    if weight > 20.0 then helpers.money(gross * 0.9) else gross
+
+let quotes = {o.id: price(o) for o in data.orders where ok(o)}
+let unknown = sorted([o.id for o in data.orders where not ok(o)])
+print to_json({quotes = quotes, unknown = unknown})

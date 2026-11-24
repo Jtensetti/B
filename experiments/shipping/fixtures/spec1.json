@@ -1,0 +1,1 @@
+{"orders": [{"id": "A1", "product": "kettle", "qty": 2}, {"id": "A2", "product": "toaster", "qty": 1}, {"id": "A3", "product": "lamp", "qty": 1}], "catalog": {"kettle": {"weight_kg": 1.2}, "toaster": {"weight_kg": 2.5}}, "usd_to_sek": 10.5}

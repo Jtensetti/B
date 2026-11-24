@@ -1,0 +1,48 @@
+use py:builtins as io
+use py:json as json
+use js:semver as versions
+
+foreign io.input() -> Text
+foreign json.loads(Text) -> Dict[Text, Dict[Text, Any]]
+use js:"fastest-levenshtein" as lev
+foreign lev.closest(Text, List[Text]) -> Text
+foreign lev.distance(Text, Text) -> Int
+use py:re as re
+foreign re.sub(Text, Text, Text) -> Text
+foreign versions.clean(Text) -> Option[Text]
+foreign json.dumps(Dict[Text, Any]) -> Text
+
+let doc = json.loads(io.input())
+let requires: Dict[Text, Any] = doc["requires"] ?? {}
+let rawpins: Dict[Text, Any] = doc["pins"] ?? {}
+let rawavail: Dict[Text, Any] = doc["available"] ?? {}
+fn cleanlist(xs: List[Text]) -> List[Text] = [versions.clean(x) ?? "" for x in xs where versions.clean(x) != none]
+fn cleanpin(p: Text) -> Text = versions.clean(p) ?? p
+let pins: Dict[Text, Any] = {k: cleanpin(v) for k, v in rawpins}
+let available: Dict[Text, Any] = {k: cleanlist(v) for k, v in rawavail}
+
+fn stable(xs: List[Text]) -> List[Text] = [x for x in xs where not ("-" in re.sub("\\+.*", "", x))]
+fn top(xs: List[Text]) -> Option[Text] = ([h for h in xs where len([y for y in xs where versions.compare(y, h) > 0]) == 0])[0]
+fn validonly(xs: List[Text]) -> List[Text] = [x for x in xs where versions.valid(x) != none]
+fn pick2(name: Text) -> Option[Text] = if name in available then (if requires[name] == "latest" then top(validonly(stable(available[name] ?? []))) else (if requires[name] == "next" then top(validonly(available[name] ?? [])) else versions.maxSatisfying(stable(available[name] ?? []), requires[name] ?? ""))) else none
+fn has(xs: List[Text], v: Text) -> Bool = v in xs
+fn pinned(name: Text) -> Option[Text] = if name in available and has(available[name] ?? [], pins[name] ?? "") then pins[name] else none
+fn pick(name: Text) -> Option[Text] = if name in pins then pinned(name) else pick2(name)
+
+let names = sorted(keys(requires))
+let resolved = {n: pick(n) ?? "" for n in names where pick(n) != none}
+let unresolved = [n for n in names where pick(n) == none]
+fn newer(n: Text) -> Option[Text] = if versions.valid(resolved[n] ?? "") == none then none else (if top(validonly(stable(available[n] ?? []))) != none and versions.compare(top(validonly(stable(available[n] ?? []))) ?? "", resolved[n] ?? "") > 0 then top(validonly(stable(available[n] ?? []))) else none)
+let outd = {n: newer(n) ?? "" for n in sorted(keys(resolved)) where newer(n) != none}
+let outA: Any = outd
+let cands = sorted(keys(available))
+fn near(n: Text) -> Text = if len(cands) == 0 then "" else lev.closest(n, cands)
+let missing = [n for n in unresolved where not (n in available)]
+let sugg = {n: near(n) for n in missing where len(cands) > 0 and lev.distance(n, near(n)) <= 2}
+let sugA: Any = sugg
+let resA: Any = resolved
+let unA: Any = unresolved
+let summ: Dict[Text, Int] = {"resolved": len(resolved), "unresolved": len(unresolved), "suggested": len(sugg)}
+let sumA: Any = summ
+let out: Dict[Text, Any] = {"resolved": resA, "unresolved": unA, "suggestions": sugA, "summary": sumA, "outdated": outA}
+print json.dumps(out)

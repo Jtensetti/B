@@ -1,4 +1,4 @@
-"""B 0.18 compiler: parse -> typed BIR -> Python backend.
+"""B compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -33,10 +33,58 @@ from .types import (
     Type, BError, INT, FLOAT, BOOL, TEXT, NONE, ANY, MODULE,
     ATTRIBUTES, Signature, Overloads, Binding, assignable,
     from_syntax, unify, needs_dynamic_guard, needs_numeric_widening, option, supports_ordering,
+    record_fields, record_type, KNOWN,
 )
 
 NOT_CONST = object()
 NUMERIC = (INT, FLOAT)
+CORE_WORDS = frozenset({"len", "sorted", "keys", "values", "text", "join",
+                        "round", "sum", "min", "max", "abs", "read_line", "to_json",
+                        "upper", "lower", "trim", "range", "ceil", "floor"})
+
+
+def _narrowed(test: Expr, scope: dict, outcome: bool) -> dict:
+    """Names a test proves are not none: `x != none` when true, `x == none` when false.
+
+    `a and b` proves both when true, `a or b` proves both when false, and
+    `not t` swaps the outcome. Only plain names with an Option type narrow.
+    """
+    proven: set[str] = set()
+
+    def visit(node, when):
+        if node.kind == "not":
+            visit(node.parts[0], not when)
+        elif node.kind == "and" and when or node.kind == "or" and not when:
+            visit(node.parts[0], when)
+            visit(node.parts[1], when)
+        elif node.kind == "cmp":
+            left, op, right = node.parts
+            for a, b in ((left, right), (right, left)):
+                if (a.kind == "name" and b.kind == "literal" and b.parts[0] is None
+                        and (op == "!=" and when or op == "==" and not when)):
+                    proven.add(a.parts[0])
+
+    visit(test, outcome)
+    narrowed = None
+    for name in proven:
+        symbol = scope.get(name)
+        if symbol is not None and symbol.type.name == "Option" and symbol.signature is None:
+            narrowed = narrowed or dict(scope)
+            narrowed[name] = Symbol(symbol.type.args[0])
+    return narrowed or scope
+
+
+def OPAQUE_TYPES():
+    from .types import OPAQUE
+    return OPAQUE
+
+
+def _record_label(typ: Type) -> str:
+    from .types import RECORDS
+    for name, known in RECORDS.items():
+        if known == typ:
+            return name
+    return "this record"
 OPS = {"add": operator.add, "sub": operator.sub, "mul": operator.mul,
        "div": operator.truediv, "mod": operator.mod}
 CMP = {"==": operator.eq, "!=": operator.ne, "<": operator.lt,
@@ -93,6 +141,8 @@ class Compiler:
         self.permitted_effects: tuple[str, ...] | None = None
         self.started_statements = False
         self.additional_cases: dict[str, list[tuple]] = {}
+        self.original_rules: dict = {}
+        self.learned: dict = {}
 
     def warn(self, code: str, message: str):
         d = Diagnostic("warning", code, message)
@@ -121,6 +171,9 @@ class Compiler:
     def _check_type(self, value: Value, expected: Type, context: str):
         if not assignable(value.type, expected):
             raise BError("E_TYPE", f"{context}: expected {expected}, got {value.type}")
+        empty = value.node.op in ("list", "dict") and not value.node.operands
+        if empty and expected.name in ("List", "Dict"):
+            return  # an empty literal belongs to every List[T] and Dict[K, V]
         if needs_dynamic_guard(value.type, expected):
             self.warn("W_DYNAMIC_TYPE", f"{context} comes from an untyped boundary; checked at runtime")
             value.node = self.guard(value.node, expected)
@@ -189,6 +242,40 @@ class Compiler:
             return candidates[0]
         raise BError("E_OVERLOAD_AMBIGUOUS", f"Ambiguous overload of {target}; annotate or narrow arguments")
 
+    def _foreign_on(self, path, params, result, names):
+        """`foreign m.f(T) -> Option[R] on E`: the call gives none when f raises E.
+
+        The declaration restates f's signature with an Option result. If B already
+        read f's signature from the relative, the parameters and R must match it."""
+        parts = path.split(".")
+        sym = self.symbols.get(parts[0])
+        if len(parts) < 2 or not sym or sym.type != MODULE or not sym.foreign:
+            raise BError("E_FOREIGN", f"{parts[0]} must be an imported foreign module")
+        if not sym.foreign.startswith(("py:", "go:", "rust:", "cs:")):
+            raise BError("E_FOREIGN", "'on' catches Python exceptions and Go or Rust errors; npm and .NET errors are not mapped yet")
+        if sym.foreign.startswith(("go:", "rust:", "cs:")) and names != ("error",):
+            raise BError("E_FOREIGN", "A Go, Rust or C# function's failure is caught as 'on error'")
+        declared = from_syntax(result)
+        if declared.name != "Option":
+            raise BError("E_FOREIGN", f"A call that can fail gives an Option: write -> Option[{declared}] on {', '.join(names)}")
+        inner = Signature(tuple(from_syntax(t) for t in params), declared.args[0])
+        fullname = sym.foreign + "." + ".".join(parts[1:])
+        if fullname in self.catching:
+            raise BError("E_FOREIGN", f"{path} is declared twice")
+        existing = self.registry.lookup(fullname)
+        if existing:
+            known = existing.binding
+            if (getattr(known, "params", None), getattr(known, "result", None)) != (inner.params, inner.result):
+                raise BError("E_FOREIGN", f"{path} is known as ({', '.join(map(str, getattr(known, 'params', ())))}) -> "
+                             f"{getattr(known, 'result', '?')}; restate it as that signature with an Option result")
+        else:
+            if any(t in (NONE, MODULE) for t in (*inner.params, inner.result)):
+                raise BError("E_TYPE", "Foreign signatures cannot use internal None or Module types")
+            self.registry.add(fullname, inner, "user-declaration")
+        self.catching[fullname] = tuple(names)
+        self.assumptions.append(f"{fullname} gives none on {', '.join(names)}: declared, not proved")
+        return StmtIR("foreign", target=fullname)
+
     def _foreign_path(self, ex: Expr, scope: dict[str, Symbol]) -> str | None:
         if ex.kind == "name":
             return scope[ex.parts[0]].foreign
@@ -208,6 +295,118 @@ class Compiler:
                 raise BError("E_NAME", f"{operation} cannot bind {name}: name is already in scope or reserved")
             elements[name] = Symbol(collection.type.args[0])
         return collection, elements
+
+    def _core_word(self, word: str, args: list[Value]) -> Value:
+        """A few words almost every program needs, typed generically, run by Python's builtins."""
+        arity = {"join": (2,), "round": (1, 2), "min": (1, 2), "max": (1, 2), "read_line": (0,)}.get(word, (1,))
+        if len(args) not in arity:
+            expected = " or ".join(map(str, arity))
+            raise BError("E_ARITY", f"{word} takes {expected} argument{'s' if max(arity) != 1 else ''}, got {len(args)}")
+        if word == "read_line":
+            return self.val(TEXT, "core", data=word)
+        first = args[0]
+        if word == "to_json":
+            if first.type == ANY or first.type.name in ("Function", "Module"):
+                raise BError("E_TYPE", f"to_json needs a typed value, got {first.type}")
+            return self.val(TEXT, "core", first.node, data=word)
+        numeric = first.type in (INT, FLOAT)
+        if word == "round":
+            if not numeric or (len(args) == 2 and args[1].type != INT):
+                raise BError("E_TYPE", "round needs a number and an optional Int of decimals")
+            return self.val(INT if len(args) == 1 else FLOAT, "core", *(a.node for a in args), data=word)
+        if word == "abs":
+            if not numeric:
+                raise BError("E_TYPE", f"abs needs a number, got {first.type}")
+            return self.val(first.type, "core", first.node, data=word)
+        if word == "sum":
+            if first.type.name != "List" or first.type.args[0] not in (INT, FLOAT):
+                raise BError("E_TYPE", f"sum needs a List of Int or Float, got {first.type}")
+            return self.val(first.type.args[0], "core", first.node, data=word)
+        if word in ("min", "max"):
+            if len(args) == 2:
+                typ = unify(first.type, args[1].type)
+                if not supports_ordering(typ) or typ == ANY:
+                    raise BError("E_TYPE", f"{word} of two values needs two Int, Float or Text values")
+                return self.val(typ, "core", *(self._widen(a, typ).node for a in args), data=word)
+            if first.type.name != "List" or not supports_ordering(first.type.args[0]):
+                raise BError("E_TYPE", f"{word} needs a List of Int, Float or Text, got {first.type}")
+            return self.val(option(first.type.args[0]), "core", first.node, data=word + "_of")
+        kind = first.type.name
+        if word == "len":
+            if kind not in ("List", "Dict") and first.type != TEXT:
+                raise BError("E_TYPE", f"len needs a List, Dict or Text, got {first.type}")
+            result = INT
+        elif word == "sorted":
+            if kind != "List" or not supports_ordering(first.type.args[0]):
+                raise BError("E_TYPE", f"sorted needs a List of Int, Float or Text, got {first.type}")
+            result = first.type
+        elif word in ("keys", "values"):
+            if kind != "Dict":
+                raise BError("E_TYPE", f"{word} needs a Dict[Text, T], got {first.type}")
+            result = Type("List", (TEXT,)) if word == "keys" else Type("List", (first.type.args[1],))
+        elif word == "range":
+            if first.type != INT:
+                raise BError("E_TYPE", f"range needs an Int, got {first.type}")
+            result = Type("List", (INT,))
+        elif word in ("ceil", "floor"):
+            if first.type not in (INT, FLOAT):
+                raise BError("E_TYPE", f"{word} needs a number, got {first.type}")
+            result = INT
+        elif word in ("upper", "lower", "trim"):
+            if first.type != TEXT:
+                raise BError("E_TYPE", f"{word} needs a Text, got {first.type}")
+            result = TEXT
+        elif word == "text":
+            if first.type not in (INT, FLOAT, TEXT, BOOL, ANY):
+                raise BError("E_TYPE", f"text needs an Int, Float, Text or Bool, got {first.type}")
+            result = TEXT
+        else:  # join
+            if first.type != Type("List", (TEXT,)) or args[1].type != TEXT:
+                raise BError("E_TYPE", "join needs a List[Text] and a Text separator")
+            result = TEXT
+        return self.val(result, "core", *(a.node for a in args), data=word)
+
+    def _each(self, ex: Expr, scope: dict[str, Symbol]) -> Value:
+        """[value for x in xs where c] and {key: value for k, v in d where c}."""
+        shape, raw_key, raw_value, binders, source, raw_condition = ex.parts
+        collection = self.infer(source, scope)
+        kind = collection.type.name
+        if kind == "List":
+            if len(binders) != 1:
+                raise BError("E_TYPE", "A list gives one name per item: for x in xs")
+            types = [collection.type.args[0]]
+        elif kind == "Dict":
+            types = [TEXT, collection.type.args[1]][:len(binders)]
+        elif collection.type == ANY:
+            types = [ANY] * len(binders)
+            self.warn("W_DYNAMIC_TYPE", "A collection from an untyped boundary is checked at runtime")
+        else:
+            raise BError("E_TYPE", f"for needs a List[T] or Dict[Text, T], got {collection.type}")
+        if len(set(binders)) != len(binders):
+            raise BError("E_NAME", "for needs two different names")
+        elements = scope.copy()
+        for name, typ in zip(binders, types):
+            if name in elements or name.startswith("_b_") or name in {"true", "false", "none", "if", "not"}:
+                raise BError("E_NAME", f"for cannot bind {name}: name is already in scope or reserved")
+            elements[name] = Symbol(typ)
+        operands = [collection.node]
+        condition = None
+        if raw_condition is not None:
+            condition = self.infer(raw_condition, elements)
+            self._check_type(condition, BOOL, "where")
+            elements = _narrowed(raw_condition, elements, True)
+        if raw_key is not None:
+            key = self.infer(raw_key, elements)
+            self._check_type(key, TEXT, "dictionary key")
+            operands.append(key.node)
+        value = self.infer(raw_value, elements)
+        operands.append(value.node)
+        if condition is not None:
+            operands.append(condition.node)
+        result = Type("List", (value.type,)) if shape == "list" else Type("Dict", (TEXT, value.type))
+        return self.val(result, "each", *operands,
+                        data={"shape": shape, "binders": binders, "source": kind,
+                              "condition": raw_condition is not None})
 
     def _summarize(self, ex: Expr, scope: dict[str, Symbol]) -> Value:
         binder, source, fields = ex.parts
@@ -248,6 +447,46 @@ class Compiler:
                             data={"mode": mode, "past": past, "current": current, **plan})
         if kind == "summarize":
             return self._summarize(ex, symbols)
+        if kind == "each":
+            return self._each(ex, symbols)
+        if kind == "locals":
+            bindings, result = p
+            scope = dict(symbols)
+            nodes = []
+            for name, annotation, raw in bindings:
+                if name in scope and scope[name].type.name == "Function" or name.startswith("_b_"):
+                    raise BError("E_NAME", f"let {name} would hide a function or runtime name")
+                value = self.infer(raw, scope)
+                if annotation is not None:
+                    wanted = from_syntax(annotation)
+                    self._check_type(value, wanted, f"let {name}")
+                    value = self._widen(value, wanted)
+                    typ = wanted
+                else:
+                    typ = value.type
+                scope = {**scope, name: Symbol(typ)}
+                nodes.append((name, typ, value.node))
+            body = self.infer(result, scope)
+            node = body.node
+            for name, typ, value_node in reversed(nodes):
+                node = ExprIR("bind", body.type, (value_node, node), data=name)
+            return Value(body.type, node, NOT_CONST)
+        if kind == "contains":
+            item, container = self.infer(p[0], symbols), self.infer(p[1], symbols)
+            kind_ = container.type.name
+            if kind_ == "List":
+                element = container.type.args[0]
+            elif kind_ == "Dict" or container.type == TEXT:
+                element = TEXT
+            else:
+                raise BError("E_TYPE", f"in needs a List, Dict, Text or a group, got {container.type}")
+            if not (assignable(item.type, element) or assignable(element, item.type)):
+                raise BError("E_TYPE", f"Cannot look for {item.type} in {container.type}")
+            return self.val(BOOL, "contains", item.node, container.node)
+        if kind == "lookup" and self.infer(p[0], symbols).type.name == "List":
+            sequence, index = self.infer(p[0], symbols), self.infer(p[1], symbols)
+            self._check_type(index, INT, "list index")
+            return self.val(option(sequence.type.args[0]), "index", sequence.node, index.node)
         if kind == "lookup":
             dictionary = self.infer(p[0], symbols)
             if dictionary.type.name != "Dict":
@@ -258,9 +497,19 @@ class Compiler:
         if kind == "coalesce":
             left = self.infer(p[0], symbols)
             if left.type.name != "Option":
-                raise BError("E_TYPE", "Left side of ?? must be Option[T]")
+                # A value that is never none needs no fallback. The fallback must still fit,
+                # so a mistaken fallback of another type is caught.
+                right = self.infer(p[1], symbols)
+                empty = p[1].kind in ("list", "dict") and not p[1].parts
+                if not empty and unify(left.type, right.type) == ANY and ANY not in (left.type, right.type):
+                    raise BError("E_TYPE", f"?? fallback {right.type} does not fit {left.type}")
+                return left
             right = self.infer(p[1], symbols)
             inner = left.type.args[0]
+            empty = p[1].kind in ("list", "dict") and not p[1].parts
+            if empty and inner.name == ("List" if p[1].kind == "list" else "Dict"):
+                # An empty [] or {} takes its element type from the other side of ??.
+                right = Value(inner, ExprIR(p[1].kind, inner), NOT_CONST)
             if right.type == NONE:
                 typ = left.type
             elif right.type.name == "Option":
@@ -284,7 +533,8 @@ class Compiler:
         if kind == "conditional":
             cv = self.infer(p[0], symbols)
             self._check_type(cv, BOOL, "if condition")
-            yv, nv = self.infer(p[1], symbols), self.infer(p[2], symbols)
+            yv = self.infer(p[1], _narrowed(p[0], symbols, True))
+            nv = self.infer(p[2], _narrowed(p[0], symbols, False))
             typ = unify(yv.type, nv.type)
             if typ == ANY and yv.type != ANY and nv.type != ANY:
                 raise BError("E_TYPE", f"if branches have incompatible types: {yv.type} versus {nv.type}")
@@ -338,9 +588,31 @@ class Compiler:
             flattened = [node for key, val in pairs
                          for node in (key.node, self._widen(val, value_type).node)]
             return self.val(Type("Dict", (TEXT, value_type)), "dict", *flattened)
+        if kind == "named_record":
+            name, literal = p
+            from .types import RECORDS
+            if name not in RECORDS:
+                raise BError("E_TYPE", f"Unknown record {name}")
+            value = self.infer(literal, symbols)
+            self._check_type(value, RECORDS[name], f"{name} {{...}}")
+            return self.val(RECORDS[name], value.node.op, *value.node.operands, data=value.node.data)
+        if kind == "record":
+            fields = [(name, self.infer(value, symbols)) for name, value in p]
+            typ = record_type([(name, value.type) for name, value in fields])
+            return self.val(typ, "record", *(value.node for _, value in sorted(fields, key=lambda f: f[0])),
+                            data=tuple(sorted(name for name, _ in fields)))
         if kind == "attr":
             base, name = p
             bv = self.infer(base, symbols)
+            if bv.type.name == "Record":
+                fields = record_fields(bv.type)
+                if name not in fields:
+                    raise BError("E_TYPE", f"No field {name} in {_record_label(bv.type)}; "
+                                 f"fields: {', '.join(sorted(fields))}")
+                return self.val(fields[name], "field", bv.node, data=name)
+            if bv.type.name == "Opaque":
+                raise BError("E_TYPE", f"Call a declared method of {bv.type.args[0].name}; "
+                             f"B does not read its attribute {name} directly")
             if bv.type not in (MODULE, ANY):
                 raise BError("E_TYPE", f"Cannot access attribute {name} on {bv.type}")
             path = self._foreign_path(ex, symbols)
@@ -354,11 +626,37 @@ class Compiler:
                 return self.val(Type("Function"), "attr", bv.node, data=name, foreign=path)
             if path and path.startswith("js:"):
                 raise BError("E_FOREIGN", f"Unregistered Node export {path}; declare its foreign signature")
+            declared_below = path and any(key.startswith(path + ".") for key in self.registry.symbols)
+            if path and path.startswith(("go:", "rust:", "cs:")) and not declared_below:
+                raise BError("E_FOREIGN", f"{path} is not a function B can type: it is missing, overloaded, generic, "
+                             "variadic, or uses types B does not map (structs, pointers, channels)")
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
-            if path and path.startswith("py:"):
+            declared_below = path and any(key.startswith(path + ".") for key in self.registry.symbols)
+            if path and path.startswith("py:") and not declared_below:
                 self.warn("W_UNCHECKED_FOREIGN", f"Unspecified Python symbol {path}; no static signature available")
             return self.val(ANY, "attr", bv.node, data=name, foreign=path)
+        if kind == "invoke" and p[0].kind == "name" and p[0].parts[0] in CORE_WORDS \
+                and p[0].parts[0] not in symbols:
+            return self._core_word(p[0].parts[0], [self.infer(a, symbols) for a in p[1]])
+        if kind == "invoke" and p[0].kind == "attr":
+            owner = self.infer(p[0].parts[0], symbols)
+            if owner.type.name == "Opaque":
+                typename, method = owner.type.args[0].name, p[0].parts[1]
+                sig = self.methods.get((typename, method))
+                if sig is None:
+                    raise BError("E_FOREIGN", f"{typename} has no declared method {method}; "
+                                 f"declare it with foreign {typename}.{method}(...) -> T")
+                values = [self.infer(a, symbols) for a in p[1]]
+                if len(values) != len(sig.params):
+                    raise BError("E_ARITY", f"{typename}.{method} expects {len(sig.params)} arguments, got {len(values)}")
+                for i, (v, t) in enumerate(zip(values, sig.params), 1):
+                    self._check_type(v, t, f"argument {i} to {typename}.{method}")
+                attr = ExprIR("attr", Type("Function"), (owner.node,), data=method)
+                call = self.val(sig.result, "call", attr, *(self.guard(v.node, t) for v, t in zip(values, sig.params)),
+                                foreign=f"method:{typename}.{method}")
+                call.node = self.guard(call.node, sig.result)
+                return call
         if kind == "invoke":
             target, raw_args = p
             tv = self.infer(target, symbols)
@@ -403,6 +701,9 @@ class Compiler:
                     result.node = replace(result.node, precondition_proved=True)
                 if path:
                     result.node = self.guard(result.node, sig.result)
+                if path in self.catching:
+                    caught = Type("Option", (sig.result,))
+                    return self.val(caught, "catch", result.node, data=self.catching[path])
                 return result
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET call {path}")
@@ -460,6 +761,15 @@ class Compiler:
             self._pure_captures(node.operands[0], locals_)
             self._pure_captures(node.operands[1], locals_ | {node.data["past"], node.data["current"]})
             return
+        if node.op == "bind":
+            self._pure_captures(node.operands[0], locals_)
+            self._pure_captures(node.operands[1], locals_ | {node.data})
+            return
+        if node.op == "each":
+            self._pure_captures(node.operands[0], locals_)
+            for child in node.operands[1:]:
+                self._pure_captures(child, locals_ | set(node.data["binders"]))
+            return
         if node.op == "summarize":
             self._pure_captures(node.operands[0], locals_)
             bound = locals_ | {node.data["binder"]}
@@ -495,7 +805,20 @@ class Compiler:
                 raise BError("E_ADOPT", "Adopted code must be a pure B function")
             return replace(native, backend="py-source", target=(
                 f"py:{fullname}@sha256:{adopted.sha256}"))
-        if kind == "foreign":
+        if kind in ("foreign", "foreign_units") and p[0].split(".")[0] in OPAQUE_TYPES():
+            path, params, result = p
+            owner, *member = path.split(".")
+            if len(member) != 1:
+                raise BError("E_FOREIGN", f"Declare a method as {owner}.name(...) -> T")
+            key = (owner, member[0])
+            if key in self.methods:
+                raise BError("E_FOREIGN", f"Method {owner}.{member[0]} is declared twice")
+            self.methods[key] = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
+            self.assumptions.append(f"method {owner}.{member[0]}: signature declared, not behavior proved")
+            return StmtIR("foreign", target=f"method:{owner}.{member[0]}")
+        if kind == "foreign_on":
+            return self._foreign_on(*p)
+        if kind in ("foreign", "foreign_units"):
             path, params, result = p
             parts = path.split(".")
             if len(parts) < 2:
@@ -504,11 +827,19 @@ class Compiler:
             if not sym or sym.type != MODULE or not sym.foreign:
                 raise BError("E_FOREIGN", f"{parts[0]} must be an imported foreign module")
             fullname = sym.foreign + "." + ".".join(parts[1:])
-            if self.registry.lookup(fullname):
-                raise BError("E_FOREIGN", f"A binding already exists for {fullname}")
+            sig = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
+            existing = self.registry.lookup(fullname)
+            if existing:
+                # A unit annotation may restate a discovered signature in B's units. It
+                # can only restate it: B never overrides what the relative's metadata says.
+                same = (getattr(existing.binding, "params", None) == sig.params
+                        and getattr(existing.binding, "result", None) == sig.result)
+                if same:  # restating what B read from the relative changes nothing
+                    return StmtIR("foreign", target=fullname)
+                raise BError("E_FOREIGN", f"A binding already exists for {fullname}"
+                             + (" with a different signature" if kind == "foreign_units" else ""))
             if fullname.startswith("net:"):
                 raise BError("E_FOREIGN", "Custom .NET declarations require a host adapter; only registered .NET bindings work")
-            sig = Signature(tuple(from_syntax(t) for t in params), from_syntax(result))
             if any(t in (NONE, MODULE) for t in (*sig.params, sig.result)):
                 raise BError("E_TYPE", "Foreign signatures cannot use internal None or Module types")
             if fullname.startswith("js:"):
@@ -529,6 +860,20 @@ class Compiler:
                     key = f"js:{path}.{name}"
                     if not self.registry.lookup(key):
                         self.registry.add(key, sig, jsmeta.provenance(path))
+            elif backend in ("go", "rust", "cs"):
+                if backend == "go":
+                    from .goadapter import describe as describe_foreign
+                elif backend == "cs":
+                    from .csadapter import describe as describe_foreign
+                else:
+                    from .rustadapter import describe as describe_foreign
+                found = describe_foreign(path)
+                if not found:
+                    raise BError("E_IMPORT", f"{backend} package {path} has no function B can type")
+                for name, function in found.items():
+                    key = f"{backend}:{path}.{name}"
+                    if not self.registry.lookup(key):
+                        self.registry.add(key, function.signature, f"{backend}-metadata")
             elif backend == "net":
                 if not any(k.startswith(f"net:{path}.") for k in self.registry.symbols):
                     raise BError("E_IMPORT", f"No registered .NET metadata for {path}")
@@ -589,12 +934,30 @@ class Compiler:
             if cases := self.additional_cases.get(name):
                 if not declared_pure or result_type != BOOL:
                     raise BError("E_ALSO", f"also requires {name} to declare a pure Bool result")
+                self.original_rules[name] = body.node
                 body.node = extend_predicate(name, dict(zip(names, types)), cases, pre, post, body.node)
             if post is not None:
                 proof = verify_post(pre, body.node, post, dict(zip(names, types)), result_type)
             return StmtIR("fn", name=name, typ=result_type, expr=self.guard(body.node, result_type),
                           params=tuple(zip(names, types)), effects=tuple(sorted(effects)),
                           requires=pre, ensures=post, verification=proof, declared_pure=declared_pure)
+        if kind == "library_example":
+            call, expected, tolerance, text = p
+            actual, wanted = self.infer(call), self.infer(expected)
+            operands = [actual.node, wanted.node]
+            if tolerance is not None:
+                margin = self.infer(tolerance)
+                for value, label in ((actual, "result"), (wanted, "expected value"), (margin, "tolerance")):
+                    if value.type not in NUMERIC + (ANY,):
+                        raise BError("E_TYPE", f"{text}: 'within' needs a numeric {label}, got {value.type}")
+                operands.append(margin.node)
+            elif actual.type != ANY and not (assignable(wanted.type, actual.type) or assignable(actual.type, wanted.type)):
+                raise BError("E_TYPE", f"{text}: the library returns {actual.type}, the example states {wanted.type}")
+            text = text.partition("\t")[0]
+            self.assumptions.append(f"{text}: checked when the program reaches it, not while type checking")
+            effects = expression_effects(actual.node, self.symbols)
+            return StmtIR("example_check", expr=ExprIR("example", BOOL, tuple(operands)), target=p[3],
+                          effects=tuple(sorted(effects)))
         if kind == "print":
             value = self.infer(p[0])
             return StmtIR("print", expr=value.node,
@@ -610,13 +973,86 @@ class Compiler:
                           effects=tuple(sorted(expression_effects(value.node, self.symbols))))
         raise BError("E_INTERNAL", f"Unrecognized statement {kind}")
 
+    def _check_examples(self, program: ProgramIR, parsed) -> None:
+        """Every current example is a checked fact about the final program."""
+        from .learn import resolve_examples
+        from .precedent import call_text, literal
+        from .revision_witness import evaluate_scalar
+        rows = {}
+        for statement in parsed:
+            if statement.kind == "example" and "." not in statement.parts[0]:
+                rows.setdefault(statement.parts[0], []).append(statement)
+        for name, statements in rows.items():
+            for arguments, expected in resolve_examples(name, statements):
+                known, actual = evaluate_scalar(program, name, arguments, adopted_examples=True)
+                if not known:
+                    self.warn("W_EXAMPLE_UNCHECKED", f"Cannot evaluate example {call_text(name, arguments)} "
+                              "before running")
+                elif type(actual) is not type(expected) or actual != expected:
+                    raise BError("E_EXAMPLE", f"example {call_text(name, arguments)} == {literal(expected)}, "
+                                 f"but the program gives {literal(actual)}")
+        for learned in self.learned.values():
+            if not learned.determined:
+                self.warn("W_EXAMPLES_OPEN", f"{learned.name} is not settled by its examples: "
+                          f"{learned.question_text()} Run 'b ask' to answer.")
+
     def compile(self, source: str, *, conditional_guarantees: bool = True) -> Compiled:
         try:
             parsed = parse(source)
         except LarkError as exc:
             raise BError("E_SYNTAX", str(exc)) from exc
+        from .types import OPAQUE, RECORDS, record_type
+        RECORDS.clear()
+        OPAQUE.clear()
+        self.methods = {}
+        self.catching = {}
+        for statement in parsed:
+            if statement.kind == "foreign_type":
+                name, path = statement.parts
+                if name in OPAQUE or name in KNOWN or name in ("List", "Dict", "Option", "Record", "Opaque"):
+                    raise BError("E_TYPE", f"Type {name} is already defined")
+                OPAQUE[name] = Type("Opaque", (Type(name),))
+        declared = {}
+        for statement in parsed:
+            if statement.kind == "record":
+                name, fields = statement.parts
+                if name in declared or name in KNOWN or name in ("List", "Dict", "Option", "Record"):
+                    raise BError("E_TYPE", f"Type {name} is already defined")
+                declared[name] = fields
+
+        def resolve(name, visiting=()):
+            # Records are structural, so a record cannot contain itself.
+            if name in RECORDS:
+                return
+            if name in visiting:
+                raise BError("E_TYPE", f"Record {name} contains itself: " + " -> ".join((*visiting, name)))
+
+            def names(node):
+                yield node[0]
+                for child in node[1]:
+                    yield from names(child)
+
+            for _, field_type in declared[name]:
+                for used in names(field_type):
+                    if used in declared:
+                        resolve(used, (*visiting, name))
+            # A quantity field is checked by the units pass and holds a Float at runtime.
+            from .units import type_dimension
+            RECORDS[name] = record_type([(n, from_syntax(("Float", ()) if type_dimension(t) is not None else t))
+                                         for n, t in declared[name]])
+
+        for name in declared:
+            resolve(name)
+        from .learn import expand
+        parsed, self.learned = expand(parsed)
+        from .library_examples import to_checks
+        from .units import BORROWED, check as check_units
+        parsed = check_units(to_checks(parsed))
+        for unit, provenance in sorted(BORROWED.items()):
+            self.assumptions.append(f"unit {unit} from {provenance}: definition borrowed, not checked by B")
         self.additional_cases = additional_cases(parsed)
-        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also"))
+        statements = tuple(self.statement(s) for s in parsed if s.kind not in ("next", "also", "example", "domain", "group", "know", "record",
+                                                                 "foreign_type"))
         detected = tuple(sorted(set().union(*(statement_effects(s) for s in statements))))
         if self.permitted_effects is not None:
             denied = set(detected) - set(self.permitted_effects)
@@ -625,9 +1061,15 @@ class Compiler:
         program = ProgramIR(statements, self.registry.export(self.used_foreign),
                             tuple(self.assumptions), permitted_effects=self.permitted_effects,
                             detected_effects=detected)
+        if any(s.kind == "example" for s in parsed):
+            self._check_examples(program, parsed)
         if self.additional_cases:
             from .preservation import validate_preservation
             validate_preservation(program, [s for s in parsed if s.kind == "also"])
+            from .precedent import validate_likeness
+            for code, message in validate_likeness(program, self.original_rules,
+                                                   [s for s in parsed if s.kind == "also"]):
+                self.warn(code, message)
         analysis = analyze(program, conditional_guarantees=conditional_guarantees)
         upgraded = {}
         for item in analysis.obligations:

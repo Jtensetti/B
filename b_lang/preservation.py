@@ -57,7 +57,7 @@ def validate_preservation(program: ProgramIR, declarations: Iterable[Stmt]) -> N
     edges = {}
     checked = set()
     for declaration in declarations:
-        target, _, protected = declaration.parts
+        target, _, protected = declaration.parts[:3]
         if len(set(protected)) != len(protected):
             raise BError("E_KEEPING", f"Duplicate function in keeping clause for {target}")
         for observable in protected:

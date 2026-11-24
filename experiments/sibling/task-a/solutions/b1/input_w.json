@@ -1,0 +1,1 @@
+{"depot": {"lat": 59.33, "lon": 18.06}, "catalog": {"Lamp": 1.1}, "orders": [{"id": "w1", "product": "Lamp", "country": "SE", "lat": 57.7, "lon": 11.97, "date": "2026-11-25", "business": false, "express": true}, {"id": "w2", "product": "Lamp", "country": "SE", "lat": 57.7, "lon": 11.97, "date": "2026-11-25", "business": false}], "rates": {"EUR": 11.0}}

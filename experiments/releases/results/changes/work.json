@@ -1,0 +1,122 @@
+{
+ "b1": {
+  "1": {
+   "tool_calls": 5,
+   "output_tokens": 7439,
+   "input_tokens": 700986,
+   "assistant_turns": 9,
+   "seconds": 18
+  },
+  "2": {
+   "tool_calls": 3,
+   "output_tokens": 5389,
+   "input_tokens": 584573,
+   "assistant_turns": 7,
+   "seconds": 14
+  },
+  "3": {
+   "tool_calls": 2,
+   "output_tokens": 3444,
+   "input_tokens": 346112,
+   "assistant_turns": 4,
+   "seconds": 10
+  },
+  "4": {
+   "tool_calls": 2,
+   "output_tokens": 2334,
+   "input_tokens": 354528,
+   "assistant_turns": 4,
+   "seconds": 9
+  }
+ },
+ "b2": {
+  "1": {
+   "tool_calls": 5,
+   "output_tokens": 6937,
+   "input_tokens": 699207,
+   "assistant_turns": 9,
+   "seconds": 13
+  },
+  "2": {
+   "tool_calls": 6,
+   "output_tokens": 11940,
+   "input_tokens": 1081436,
+   "assistant_turns": 13,
+   "seconds": 23
+  },
+  "3": {
+   "tool_calls": 7,
+   "output_tokens": 10399,
+   "input_tokens": 968233,
+   "assistant_turns": 11,
+   "seconds": 21
+  },
+  "4": {
+   "tool_calls": 4,
+   "output_tokens": 3088,
+   "input_tokens": 551646,
+   "assistant_turns": 6,
+   "seconds": 12
+  }
+ },
+ "py1": {
+  "1": {
+   "tool_calls": 4,
+   "output_tokens": 4142,
+   "input_tokens": 529991,
+   "assistant_turns": 7,
+   "seconds": 10
+  },
+  "2": {
+   "tool_calls": 3,
+   "output_tokens": 4146,
+   "input_tokens": 397457,
+   "assistant_turns": 5,
+   "seconds": 9
+  },
+  "3": {
+   "tool_calls": 4,
+   "output_tokens": 6096,
+   "input_tokens": 489580,
+   "assistant_turns": 6,
+   "seconds": 8
+  },
+  "4": {
+   "tool_calls": 4,
+   "output_tokens": 4666,
+   "input_tokens": 502400,
+   "assistant_turns": 6,
+   "seconds": 8
+  }
+ },
+ "py2": {
+  "1": {
+   "tool_calls": 5,
+   "output_tokens": 3626,
+   "input_tokens": 608884,
+   "assistant_turns": 8,
+   "seconds": 13
+  },
+  "2": {
+   "tool_calls": 3,
+   "output_tokens": 3750,
+   "input_tokens": 397264,
+   "assistant_turns": 5,
+   "seconds": 8
+  },
+  "3": {
+   "tool_calls": 5,
+   "output_tokens": 6046,
+   "input_tokens": 653466,
+   "assistant_turns": 8,
+   "seconds": 10
+  },
+  "4": {
+   "tool_calls": 4,
+   "output_tokens": 4622,
+   "input_tokens": 502470,
+   "assistant_turns": 6,
+   "seconds": 7
+  }
+ }
+}

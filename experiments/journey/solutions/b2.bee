@@ -1,0 +1,33 @@
+use py:sys as sys
+use py:json as json
+use py:re as re
+use js:semver as versions
+use js:"fastest-levenshtein" as words
+foreign words.closest(Text, List[Text]) -> Text
+foreign versions.clean(Text) -> Option[Text]
+foreign words.distance(Text, Text) -> Int
+
+record Input { requires: Dict[Text, Text], available: Dict[Text, List[Text]], pins: Option[Dict[Text, Text]] }
+
+let raw: Text = sys.stdin.readline()
+let data: Input = json.loads(raw)
+
+fn cl(v: Text) -> Text = versions.clean(v) ?? v
+fn cleaned(xs: List[Text]) -> List[Text] = keys({cl(v): true for v in xs where versions.clean(v) != none})
+let avail: Dict[Text, List[Text]] = {p: cleaned(xs) for p, xs in data.available}
+let rawpins: Dict[Text, Text] = data.pins ?? {}
+let pins: Dict[Text, Text] = {p: cl(v) for p, v in rawpins}
+fn stable(xs: List[Text]) -> List[Text] = [v for v in xs where re.search("^[^+]*-", v) == none]
+fn anyof(xs: List[Text]) -> Text = join([v for v in xs where versions.valid(v) != none], " || ")
+fn top(p: Text) -> Option[Text] = versions.maxSatisfying(stable(avail[p] ?? []), "*")
+fn newer(p: Text, v: Text) -> Bool = if versions.valid(v) == none then false else (if top(p) == none then false else versions.compare(top(p) ?? "", v) > 0)
+fn pick(p: Text, r: Text) -> Option[Text] = if p in pins then (if (pins[p] ?? "") in (avail[p] ?? []) then pins[p] else none) else (if r == "next" then versions.maxSatisfying(avail[p] ?? [], anyof(avail[p] ?? [])) else (if r == "latest" then versions.maxSatisfying(stable(avail[p] ?? []), "*") else versions.maxSatisfying(stable(avail[p] ?? []), r)))
+let picks: Dict[Text, Option[Text]] = {p: pick(p, r) for p, r in data.requires}
+let resolved: Dict[Text, Text] = {p: v ?? "" for p, v in picks where v != none}
+let unresolved: List[Text] = sorted([p for p, v in picks where v == none])
+let names: List[Text] = sorted(keys(data.available))
+let missing: List[Text] = [p for p in unresolved where not (p in data.available)]
+let best: Dict[Text, Text] = {p: words.closest(p, names) for p in missing where len(names) > 0}
+let suggestions: Dict[Text, Text] = {p: c for p, c in best where words.distance(p, c) <= 2}
+let outdated: Dict[Text, Text] = {p: top(p) ?? "" for p, v in resolved where newer(p, v)}
+print json.dumps({resolved = resolved, unresolved = unresolved, suggestions = suggestions, outdated = outdated, summary = {resolved = len(resolved), unresolved = len(unresolved), suggested = len(suggestions)}})

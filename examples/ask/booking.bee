@@ -1,0 +1,10 @@
+fn free_entry(child: Bool, day: Text) -> Bool pure = child and day == "sat"
+fn ticket(child: Bool, day: Text) -> Int pure = if free_entry(child, day) then 0 else 100
+fn fee(child: Bool, day: Text) -> Int pure = if child and day == "sat" then 0 else 10
+fn total(child: Bool, day: Text) -> Int pure = ticket(child, day) + fee(child, day)
+fn seats(child: Bool, day: Text, available: Int) -> Int pure = available - 1
+fn recipient(gift: Bool) -> Text pure = if gift then "buyer" else "guest"
+
+print total(true, "sun")
+print seats(true, "sun", 8)
+print recipient(true)

@@ -1,0 +1,55 @@
+use py:json as json
+use go:"./libs/leadtime" as lt
+use rust:"./libs/stats" as stats
+use cs:"./libs/Packaging" as pk
+use py:libs.weeks.dates as dates
+use js:"fastest-levenshtein" as words
+
+record Item { sku: Text, supplier: Text, stock: Int, pack: Int, price: Float }
+record Sale { sku: Text, date: Text, qty: Int }
+record Input { today: Text, items: List[Item], sales: List[Sale] }
+record Order { qty: Int, arrive: Text }
+record Output { orders: Dict[Text, Order], unknown: List[Text] }
+record Plan { sku: Text, known: Bool, qty: Int, arrive: Text }
+
+foreign lt.Days(Text) -> Option[Int] on error
+foreign json.loads(Text) -> Input
+
+let data = json.loads(read_line())
+let days = [dates.add_days(data.today, i - 28) for i in range(28)]
+
+fn series(sku: Text) -> List[Float] =
+    [0.0 + sum([s.qty for s in data.sales where s.sku == sku and s.date == d]) for d in days]
+
+let week = dates.iso_week(data.today)
+let season = if week >= 48 and week <= 52 then 1.25 else 1.0
+
+fn need(it: Item, lead: Int) -> Float =
+    let s = series(it.sku)
+    stats.trailing_mean(s, 7) * season * (lead + 7) + stats.percentile(s, 90.0) - it.stock
+
+fn order(it: Item, lead: Int) -> Plan =
+    let n = need(it, lead)
+    let q = if n > 0.0 then pk.Packs.RoundUp(ceil(n), it.pack) else 0
+    if q * it.price < 500.0
+    then Plan { sku = it.sku, known = true, qty = 0, arrive = "" }
+    else Plan { sku = it.sku, known = true, qty = q, arrive = dates.to_weekday(dates.add_days(data.today, lead)) }
+
+let suppliers = sorted(lt.Suppliers())
+
+fn supplier_name(s: Text) -> Option[Text] =
+    let m = min([words.distance(s, c) for c in suppliers]) ?? 99
+    let best = [c for c in suppliers where words.distance(s, c) == m]
+    if m <= 2 then best[0] else none
+
+fn plan(it: Item) -> Plan =
+    let name = supplier_name(it.supplier)
+    let lead = if name == none then none else lt.Days(name ?? "")
+    if lead == none
+    then Plan { sku = it.sku, known = false, qty = 0, arrive = "" }
+    else order(it, lead ?? 0)
+
+let plans = [plan(it) for it in data.items]
+let orders = {p.sku: Order { qty = p.qty, arrive = p.arrive } for p in plans where p.qty > 0}
+let unknown = sorted([p.sku for p in plans where not p.known])
+print to_json(Output { orders = orders, unknown = unknown })

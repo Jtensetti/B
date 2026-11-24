@@ -1,5 +1,33 @@
 # B experiments — reproducible evidence
 
+## B 0.29 the long run, Python calibration (pre-registered)
+
+[A build from an empty file and eight interacting changes](../experiments/longrun/PREREGISTRATION.md) to a subscription-invoicing program. Three typed-Python Haiku solvers delivered 0 wrong units in 1 908. The B stage was not run.
+
+## B 0.29 cross-cutting changes, Python calibration (pre-registered)
+
+[Three changes that reach several modules](../experiments/crosscut/PREREGISTRATION.md) of an inherited invoicing program. Three typed-Python Haiku solvers. Every amount was right. The only graded errors came from how one solver read a sentence. The B stage was not run.
+
+## B 0.28 a silent library upgrade (pre-registered)
+
+[A Python library starts returning VAT-inclusive prices](../experiments/upgrade/PREREGISTRATION.md) between two changes. Three Haiku solvers per language. No wrong quotes in either language: every solver noticed the upgrade during the next change. The hypothesis that B's library examples reduce wrong results failed.
+
+## B 0.28 ambiguous changes (pre-registered)
+
+[Three ambiguous owner changes](../experiments/ambiguity/PREREGISTRATION.md), three Haiku solvers per language. No wrong totals and no questions in either language. The hypothesis that `also` and `b ask` reduce wrong totals failed its kill criterion.
+
+## B 0.24 units at a language border
+
+[Seven unit mistakes](../experiments/border-units/README.md) in a program that uses two Python libraries in imperial units. B rejects six before running. Typed Python runs all seven with wrong results. The experiment also found a folding bug in B 0.22, which is fixed.
+
+## B 0.20 decisions as source
+
+[Hidden policies](../experiments/decisions/README.md) compare how many examples B needs when it chooses its own questions with the same number of random examples. Two requirement changes count the owner's lines and answers.
+
+## B 0.19 precedent questions
+
+[Seven booking programs](../experiments/precedent-questions/README.md) receive the same request to extend a rule. The study records when `b ask` settles the meaning from an existing case, which question it asks otherwise and whether each answer runs.
+
 ## B 0.18 executable changes
 
 [Bookings and sensor readings](../experiments/executable-changes/README.md) exercise the same declaration as running code and as a constraint on a revision. The comparison measures mutations caught, state across two events, text tokens and local execution time. [A two-edit author trial](../experiments/executable-changes/first-use/README.md) records first submissions in B and Python.

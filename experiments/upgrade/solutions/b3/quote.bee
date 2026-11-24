@@ -1,0 +1,33 @@
+use py:tariff as tariff
+use py:json as json
+use py:zone_check as zone_check
+use js:"fastest-levenshtein" as words
+
+record Order { id: Text, product: Text, country: Text, express: Option[Bool], qty: Option[Int] }
+record Input { orders: List[Order], catalog: Dict[Text, Float] }
+
+foreign json.loads(Text) -> Input
+
+let data = json.loads(read_line())
+let names = sorted(keys(data.catalog))
+
+fn find(name: Text) -> Option[Text] =
+    if name in data.catalog then name
+    else if len(names) == 0 then none
+    else if words.distance(name, words.closest(name, names)) <= 2 then words.closest(name, names)
+    else none
+
+fn quote_sek(zone: Int, kg: Float, express: Bool) -> Float =
+    let base = tariff.base_price(zone, kg) / 1.25
+    let with_express = if express then base + 50.0 else base
+    let with_fuel = if zone == 4 then with_express + 30.0 else with_express
+    let total = with_fuel * 1.25
+    round(if kg > 20.0 then total * 0.9 else total, 2)
+
+fn ok(o: Order) -> Bool =
+    find(o.product) != none and zone_check.served(o.country)
+
+let found = {o.id: find(o.product) ?? "" for o in data.orders where ok(o)}
+print to_json({
+    quotes = {o.id: quote_sek(tariff.zone(o.country), ((o.qty ?? 1) * 1.0) * (data.catalog[found[o.id] ?? ""] ?? 0.0), o.express ?? false) for o in data.orders where o.id in found},
+    unknown = sorted([o.id for o in data.orders where not (o.id in found)])})

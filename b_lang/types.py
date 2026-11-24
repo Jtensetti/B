@@ -42,8 +42,35 @@ def option(inner: Type) -> Type:
     return Type("Option", (inner,))
 
 
+# Named records declared by the program being compiled: name -> structural Type.
+# A record is structural, as in TypeScript: Record[field[T], ...] with fields sorted.
+RECORDS: dict[str, Type] = {}
+# Named types for objects of another language, such as Python's datetime.date.
+# B never looks inside them; it only calls their declared methods.
+OPAQUE: dict[str, Type] = {}
+
+
+def record_type(fields) -> Type:
+    names = [n for n, _ in fields]
+    if len(set(names)) != len(names):
+        raise BError("E_TYPE", "A record names each field once")
+    return Type("Record", tuple(Type(n, (t,)) for n, t in sorted(fields, key=lambda f: f[0])))
+
+
+def record_fields(typ: Type) -> dict[str, Type]:
+    return {field.name: field.args[0] for field in typ.args}
+
+
 def from_syntax(node) -> Type:
     name, raw_args = node
+    if name == "Record":
+        return record_type([(field, from_syntax(inner[0])) for field, inner in raw_args])
+    if name in RECORDS and not raw_args:
+        return RECORDS[name]
+    if name in OPAQUE and not raw_args:
+        return OPAQUE[name]
+    if name == "Opaque" and len(raw_args) == 1 and not raw_args[0][1]:
+        return Type("Opaque", (Type(raw_args[0][0]),))
     args = tuple(from_syntax(n) for n in raw_args)
     if name in KNOWN:
         if args:
@@ -65,6 +92,11 @@ def assignable(actual: Type, expected: Type) -> bool:
         return True
     if actual == expected:
         return True
+    if actual.name == expected.name == "Record":
+        have, want = record_fields(actual), record_fields(expected)
+        # A missing optional field reads as none, so a record may leave it out.
+        return set(have) <= set(want) and all(
+            assignable(have[n], t) if n in have else t.name == "Option" for n, t in want.items())
     if actual == INT and expected == FLOAT:
         return True
     if expected.name == "Option":
@@ -172,14 +204,14 @@ def supports_ordering(typ: Type) -> bool:
 def parse_descriptor(text: str) -> Type:
     """Parse trusted compiler-generated type descriptors without eval()."""
     import re
-    parts = re.findall(r"[A-Za-z][A-Za-z0-9_]*|\[|\]|,", text)
+    parts = re.findall(r"[^\W\d]\w*|\[|\]|,", text)
     if "".join(parts) != text.replace(" ", ""):
         raise BError("E_TYPE", "Invalid type descriptor")
     pos = 0
 
     def parse():
         nonlocal pos
-        if pos >= len(parts) or not parts[pos][0].isalpha():
+        if pos >= len(parts) or not (parts[pos][0].isalpha() or parts[pos][0] == "_"):
             raise BError("E_TYPE", "Invalid type descriptor")
         name = parts[pos]
         pos += 1

@@ -1,0 +1,18 @@
+domain dag: "måndag", "tisdag", "onsdag", "torsdag", "fredag", "lördag", "söndag"
+group helg of dag: "lördag", "söndag"
+group vardag of dag: "måndag", "tisdag", "onsdag", "torsdag", "fredag"
+domain månad: "januari", "februari", "mars", "april", "maj", "juni", "juli", "augusti", "september", "oktober", "november", "december"
+group sommar of månad: "juni", "juli", "augusti"
+group vinter of månad: "december", "januari", "februari"
+
+fn nästa_dag(dag: Text) -> Text pure = if dag == "måndag" then "tisdag" else if dag == "tisdag" then "onsdag" else if dag == "onsdag" then "torsdag" else if dag == "torsdag" then "fredag" else if dag == "fredag" then "lördag" else if dag == "lördag" then "söndag" else "måndag"
+fn föregående_dag(dag: Text) -> Text pure = if dag == "måndag" then "söndag" else if dag == "tisdag" then "måndag" else if dag == "onsdag" then "tisdag" else if dag == "torsdag" then "onsdag" else if dag == "fredag" then "torsdag" else if dag == "lördag" then "fredag" else "lördag"
+fn skottår(år: Int) -> Bool pure = år % 4 == 0 and (år % 100 != 0 or år % 400 == 0)
+fn dagar_i_månad(månad: Text, år: Int) -> Int pure = if månad == "februari" then (if skottår(år) then 29 else 28) else if månad == "april" or månad == "juni" or månad == "september" or månad == "november" then 30 else 31
+example nästa_dag("söndag") == "måndag"
+example föregående_dag("måndag") == "söndag"
+example skottår(2024) == true
+example skottår(1900) == false
+example skottår(2000) == true
+example dagar_i_månad("februari", 2024) == 29
+example dagar_i_månad("november", 2025) == 30

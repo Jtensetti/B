@@ -75,6 +75,18 @@ def _has_dynamic_values(typ):
     return typ == ANY or any(_has_dynamic_values(item) for item in typ.args)
 
 
+def _same_value(old, new) -> bool:
+    """Equal BIR, except that a name narrowed from Option[T] to T by a none test is the same value."""
+    if old == new:
+        return True
+    if (old.op == new.op == "name" and old.data == new.data and old.typ.name == "Option"
+            and old.typ.args[0] == new.typ):
+        return True
+    return (old.op == new.op and old.data == new.data and old.typ == new.typ
+            and len(old.operands) == len(new.operands)
+            and all(_same_value(a, b) for a, b in zip(old.operands, new.operands)))
+
+
 def validate_rewrite(current: ProgramIR, revised: ProgramIR, targets, additional_cases=()):
     """Check the guard's effect boundary and preserve the previous fallback conversions."""
     before = {fn.name: fn for fn in current.statements if fn.op == "fn"}
@@ -105,7 +117,7 @@ def validate_rewrite(current: ProgramIR, revised: ProgramIR, targets, additional
         fallback_guards, fallback_value = _guard_chain(fallback)
         old_types = [typ for typ, _ in groupby(old_guards)]
         new_types = [typ for typ, _ in groupby(new_guards + fallback_guards)]
-        if old_types != new_types or old_value != fallback_value:
+        if old_types != new_types or not _same_value(old_value, fallback_value):
             raise BError("E_HANDOFF", f"next would change the existing fallback's conversion in {name}; "
                          "use a replacement compatible with its current return path")
 

@@ -1,0 +1,1 @@
+Customers outside Sweden now pay in euros. The input has "rates": {"EUR": <SEK per EUR>}. For an order to any country other than SE, price is the SEK price including VAT divided by the rate, rounded to 2 decimals. Every quote gets a "currency" field: "SEK" or "EUR".

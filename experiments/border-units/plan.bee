@@ -1,0 +1,14 @@
+use py:b_examples.aviation as aviation
+use py:b_examples.weather as weather
+foreign aviation.takeoff_distance(Speed[knot], Mass[lb]) -> Length[ft]
+foreign aviation.fuel_burn(Duration[h]) -> Volume[gal]
+foreign weather.density_altitude(Length[ft], Temperature[degC]) -> Length[ft]
+
+let runway = 900 m
+let roll = aviation.takeoff_distance(220 km per h, 1100 kg)
+let altitude = weather.density_altitude(350 m, 28 degC)
+let fuel = aviation.fuel_burn(95 min) + 12 l
+
+print (runway - roll) as m
+print altitude as m
+print fuel as l

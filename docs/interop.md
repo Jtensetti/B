@@ -27,6 +27,45 @@ print stats.median([1.0, 3.0, 7.0])
 
 Use when automatic discovery cannot represent the signature. Explicit declarations describe the B boundary but are **trusted claims made by the author**, checked only for type compatibility at runtime. A declaration cannot override a known built-in or auto-discovered signature.
 
+## Go, Rust and C# (B 0.30)
+
+```b
+use go:"strings" as s
+use go:"./geo" as geo
+use rust:"./pricing" as p
+foreign geo.Zone(Text) -> Option[Int] on error
+print s.Repeat("ab", 3)
+print p.discounted(200.0, 15)
+```
+
+B reads a Go package with Go's own type checker (`go/types`), and a Rust crate's `src/lib.rs` with Rust's own parser (`syn`). Every exported, non-generic function whose types B can represent becomes a typed B function. The others are left out, and calling one is a compile error. B never invents a signature.
+
+| Go | Rust | B |
+| --- | --- | --- |
+| `int`, `int64`, other integers | `i64`, `usize`, other integers | `Int` |
+| `float64`, `float32` | `f64`, `f32` | `Float` |
+| `string` | `String`, `&str` | `Text` |
+| `bool` | `bool` | `Bool` |
+| `[]T` | `Vec<T>`, `&[T]` | `List[T]` |
+| `map[string]T` | `HashMap<String, T>` | `Dict[Text, T]` |
+| | `Option<T>` | `Option[T]` |
+| `(T, error)` | `Result<T, E>` | `T`, which stops the program on an error, or `Option[T]` with `on error` |
+
+- **Go:** standard library packages by import path, and local modules (a directory with `go.mod`) by a path relative to the program. Hosts are built offline (`GOPROXY=off`).
+- **Rust:** local crates only, written as a path. The first build fetches `serde_json` from crates.io. Methods, structs, traits and modules other than `lib.rs` are not read yet.
+- **C#:** `use cs:"./Tax" as tax` builds a local project (a directory with one `.csproj`) and reads the public static methods of its public static classes by .NET reflection, called as `tax.Vat.Rate("SE")`. Overloaded, generic and `out`/`ref` methods are left out. `int`/`long` map to `Int`, `double`/`decimal` to `Float`, `T[]` and `List<T>` to `List[T]`, `Dictionary<string, T>` to `Dict[Text, T]` and `T?` to `Option[T]`. An exception stops the program, or gives none with `on error`. The older `net:` binding to `System.Math` and `Regex` stays as it was.
+- **The border:** calls cross a JSON-lines process boundary to a host that B generates for the package. B builds it once with the relative's own toolchain and caches it by content hash. Results are checked against the B type at runtime, and units at the border work as for Python (`foreign geo.HaversineKm(Float, Float, Float, Float) -> Length[km]`).
+
+## A call that can fail
+
+```b
+use py:tariff as tariff
+foreign tariff.zone(Text) -> Option[Int] on KeyError
+let zones = [tariff.zone(c) ?? 0 for c in countries]
+```
+
+B has no `try`. A foreign function that raises an exception for some inputs is declared with the exceptions it may raise and an `Option` result, and the call gives `none` when one of them is raised. Exceptions are matched by class name along their hierarchy, so `on LookupError` also catches `KeyError`, and a library's own exception class needs no import. Any other exception still stops the program. The declaration restates the signature B read from the library: the parameters and the type inside the `Option` must match it. It works for Python only. npm and .NET errors are not mapped yet.
+
 ## .NET reflection and a permitted transport
 
 The .NET 10 host has a narrow allowlist of static functions. `B.NetHost --describe` enumerates **real CLR metadata via reflection** and returns their transport-compatible B signatures. The generated [`net-signatures.json`](../b_lang/net-signatures.json) is tracked in Git and used for static checks without starting .NET. CI verifies that its contents match current reflection output.
@@ -39,7 +78,7 @@ The .NET 10 host has a narrow allowlist of static functions. `B.NetHost --descri
 
 ## Node.js and npm (B 0.12)
 
-`use js:"node:path/posix" as path` gives B six static signatures for POSIX path operations. `use js:semver as versions` provides signatures for `satisfies`, `compare`, `valid` and `maxSatisfying`. The latter two can return `Option[Text]`. At execution B checks that the installed semver package is version 7. Inspect the catalog with `b inspect js:semver --json`. The catalog is available during compilation without starting Node or loading npm code.
+`use js:"node:path/posix" as path` gives B six static signatures for POSIX path operations. `use js:semver as versions` provides typed signatures for 21 functions: `satisfies`, `compare`, `valid`, `maxSatisfying`, `minSatisfying`, `clean`, `validRange`, `prerelease`, `gt`, `gte`, `lt`, `lte`, `eq`, `major`, `minor`, `patch`, `sort`, `rsort`, `diff`, `inc` and `intersects`. `use js:"fastest-levenshtein" as words` provides `distance` and `closest`. At execution B checks that the installed semver package is version 7. Inspect the catalog with `b inspect js:semver --json`. The catalog is available during compilation without starting Node or loading npm code.
 
 For a different installed package, quote scoped or hyphenated names and declare the synchronous export to be called:
 
@@ -84,3 +123,8 @@ The discovery reader now supports a **small explicit subset** of `@overload` set
 ## Checked source adoption (B 0.7)
 
 Separate from `use`, the `adopt py:MODULE.function as local` operation may statically translate a tiny single-expression Python function into an ordinary native B function. No Python module import is emitted. A source SHA-256 appears in the BIR function origin; unsupported constructs are rejected. The tool does not claim that arbitrary Python code is pure or behaviorally verified. See [source adoption and coverage](source-adoption.md).
+
+## Objects from another language
+
+`foreign type Date = dt.date` names a Python class as an opaque B type. `foreign Date.isocalendar() -> List[Int]` declares a method. B type checks every call to a declared method and guards its result at runtime. It never reads the object's attributes directly. Each method appears in the compiler's assumptions, because its signature is declared, not read. A Python tuple returned at the border becomes a `List`.
+

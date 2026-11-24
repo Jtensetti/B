@@ -2,6 +2,80 @@
 
 B is an independent language with a parser, type checker and Python-AST lowering, plus explicit foreign adapters. The target is fewer model-generated decisions and greater verified capability per token/cost, while reusing existing ecosystems. No AI programming benchmark has yet confirmed this advantage.
 
+## Long-term goal
+
+**A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
+
+## After B 0.29: the long-run calibration
+
+The [long-run trial](../experiments/longrun/PREREGISTRATION.md) followed the goal's own wording: a build from an empty file, then eight changes with interacting rules (semver pricing, coupons by calendar month, a trial period, plan changes within a month, reverse-charge VAT, annual plans, a minimum invoice and whole-krona rounding). Three typed-Python Haiku solvers delivered 0 wrong units in 27 graded steps, 1 908 units. The B stage was not run. Eight trials have found no task on which typed Python makes substantive errors, so the goal's error criterion is unreachable by measurement with today's models.
+
+## After B 0.29: the cross-cutting calibration
+
+The [cross-cutting trial](../experiments/crosscut/PREREGISTRATION.md) first ran three typed-Python solvers on an inherited invoicing program of 169 lines in seven modules. They made three changes that each reach several modules: Norwegian invoices in NOK while the report stays in SEK, Norwegian VAT, and prices that include VAT. Every amount was right in all nine steps. The only graded errors came from one solver's reading of a sentence in change 2. The B stage was not run, because there was nothing for B's dimension types to prevent. Seven trials with 31 runs show that today's models make no substantive errors on tasks of this size in either language.
+
+## B 0.31: friction from the first sibling trial
+
+[Sibling task A](../experiments/sibling/task-a/PREREGISTRATION.md) gave B 0 errors but the most output tokens of six languages, 2.8 times TypeScript. The B solvers' transcripts show where the extra turns went, and this release removes those causes. A record can be built by name, `Quote { price = 1.0 }`. There are new core words `upper`, `lower` and `trim`. A condition such as `if r > 0.0 then x / r` now proves the divisor nonzero, for fields too. `x ?? y` on a value that is never none keeps the value. A `foreign` line that restates exactly what B read is accepted.
+
+## B 0.30: Go, Rust and C#
+
+`use go:`, `use rust:` and `use cs:` read signatures with each relative's own tools: go/types, syn and .NET reflection. Calls cross a JSON-lines border to generated, cached hosts, and `on error` turns an error value into none.
+
+## B 0.29
+
+A foreign call that can fail is declared as one: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` when the library raises `KeyError`, matched by class name along the exception's hierarchy. This removes the gap that made every B solver in the upgrade trial write a Python wrapper. Record fields can now hold quantities, `Money[SEK]` or `Mass`, so an order line can carry its currency. A quantity field keeps one dimension under its name in every record. `sum`, `min` and `max` over a comprehension keep the dimension. The declaration only restates the signature B read, with an `Option` result. Python only. npm and .NET errors are not mapped yet.
+
+## After B 0.28: the upgrade trial
+
+The [pre-registered upgrade trial](../experiments/upgrade/PREREGISTRATION.md) replaced a Python library between two changes with a version whose `base_price` includes VAT. Wrong quotes were 0 for B and 0 for Python. Every solver noticed the upgrade while making the next change, and none had written a library check. H2 fails. B used 1.03 times Python's output tokens. Most of B's extra cost came from one gap: B cannot handle an exception from a foreign function, so every B solver wrote a Python wrapper for `tariff.zone`. Next: close that gap in the grammar, so that a foreign call that can fail becomes an `Option`.
+
+## After B 0.28: the ambiguity trial
+
+The [pre-registered ambiguity trial](../experiments/ambiguity/PREREGISTRATION.md) gave six Haiku solvers three changes with two reasonable readings each. B solvers had `also` and `b ask`. Wrong totals were 0 for B and 0 for Python, no solver asked a question, and B used 0.89 times Python's output tokens. H1 fails, and as the pre-registration requires, the roadmap drops the ambition that B reduces errors in changes. The ambiguity never reached the code: every first build put the free-child rule in one condition that covered both the ticket and the fee. `also` and `b ask` stay as tools, but they no longer drive the language's growth. Next: measure errors only where reading the code cannot prevent them. Library behavior that changes underneath a program is milestone 2, and units at a language border are milestone 1.
+
+## After B 0.27: the release trial
+
+The [third trial](../experiments/releases/README.md) mixed npm semver with Python calendar arithmetic and used the new guide for models. Errors were again zero in both languages. The B build became cheaper than Python's, at 8,000–10,000 output tokens. The changes still cost B about 1.65 times as much, mostly because B cannot type a method call on a Python object, so the solvers rewrote ISO weeks by hand. Across three trials, the goal is not met. Next: typed methods on foreign objects, empty literals typed by context, then a trial of changes alone from a shared starting program.
+
+## After B 0.26: the shipping trial
+
+A [second trial](../experiments/shipping/README.md) removed B's borrowing advantage: the library was Python, and the solvers were Haiku. Correctness was equal again, with no errors in either language. B cost about 3.6 times the output tokens. Neither B solver used units or examples, although the task was a unit-conversion problem. The long-term goal is not met: fewer errors has not been shown, and less work only holds when borrowing dominates. Next: make B's distinctive checks the path of least resistance. A missing unit at a foreign border could be a compile-time question rather than an optional annotation. The cost of learning B could also be measured and reduced, for example with a short guide written for models, before running a third trial.
+
+## B 0.26
+
+The [journey trial](../experiments/journey/README.md) ran four Sonnet solvers through a build and seven changes. Correctness was equal: every solver passed every hidden test. B's total output tokens were about 0.55 times Python's, entirely because B borrowed npm semver at build time. Each change cost B about 1.8 times as much. This release removes the friction the B programs showed: local bindings in function bodies, `Option` narrowing after a none test, a 21-function semver catalog and a typed catalog for fastest-levenshtein. Next: a second trial on a new task with fresh solvers, to see whether the cost of a change drops and whether errors separate the languages.
+
+## B 0.25
+
+Milestone 3, the building blocks a real program needs. Collection transforms (`[x for x in xs where c]`, `{k: v for k, v in d}`), structural records that JSON enters through a border check, and the typed core words `len`, `sorted`, `keys`, `values`, `text` and `join`. Until now B could not map over a list. Next: the journey trial (milestone 5).
+
+## B 0.24
+
+Milestone 2 of the [vision](vision.md) has started. An `example` on an imported function is type checked, units included, and runs where it stands. `b check --library-examples` reports each fact separately after an upgrade. A simulated upgrade of a Python VAT module is caught. Not done: .NET and npm runs (no SDK or packages here), properties over many inputs, and `keeping` on library functions. The [unit-mistake study](../experiments/border-units/README.md) tests milestone 1's kill criterion on one program. Unit declarations cost no extra lines and catch six of seven mistakes, measured against typed Python without a unit library. Next: milestone 3, records and data, which the journey trial needs.
+
+## B 0.23
+
+Milestone 1 of the [vision](vision.md), units across the border, is partly done. `foreign f(Speed[knot]) -> Length[ft]` restates a Python or registered .NET signature with units. B converts at each call and rejects a wrong dimension at compile time. Missing unit names are borrowed from pint, with provenance in the assumptions. Not verified: real pint (the install was not permitted, so a stand-in was used), npm functions, and a realistic multi-library program for the kill criterion. Next: those three, then milestone 2, examples on imported functions.
+
+## B 0.22
+
+[Units](units.md) are part of the language: about 130 units with exact factors, dimension types including `Money[SEK]` and `Rate[SEK, USD]`, affine temperatures and compile-time exact folding. Knowledge files can now carry functions and examples: calendar relations, exact SI constants and currency identities. Next: exact decimal money at runtime, quantities in lists and in functions defined by examples, and unit annotations on foreign signatures, so that a Python function taking feet cannot receive meters.
+
+## B 0.21
+
+B can [know shared truths](knowledge.md). `know kalender` and `know calendar` bring in weekdays, months and named groups written in B, and `x in group` tests membership. A known group counts as one test when B derives a rule, so a weekend rule becomes as simple as a Saturday rule. Names may now use Swedish and other letters. Next: relations such as the order of days and unit conversions, and checking imported Python and .NET functions against examples.
+
+## B 0.20
+
+Functions can be [defined by examples](examples.md). B searches small ordered rule lists, asks for the input that separates plausible readings, checks examples on every compile and requires `was` for a changed result. `domain` names the values of an input. The [decision experiment](../experiments/decisions/README.md) hides six policies and compares B's own questions with random examples. Next: an owner trial over a sequence of changes, starting from an empty file (milestone 1 in the vision), and coverage questions for cases that rest on a single example (milestone 2).
+
+## B 0.19
+
+`b ask` uses a case a rule already covered as context for a new one. It asks a question only when the two cases still differ, and writes the answer back as `keeping` or as a checked `like` clause. The [fixture study](../experiments/precedent-questions/README.md) covers seven variants of one request. The mechanism was written by the same author as the fixtures, and nobody has used it on an unseen program yet.
+
+Next, test the whole journey rather than a single edit. Start a solver from an empty file and a short brief, then send four or five requirement changes one at a time, some of them ambiguous in the way the Sunday fee is. Compare B with typed Python plus an equivalent test harness. Count wrong outcomes delivered, questions asked and how many of them an owner would consider necessary, retries, model tokens and wall time. Include a program where the precedent is misleading, as in the flat-fee variant, so that a settled answer can be wrong. Kill criterion: if the B group does not deliver fewer wrong totals or cheaper revisions over the whole sequence, keep the precedent search as a standalone tool and stop extending the syntax.
+
 ## B 0.18
 
 One executable declaration now extends a rule and can protect other results from that change. The [experiment](../experiments/executable-changes/README.md) compares two working implementations against the same booking and sensor outcomes. A [paired author trial](../experiments/executable-changes/first-use/README.md) showed how strongly the result depends on the supplied interface. Test the next revision on an unfamiliar change where the right function to protect must be discovered, and count context retrieval, incorrect assumptions, repairs, checking and execution. Include tasks that cannot be expressed by adding a single tuple.

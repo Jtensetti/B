@@ -1,0 +1,9 @@
+py2 {"step": 1, "wrong": 0, "of": 20, "examples": []}
+py3 {"step": 1, "wrong": 0, "of": 20, "examples": []}
+py1 {"step": 1, "wrong": 0, "of": 20, "examples": []}
+py2 {"step": 2, "wrong": 0, "of": 20, "examples": []}
+py1 {"step": 2, "wrong": 8, "of": 20, "examples": ["o02", "o03", "o05", "o08", "o09", "o11"]}
+py3 {"step": 2, "wrong": 0, "of": 20, "examples": []}
+py2 {"step": 3, "wrong": 0, "of": 20, "examples": []}
+py3 {"step": 3, "wrong": 0, "of": 20, "examples": []}
+py1 {"step": 3, "wrong": 8, "of": 20, "examples": ["o02", "o03", "o05", "o08", "o09", "o11"]}

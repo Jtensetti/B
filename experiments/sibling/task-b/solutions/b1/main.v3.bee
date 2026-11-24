@@ -1,0 +1,55 @@
+use go:"./libs/hours" as gohours
+use rust:"./libs/quarter" as quarter
+use cs:"./libs/Rules" as rules
+use py:libs.payroll.withholding as wh
+use py:json as json
+use py:datetime as dt
+use js:semver as versions
+
+record Employee { id: Text, hourly: Float, table: Int, contract: Text }
+record Shift { id: Text, employee: Text, date: Text, hours: Text, break: Option[Text] }
+record Input { month: Text, employees: List[Employee], shifts: List[Shift] }
+record Slip { hours: Float, gross: Float, tax: Int, net: Float }
+
+foreign gohours.Parse(Text) -> Option[Float] on error
+foreign json.loads(Text) -> Input
+foreign type Date = dt.date
+foreign dt.date.fromisoformat(Text) -> Date
+foreign Date.weekday() -> Int
+
+let data = json.loads(read_line())
+let emp = {e.id: e for e in data.employees}
+let names = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+fn break_hours(s: Shift) -> Option[Float] =
+    let b = s.break
+    if b == none then 0.0 else gohours.Parse(b)
+
+fn worked(s: Shift) -> Option[Float] =
+    let total = gohours.Parse(s.hours)
+    let brk = break_hours(s)
+    if total == none or brk == none then none
+    else if brk > total then none
+    else total - brk
+
+fn shift_hours(s: Shift) -> Option[Float] =
+    let w = worked(s)
+    if w != none then quarter.round_up(w) else none
+
+fn rate(e: Employee) -> Float =
+    if versions.satisfies(e.contract, ">=3.0.0") then e.hourly * 11.0 / 10.0 else e.hourly
+
+fn overtime(d: Text) -> Float =
+    rules.Overtime.Multiplier(names[dt.date.fromisoformat(d).weekday()] ?? "Mon")
+
+let good = [s for s in data.shifts where s.employee in emp and shift_hours(s) != none]
+let rejected = sorted([s.id for s in data.shifts where not (s.employee in emp and shift_hours(s) != none)])
+
+fn slip(e: Employee) -> Slip =
+    let mine = [s for s in good where s.employee == e.id]
+    let gross = round(sum([(shift_hours(s) ?? 0.0) * rate(e) * overtime(s.date) for s in mine]), 2)
+    let tax = wh.withholding(gross, e.table)
+    Slip { hours = sum([shift_hours(s) ?? 0.0 for s in mine]), gross = gross, tax = tax, net = round(gross - tax, 2) }
+
+let payslips = {e.id: slip(e) for e in data.employees}
+print to_json({payslips = payslips, rejected = rejected})

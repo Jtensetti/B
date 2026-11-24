@@ -110,6 +110,25 @@ class PythonLowerer:
         finally:
             self._locals = surrounding
 
+    def _each(self, e: ExprIR) -> ast.expr:
+        source, *rest = e.operands
+        names = [_python_name(n) for n in e.data["binders"]]
+        iterable = self.expr(source)
+        if e.data["source"] == "Dict" and len(names) == 2:
+            iterable = ast.Call(func=ast.Attribute(value=iterable, attr="items", ctx=ast.Load()), args=[], keywords=[])
+        if len(names) == 2:
+            target = ast.Tuple(elts=[ast.Name(id=n, ctx=ast.Store()) for n in names], ctx=ast.Store())
+        else:
+            target = ast.Name(id=names[0], ctx=ast.Store())
+        with self._bind(names):
+            key = self.expr(rest.pop(0)) if e.data["shape"] == "dict" else None
+            value = self.expr(rest.pop(0))
+            conditions = [self.expr(rest.pop(0))] if e.data["condition"] else []
+        loop = [ast.comprehension(target=target, iter=iterable, ifs=conditions, is_async=0)]
+        if key is not None:
+            return ast.DictComp(key=key, value=value, generators=loop)
+        return ast.ListComp(elt=value, generators=loop)
+
     def _summarize(self, e: ExprIR) -> ast.Call:
         # Keep the traversal in its own helper so the call remains an expression
         # even inside a lazy branch. It receives the source and any captured locals.
@@ -271,6 +290,58 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return self._history_count(e)
         if op == "summarize":
             return self._summarize(e)
+        if op == "each":
+            return self._each(e)
+        if op == "bind":
+            # let x = v ... as an expression: (lambda x: rest)(v), so later uses see one evaluation.
+            name = _python_name(data)
+            value = self.expr(children[0])
+            with self._bind([name]):
+                rest = self.expr(children[1])
+            arguments = ast.arguments(posonlyargs=[], args=[ast.arg(arg=name)], vararg=None, kwonlyargs=[],
+                                      kw_defaults=[], kwarg=None, defaults=[])
+            return ast.Call(func=ast.Lambda(args=arguments, body=rest), args=[value], keywords=[])
+        if op == "contains":
+            return ast.Compare(left=self.expr(children[0]), ops=[ast.In()], comparators=[self.expr(children[1])])
+        if op == "index":
+            # xs[i] is none outside the list, as a missing key is for a dictionary.
+            return ast.Call(func=_load("_b_index"), args=[self.expr(children[0]), self.expr(children[1])], keywords=[])
+        if op == "core":
+            args = [self.expr(x) for x in children]
+            if data == "len":
+                return ast.Call(func=_load("_b_len"), args=args, keywords=[])
+            if data == "sorted":
+                return ast.Call(func=_load("_b_sorted"), args=args, keywords=[])
+            if data in ("keys", "values"):
+                view = ast.Call(func=ast.Attribute(value=args[0], attr=data, ctx=ast.Load()), args=[], keywords=[])
+                return ast.Call(func=_load("_b_list"), args=[view], keywords=[])
+            if data == "text":
+                return ast.Call(func=_load("_b_text"), args=args, keywords=[])
+            if data == "range":
+                return ast.Call(func=_load("_b_list"), args=[ast.Call(func=ast.Name(id="range", ctx=ast.Load()),
+                                                                       args=args, keywords=[])], keywords=[])
+            if data in ("ceil", "floor"):
+                math_module = ast.Call(func=ast.Name(id="__import__", ctx=ast.Load()), args=[ast.Constant("math")], keywords=[])
+                return ast.Call(func=ast.Attribute(value=math_module, attr=data, ctx=ast.Load()), args=args, keywords=[])
+            if data in ("upper", "lower", "trim"):
+                method = "strip" if data == "trim" else data
+                return ast.Call(func=ast.Attribute(value=args[0], attr=method, ctx=ast.Load()), args=[], keywords=[])
+            if data in ("round", "sum", "min", "max", "abs"):
+                return ast.Call(func=_load("_b_" + data), args=args, keywords=[])
+            if data == "to_json":
+                return ast.Call(func=_load("_b_to_json"), args=args, keywords=[])
+            if data == "read_line":
+                return ast.Call(func=_load("_b_read_line"), args=[], keywords=[])
+            if data in ("min_of", "max_of"):
+                return ast.Call(func=_load("_b_" + data), args=args, keywords=[])
+            return ast.Call(func=ast.Attribute(value=args[1], attr="join", ctx=ast.Load()), args=[args[0]], keywords=[])
+        if op == "record":
+            return ast.Dict(keys=[ast.Constant(name) for name in data], values=[self.expr(x) for x in children])
+        if op == "field":
+            if e.typ.name == "Option":  # an optional field may be absent
+                get = ast.Attribute(value=self.expr(children[0]), attr="get", ctx=ast.Load())
+                return ast.Call(func=get, args=[ast.Constant(data)], keywords=[])
+            return ast.Subscript(value=self.expr(children[0]), slice=ast.Constant(data), ctx=ast.Load())
         if op == "lookup":
             dictionary, key = children
             get = ast.Attribute(value=self.expr(dictionary), attr="get", ctx=ast.Load())
@@ -291,14 +362,19 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                 test = _indexed_facts(children[0], rule_params)
             return ast.IfExp(test=test or self.expr(children[0]), body=self.expr(children[1]),
                              orelse=self.expr(children[2]))
+        if op == "catch":
+            thunk = ast.Lambda(args=ast.arguments(posonlyargs=[], args=[], vararg=None, kwonlyargs=[],
+                                                  kw_defaults=[], kwarg=None, defaults=[]),
+                               body=self.expr(children[0]))
+            names = ast.Tuple(elts=[ast.Constant(n) for n in data], ctx=ast.Load())
+            return ast.Call(func=_load("_b_catch"), args=[thunk, names], keywords=[])
         if op == "coalesce":
-            # NamedExpr ensures that potentially impure foreign calls are evaluated ONCE.
-            self._tmp += 1
-            temp = f"_b_coalesce_{self._tmp}"
-            test = ast.Compare(left=ast.NamedExpr(
-                target=ast.Name(id=temp, ctx=ast.Store()), value=self.expr(children[0])),
-                ops=[ast.IsNot()], comparators=[ast.Constant(None)])
-            return ast.IfExp(test=test, body=ast.Name(id=temp, ctx=ast.Load()), orelse=self.expr(children[1]))
+            # The left side runs once and the fallback only when needed. A helper call, not
+            # :=, because Python forbids := where a comprehension names what it iterates over.
+            fallback = ast.Lambda(args=ast.arguments(posonlyargs=[], args=[], vararg=None, kwonlyargs=[],
+                                                     kw_defaults=[], kwarg=None, defaults=[]),
+                                  body=self.expr(children[1]))
+            return ast.Call(func=_load("_b_coalesce"), args=[self.expr(children[0]), fallback], keywords=[])
         if op in _BINARY:
             return ast.BinOp(left=self.expr(children[0]), op=_BINARY[op](), right=self.expr(children[1]))
         if op == "cmp":
@@ -312,9 +388,9 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
 
     def statement(self, s: StmtIR) -> ast.stmt:
         if s.op == "import":
-            if s.backend not in ("py", "net", "js") or not s.target or not s.name:
+            if s.backend not in ("py", "net", "js", "go", "rust", "cs") or not s.target or not s.name:
                 raise BError("E_INTERNAL", "Invalid import BIR")
-            adapter = {"py": "_b_py", "net": "_b_net", "js": "_b_js_module"}[s.backend]
+            adapter = {"py": "_b_py", "net": "_b_net", "js": "_b_js_module", "go": "_b_go", "rust": "_b_rust", "cs": "_b_cs"}[s.backend]
             return ast.Assign(targets=[ast.Name(id=_python_name(s.name), ctx=ast.Store())], value=ast.Call(
                 func=ast.Name(id=adapter, ctx=ast.Load()),
                 args=[ast.Constant(s.target)], keywords=[]))
@@ -364,6 +440,25 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
         if s.op == "print":
             return ast.Expr(value=ast.Call(func=ast.Name(id="_b_print", ctx=ast.Load()),
                                            args=[self.expr(s.expr)], keywords=[]))
+        if s.op == "example_check":
+            actual, expected, *margin = s.expr.operands
+            value = ast.Name(id="_b_example_value", ctx=ast.Load())
+            if margin:
+                difference = ast.BinOp(left=value, op=ast.Sub(), right=self.expr(expected))
+                holds = ast.Compare(left=ast.Call(func=ast.Name(id="_b_abs", ctx=ast.Load()), args=[difference],
+                                                  keywords=[]), ops=[ast.LtE()], comparators=[self.expr(margin[0])])
+            else:
+                holds = ast.Compare(left=value, ops=[ast.Eq()], comparators=[self.expr(expected)])
+            text, _, unit = s.target.partition("\t")
+            message = ast.BinOp(left=ast.BinOp(left=ast.Constant(f"{text} no longer holds: the library returned "),
+                                op=ast.Add(), right=ast.Call(func=ast.Name(id="_b_repr", ctx=ast.Load()),
+                                                             args=[value], keywords=[])),
+                                op=ast.Add(), right=ast.Constant(unit))
+            return ast.If(test=ast.Constant(True), body=[
+                ast.Assign(targets=[ast.Name(id="_b_example_value", ctx=ast.Store())], value=self.expr(actual)),
+                ast.If(test=ast.UnaryOp(op=ast.Not(), operand=holds), body=[ast.Raise(
+                    exc=ast.Call(func=ast.Name(id="_b_example_error", ctx=ast.Load()), args=[message], keywords=[]),
+                    cause=None)], orelse=[])], orelse=[])
         if s.op == "assert":
             return ast.If(test=ast.UnaryOp(op=ast.Not(), operand=self.expr(s.expr)),
                 body=[ast.Raise(exc=ast.Call(func=ast.Name(id="_b_assertion_error", ctx=ast.Load()),
@@ -378,6 +473,14 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="len", asname="_b_len"),
             ast.alias(name="enumerate", asname="_b_enumerate"),
             ast.alias(name="range", asname="_b_range"),
+            ast.alias(name="abs", asname="_b_abs"),
+            ast.alias(name="sorted", asname="_b_sorted"),
+            ast.alias(name="round", asname="_b_round"),
+            ast.alias(name="sum", asname="_b_sum"),
+            ast.alias(name="min", asname="_b_min"),
+            ast.alias(name="max", asname="_b_max"),
+            ast.alias(name="list", asname="_b_list"),
+            ast.alias(name="repr", asname="_b_repr"),
         ], level=0)
         body = [builtins, ast.ImportFrom(module="b_lang.runtime", names=[
             ast.alias(name="py_module", asname="_b_py"),
@@ -385,6 +488,18 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="guard", asname="_b_guard"),
             ast.alias(name="BAssertionError", asname="_b_assertion_error"),
             ast.alias(name="BContractError", asname="_b_contract_error"),
+            ast.alias(name="BExampleError", asname="_b_example_error"),
+            ast.alias(name="text", asname="_b_text"),
+            ast.alias(name="index", asname="_b_index"),
+            ast.alias(name="coalesce", asname="_b_coalesce"),
+            ast.alias(name="catch", asname="_b_catch"),
+            ast.alias(name="go_module", asname="_b_go"),
+            ast.alias(name="rust_module", asname="_b_rust"),
+            ast.alias(name="cs_module", asname="_b_cs"),
+            ast.alias(name="read_line", asname="_b_read_line"),
+            ast.alias(name="to_json", asname="_b_to_json"),
+            ast.alias(name="min_of", asname="_b_min_of"),
+            ast.alias(name="max_of", asname="_b_max_of"),
         ], level=0)]
         if any(s.op == "import" and s.backend == "js" for s in program.statements):
             signatures = []

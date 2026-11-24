@@ -1,0 +1,1 @@
+Change 5 of the trial. The owner says: "Business customers in Germany and France pay no VAT (reverse charge). A business customer has a non-empty "vat_id". Their vat is 0 and total equals net. Swedish and Norwegian business customers still pay VAT."

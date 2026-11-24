@@ -1,4 +1,4 @@
-# B language reference — implemented experimental v0.18
+# B language reference — implemented experimental v0.33
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
@@ -7,6 +7,16 @@ For source adoption and contract analysis across functions, see [source adoption
 ## Executable rule extensions
 
 `also free_entry(true, "sun") keeping seats, recipient` adds a ground input tuple to a pure native Boolean predicate. The optional `keeping` clause protects named functions against a transitive dependency on that predicate. Source order does not change the meaning of a fact. See the [grammar, examples and revision checker](executable-changes.md).
+
+`also free_entry(true, "sun") like (true, "sat")` additionally requires the new case to be indistinguishable from a case the rule already covered, for every pure function that shares an input name with the rule. `b ask` finds that case when the declaration omits it and turns a remaining difference into one question. See [precedent questions](precedent-questions.md).
+
+`fn price(child: Bool, day: Text) -> Int pure by examples` declares a pure function without a body. The compiler derives an ordered rule list from the `example price(true, "sat") == 0` statements for that name. `example` statements also check ordinary functions. A changed result must be written `... == 120 was 100`. `domain day: "mon", ..., "sun"` lists the values of any parameter named `day`. See [decisions as source](examples.md).
+
+`know kalender` includes domains and groups that ship with B. `group helg of dag: "lördag", "söndag"` names a subset, and `dag in helg` tests membership. Names may contain any letters in normalized Unicode form. See [what B knows](knowledge.md).
+
+A quantity literal is a number and a unit (`5 km`, `90 km per h`, `19.5 kr`). `x as km` converts to a plain number. Types such as `Length`, `Money[SEK]` and `Rate[SEK, USD]` declare dimensions. The checker rejects mixed dimensions and currencies, then erases units to Float SI values. See [units](units.md).
+
+`example alias.member(args) == value [within tolerance]` states a fact about an imported function. It is type checked while compiling and executed where it stands. `b check --library-examples` runs each such fact separately. See [decisions about libraries](library-examples.md).
 
 ## 1. Source form and tokens
 
@@ -63,6 +73,31 @@ A top-level `next` declares a pending edit on a source function. The condition a
 A case table is an expression. It compares the named value against each scalar literal in order, using the ordinary comparison operators and type rules. The first matching row supplies the result, with a mandatory final fallback. Numeric thresholds can be negative. See [decision tables and source views](registers.md).
 
 Expressions also allow literals (`true`, `false`, `none`, numbers, strings), references, calls, attribute access and grouping. Precedence (highest to lowest): postfix attribute/call/key lookup, unary `not`/`-`, multiplication/division/modulo, addition/subtraction, comparison, `and`, `or`, `??` (right associative), conditional. Both conditional branches are statically type-checked, even if the condition is constant.
+
+### Transforming collections, records and core words
+
+`[expr for x in xs where cond]` builds a list. `{key: value for k, v in d where cond}` builds a `Dict[Text, V]`. A list gives one name per item. A dictionary gives its key, or its key and value. `where` is optional. The names are local to the expression and may not shadow names in scope.
+
+`record Booking { child: Bool, day: Text, note: Option[Text] }` declares a structural record type, as in TypeScript. `{child = true, day = "sat"}` builds a record, and `b.day` reads a field. An `Option` field may be left out and then reads as `none`. At runtime a record is a dictionary, so JSON from Python or JavaScript enters through the usual border check. A missing required field stops the program there, and undeclared fields are not carried along. Records may refer to records declared later, but not to themselves.
+
+`xs[0]` reads a list item as an `Option`. A position outside the list gives `none`, and `xs[-1]` is the last item. `x in xs` tests whether a list contains an item, a dictionary a key, or a text a substring. If the name after `in` is a declared group, it tests group membership instead.
+
+A newline inside `(...)` or `[...]` continues the expression, as in Python. Inside `{...}`, newlines are allowed after commas and around the parts of a dictionary transform.
+
+A function body may start with local bindings, one per line, before its result:
+
+```bee
+fn describe(prices: Dict[Text, Int], item: Text) -> Text =
+    let price = prices[item]
+    let label: Text = "item " + item
+    if price != none then label + " costs " + text(price) else label + " is unknown"
+```
+
+Each binding is evaluated once. A binding may not hide a function.
+
+After a test `x != none`, `x` has its inner type wherever the test is known to hold. That includes the `then` branch, the `else` branch of `x == none`, both sides of `and`, under `not`, and the item expression of `[... for ... where x != none]`. Only plain names narrow.
+
+`len`, `sorted`, `keys`, `values`, `text`, `join`, `round`, `sum`, `min`, `max`, `abs`, `read_line` and `to_json` are typed core words. `min` and `max` of a list give an `Option`, and of two values give the larger or smaller value. A line may start with `then` or `else` to continue an `if`. Python's builtins run them, but B types them for any element type. `text(true)` is `"true"`. A program's own function of the same name takes precedence.
 
 ### Collection expressions
 
@@ -137,6 +172,8 @@ An overload is selected only if its argument types distinguish it unambiguously.
 
 A used `.pyi` signature is a trusted *assumption*. Typed foreign arguments and results are checked at runtime, including nested lists, dictionaries and nullable values, but the correctness of the library's *behavior* is not thereby proved. The user may still explicitly declare a Python signature with `foreign` when metadata cannot represent it. Unsupported Python calls are dynamic and warn with `W_UNCHECKED_FOREIGN`.
 
+A Python function that raises an exception for some inputs is declared with an `Option` result and the exceptions it may raise: `foreign tariff.zone(Text) -> Option[Int] on KeyError, ValueError`. The call then gives `none` when the function raises one of the named exceptions, matched by class name along the exception's hierarchy, and every other exception still propagates. The declaration restates the signature B already read, with the result wrapped in `Option`. See [interop](interop.md#a-call-that-can-fail).
+
 For `net:`, the B host has only an explicit set of allowed `System.Math` and `System.Text.RegularExpressions.Regex` methods. The checked-in signature snapshot is compared with live reflection in GitHub CI. The interop transport is typed JSON messages; arbitrary .NET assemblies, custom classes or object identity are not available.
 
 ## 6. Diagnostics
@@ -170,7 +207,7 @@ For `net:`, the B host has only an explicit set of allowed `System.Math` and `Sy
 
 ## 7. Current limitations and status
 
-No B-authored module imports; generic B functions; loops; reassignment; records; general effects/capabilities; exception modeling; asynchronous calls; zero-copy data exchange; Java/Rust/WASM backends; arbitrary .NET libraries; true native B compilation; formal proof or safe execution of untrusted code. `Option` values support a typed `??` fallback, but not yet exhaustive pattern matching/case analysis or unsafe forced unwrapping. Type checking is conservative and may reject useful Python calls; this is safer than silently claiming a type it cannot establish.
+No B-authored module imports; generic B functions; reassignment; recursive records; general effects/capabilities; exception modeling; asynchronous calls; zero-copy data exchange; Java/Rust/WASM backends; arbitrary .NET libraries; true native B compilation; formal proof or safe execution of untrusted code. `Option` values support a typed `??` fallback, but not yet exhaustive pattern matching/case analysis or unsafe forced unwrapping. Type checking is conservative and may reject useful Python calls; this is safer than silently claiming a type it cannot establish.
 
 ## 8. Versioning
 

@@ -3,17 +3,30 @@ _NL: NEWLINE
 
 ?stmt: "permit" "[" [names] "]"                          -> permit_stmt
      | "use" "js" ":" ESCAPED_STRING "as" NAME            -> js_string_use
+     | "use" "go" ":" ESCAPED_STRING "as" NAME            -> go_use
+     | "use" "rust" ":" ESCAPED_STRING "as" NAME          -> rust_use
+     | "use" "cs" ":" ESCAPED_STRING "as" NAME            -> cs_use
      | "use" "js" ":" path "as" NAME                     -> js_use
      | "use" BACKEND ":" path "as" NAME                   -> use_stmt
      | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
      | "let" NAME [":" type_expr] "=" _NL* expr          -> let_stmt
-     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
-     | "also" NAME "(" [also_args] ")" ["keeping" names]   -> also_stmt
+     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* fn_body -> fn_stmt
+     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? "by" "examples" -> learned_stmt
+     | "domain" NAME ":" also_args                         -> domain_stmt
+     | "record" NAME "{" _NL* record_field ((","|_NL) _NL* record_field)* ","? _NL* "}" -> record_stmt
+     | "group" NAME "of" NAME ":" also_args                -> group_stmt
+     | "know" NAME                                         -> know_stmt
+     | "example" path "(" [example_args] ")" COMP example_value ["within" example_value] ["was" case_literal] -> example_stmt
+     | "also" NAME "(" [also_args] ")" [also_like] ["keeping" names] -> also_stmt
      | "next" NAME "when" expr "=>" expr                   -> next_stmt
      | "print" expr                                       -> print_stmt
      | "assert" expr                                      -> assert_stmt
      | "foreign" path "(" [type_list] ")" "->" type_expr -> foreign_stmt
+     | "foreign" path "(" [type_list] ")" "->" type_expr "on" NAME ("," NAME)* -> foreign_on_stmt
+     | "foreign" "type" NAME "=" path                   -> foreign_type_stmt
 
+?fn_body: local* expr
+local: "let" NAME [":" type_expr] "=" _NL* expr _NL+
 fn_pure: "pure"
 fn_requires: "requires" expr
 fn_ensures: "ensures" expr
@@ -36,6 +49,8 @@ history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL
 ?and_expr: and_expr "and" cmp_expr -> and_op
          | cmp_expr
 ?cmp_expr: cmp_expr COMP sum_expr  -> comparison
+         | cmp_expr "in" sum_expr  -> membership
+         | cmp_expr "as" unit      -> convert
          | sum_expr
 ?sum_expr: sum_expr "+" mul_expr  -> add
          | sum_expr "-" mul_expr   -> subtract
@@ -52,7 +67,10 @@ history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL
      | "(" [args] ")"              -> invoke
      | "[" expr "]"                -> lookup
 args: expr ("," expr)*
-pairs: pair ("," pair)*
+binders: NAME ["," NAME]
+record_field: NAME ":" type_expr
+record_entry: NAME "=" expr
+pairs: pair ("," _NL* pair)* ","?
 pair: expr ":" expr
 ?scalar: number_literal
        | ESCAPED_STRING              -> string
@@ -63,6 +81,10 @@ number_literal: NUMBER               -> number
 ?case_literal: scalar
              | "-" number_literal    -> neg
 also_args: case_literal ("," case_literal)*
+also_like: "like" "(" [also_args] ")"
+example_args: example_value ("," example_value)*
+?example_value: case_literal
+              | number_literal unit   -> quantity_value
 case_row: COMP case_literal "=>" expr
 _ROW_SEMI: ";"
 _row_sep: _ROW_SEMI _NL* | _NL+
@@ -77,13 +99,21 @@ summary_field: NAME ":" summary_reduction
                 | "+" SUMMARY_INT -> default_int
                 | "-" SUMMARY_INT -> default_negative_int
 
+unit: NAME ["per" NAME]
+
 ?atom: case_table
+     | number_literal unit           -> quantity
      | CASES                         -> identifier
      | summary
      | scalar
      | NAME                          -> identifier
+     | "[" expr "for" binders "in" expr ["where" expr] "]"          -> list_each
+     | "{" _NL* record_entry ("," _NL* record_entry)* ","? _NL* "}" -> record_literal
+     | RECORD_NAME "{" _NL* record_entry ("," _NL* record_entry)* ","? _NL* "}" -> named_record_literal
+     | "{" _NL* expr ":" expr _NL* "for" binders "in" expr _NL* ["where" expr _NL*] "}" -> dict_each
      | "[" [args] "]"                -> list_literal
-     | "{" [pairs] "}"               -> dict_literal
+     | "{" _NL* pairs _NL* "}"       -> dict_literal
+     | "{" "}"                       -> dict_literal
      | "(" expr ")"                  -> grouped
 
 // Both words can also be ordinary variables and functions. Recognize a
@@ -95,8 +125,10 @@ HISTORY_MODE: "adjacent" | "earlier"
 EXTREMUM: "min" | "max"
 SUMMARY_INT: /0|[1-9][0-9]*/
 BACKEND: "py" | "net"
+// A record name directly followed by a brace starts a named record literal: Quote { price = 1.0 }.
+RECORD_NAME.2: /[A-Z][A-Za-z0-9_]*(?=[ \t]*\{)/
 COMP: "==" | "!=" | "<=" | ">=" | "<" | ">"
-NAME: /[A-Za-z_][A-Za-z0-9_]*/
+NAME: /(?!\d)\w+/
 NUMBER: /(?:0|[1-9][0-9]*)(?:\.[0-9]+)?/
 %import common.ESCAPED_STRING
 %import common.NEWLINE

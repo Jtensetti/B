@@ -1,0 +1,239 @@
+{
+ "tools": {
+  "python": "Python 3.12.14",
+  "mypy": "mypy 2.4.1 (compiled: yes)",
+  "node": "v24.22.3",
+  "typescript": "Version 5.9.3",
+  "go": "go version go1.24.6 linux/amd64",
+  "rust": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "cargo": "cargo 1.89.0 (c24e10642 2025-06-23)",
+  "dotnet": "8.0.415 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]\n10.0.100 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]",
+  "B": "01a91593241803567c35534acbe3e041d4936b11",
+  "npm_packages": {
+   "fastest-levenshtein": "1.0.16",
+   "semver": "7.8.5",
+   "@types/node": "22.20.5"
+  }
+ },
+ "rows": [
+  {
+   "task": "task-a",
+   "solver": "py1",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "comment": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "unit": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "currency": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "behavior": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "signature": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "py2",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "comment": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "unit": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "currency": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "behavior": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "signature": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "py3",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "comment": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "unit": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "currency": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "behavior": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    },
+    "signature": {
+     "command": [
+      "mypy",
+      "--strict",
+      "main.py"
+     ],
+     "exit": 0,
+     "diagnostic": "Success: no issues found in 1 source file\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  }
+ ]
+}

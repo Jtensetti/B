@@ -1,0 +1,60 @@
+use go:"./libs/hours" as hours
+use rust:"./libs/quarter" as quarter
+use cs:"./libs/Rules" as rules
+use py:libs.payroll.withholding as wh
+use py:datetime as dt
+use py:json as json
+use js:"semver" as semver
+
+record Employee { id: Text, hourly: Float, table: Int, contract: Text }
+record Shift { id: Text, employee: Text, date: Text, hours: Text, break: Option[Text] }
+record Input { month: Text, employees: List[Employee], shifts: List[Shift], holidays: Option[List[Text]] }
+record Slip { hours: Float, gross: Float, tax: Int, net: Float, pension: Float }
+record Output { payslips: Dict[Text, Slip], rejected: List[Text] }
+
+foreign type Date = dt.date
+foreign json.loads(Text) -> Input
+foreign hours.Parse(Text) -> Option[Float] on error
+foreign quarter.round_up(Float) -> Float
+foreign rules.Overtime.Multiplier(Text) -> Float
+foreign rules.Overtime.Holiday() -> Float
+foreign wh.withholding(Float, Int) -> Int
+foreign dt.date.fromisoformat(Text) -> Date
+foreign Date.weekday() -> Int
+foreign Date.strftime(Text) -> Text
+foreign semver.satisfies(Text, Text) -> Bool
+
+let data = json.loads(read_line())
+let staff = {e.id: e for e in data.employees}
+let weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+
+fn shift_hours(s: Shift) -> Option[Float] =
+    let total = hours.Parse(s.hours)
+    let pause_text = s.break
+    let pause = if pause_text == none then 0.0 else hours.Parse(pause_text)
+    let worked = (total ?? 0.0) - (pause ?? 0.0)
+    if total != none and pause != none and worked >= 0.0 then quarter.round_up(worked) else none
+
+fn in_month(s: Shift) -> Bool =
+    dt.date.fromisoformat(s.date).strftime("%Y-%m") == data.month
+
+let accepted = [s for s in data.shifts where in_month(s) and s.employee in staff and shift_hours(s) != none]
+let rejected = sorted([s.id for s in data.shifts where in_month(s) and not (s.employee in staff and shift_hours(s) != none)])
+
+fn rate(e: Employee) -> Float =
+    if semver.satisfies(e.contract, ">=3.0.0") then e.hourly * 1.1 else e.hourly
+
+fn shift_pay(s: Shift, e: Employee) -> Float =
+    let day = dt.date.fromisoformat(s.date)
+    let name = weekdays[day.weekday()] ?? "Mon"
+    let holidays = data.holidays ?? []
+    let multiplier = if s.date in holidays then rules.Overtime.Holiday() else rules.Overtime.Multiplier(name)
+    (shift_hours(s) ?? 0.0) * rate(e) * multiplier
+
+fn slip(e: Employee) -> Slip =
+    let mine = [s for s in accepted where s.employee == e.id]
+    let gross = round(sum([shift_pay(s, e) for s in mine]), 2)
+    let tax = wh.withholding(gross, e.table)
+    Slip { hours = sum([shift_hours(s) ?? 0.0 for s in mine]), gross = gross, tax = tax, net = round(gross - tax, 2), pension = round(gross * 0.045, 2) }
+
+print to_json(Output { payslips = {e.id: slip(e) for e in data.employees}, rejected = rejected })

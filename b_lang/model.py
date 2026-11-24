@@ -7,11 +7,18 @@ from lark import Lark, Transformer
 from lark.exceptions import LarkError, UnexpectedCharacters, UnexpectedToken, VisitError
 from importlib import resources
 import re
+import unicodedata
 
 @dataclass(frozen=True)
 class Expr:
     kind: str
     parts: tuple[Any, ...]
+
+@dataclass(frozen=True)
+class Quantity:
+    """A literal with a unit in an example, such as 9.5 gal."""
+    value: int | float
+    unit: tuple
 
 @dataclass(frozen=True)
 class Stmt:
@@ -50,6 +57,18 @@ class ToModel(Transformer):
     def none(self, _): return Expr("literal", (None,))
     def identifier(self, xs): return Expr("name", (str(xs[0]),))
     def grouped(self, xs): return xs[0]
+    def record_field(self, xs): return (str(xs[0]), xs[1])
+    def record_entry(self, xs): return (str(xs[0]), xs[1])
+    def record_stmt(self, xs): return Stmt("record", (str(xs[0]), tuple(xs[1:])))
+    def record_literal(self, xs): return Expr("record", tuple(xs))
+    def named_record_literal(self, xs): return Expr("named_record", (str(xs[0]), Expr("record", tuple(xs[1:]))))
+    def binders(self, xs): return tuple(str(x) for x in xs if x is not None)
+    def list_each(self, xs):
+        value, binders, source, condition = xs
+        return Expr("each", ("list", None, value, binders, source, condition))
+    def dict_each(self, xs):
+        key, value, binders, source, condition = xs
+        return Expr("each", ("dict", key, value, binders, source, condition))
     def list_literal(self, xs): return Expr("list", tuple(xs[0]) if xs and xs[0] is not None else ())
     def pair(self, xs): return (xs[0], xs[1])
     def pairs(self, xs): return list(xs)
@@ -122,18 +141,33 @@ class ToModel(Transformer):
     def and_op(self, xs): return Expr("and", tuple(xs))
     def or_op(self, xs): return Expr("or", tuple(xs))
     def comparison(self, xs): return Expr("cmp", (xs[0], str(xs[1]), xs[2]))
+    def foreign_type_stmt(self, xs): return Stmt("foreign_type", (str(xs[0]), xs[1]))
     def foreign_stmt(self, xs): return Stmt("foreign", (xs[0], xs[1] or [], xs[2]))
+    def foreign_on_stmt(self, xs): return Stmt("foreign_on", (xs[0], xs[1] or [], xs[2], tuple(str(x) for x in xs[3:])))
     def use_stmt(self, xs): return Stmt("use", (str(xs[0]), xs[1], str(xs[2])))
     def js_use(self, xs): return Stmt("use", ("js", xs[0], str(xs[1])))
     def js_string_use(self, xs):
         import json
         return Stmt("use", ("js", json.loads(str(xs[0])), str(xs[1])))
+    def go_use(self, xs):
+        import json
+        return Stmt("use", ("go", json.loads(str(xs[0])), str(xs[1])))
+    def rust_use(self, xs):
+        import json
+        return Stmt("use", ("rust", json.loads(str(xs[0])), str(xs[1])))
+    def cs_use(self, xs):
+        import json
+        return Stmt("use", ("cs", json.loads(str(xs[0])), str(xs[1])))
     def adopt_stmt(self, xs): return Stmt("adopt", (str(xs[0]), str(xs[1])))
     def let_stmt(self, xs): return Stmt("let", (str(xs[0]), xs[1], xs[2]))
     def fn_stmt(self, xs):
         flags = {key: value for item in xs[3:-1] if item is not None for key, value in (item,)}
         return Stmt("fn", (str(xs[0]), xs[1] or [], xs[2], xs[-1],
                             bool(flags.get("pure", False)), flags.get("requires"), flags.get("ensures")))
+    def local(self, xs): return (str(xs[0]), xs[1], xs[2])
+    def fn_body(self, xs):
+        *bindings, result = xs
+        return Expr("locals", (tuple(bindings), result)) if bindings else result
     def next_stmt(self, xs): return Stmt("next", (str(xs[0]), xs[1], xs[2]))
     def also_args(self, xs):
         values = []
@@ -144,24 +178,82 @@ class ToModel(Transformer):
             else:
                 values.append(literal.parts[0])
         return tuple(values)
-    def also_stmt(self, xs): return Stmt("also", (str(xs[0]), xs[1] or (), tuple(xs[2] or ())))
+    def also_like(self, xs): return ("like", xs[0] or ())
+    def also_stmt(self, xs):
+        like = xs[2][1] if xs[2] is not None else None
+        return Stmt("also", (str(xs[0]), xs[1] or (), tuple(xs[3] or ()), like))
+    def domain_stmt(self, xs): return Stmt("domain", (str(xs[0]), xs[1]))
+    def group_stmt(self, xs): return Stmt("group", (str(xs[0]), str(xs[1]), xs[2]))
+    def know_stmt(self, xs): return Stmt("know", (str(xs[0]),))
+    def unit(self, xs): return (str(xs[0]), None if xs[1] is None else str(xs[1]))
+    def quantity(self, xs): return Expr("quantity", (xs[0].parts[0], xs[1]))
+    def convert(self, xs): return Expr("convert", (xs[0], xs[1]))
+    def membership(self, xs):
+        container = xs[1]
+        if isinstance(container, Expr) and container.kind == "name":
+            return Expr("member", (xs[0], container.parts[0]))  # a group, or a collection by name
+        return Expr("contains", (xs[0], container))
+    def learned_stmt(self, xs):
+        return Stmt("learn", (str(xs[0]), xs[1] or [], xs[2], xs[3] is not None))
+    def quantity_value(self, xs): return ("quantity", xs[0].parts[0], xs[1])
+    def example_args(self, xs): return tuple(self._example_value(x) for x in xs)
+    def _example_value(self, node):
+        if isinstance(node, tuple) and node and node[0] == "quantity":
+            return Quantity(node[1], node[2])
+        return self.also_args([node])[0]
+    def example_stmt(self, xs):
+        name, arguments, operator, value, tolerance, previous = xs
+        if str(operator) != "==":
+            raise LarkError(f"An example states one result with ==, found {operator} "
+                            f"at line {operator.line}, column {operator.column}")
+        optional = lambda node: None if node is None else self._example_value(node)
+        return Stmt("example", (str(name), arguments or (), self._example_value(value), optional(previous),
+                                previous is not None, optional(tolerance)))
     def print_stmt(self, xs): return Stmt("print", (xs[0],))
     def assert_stmt(self, xs): return Stmt("assert", (xs[0],))
 
 _GRAMMAR = resources.files("b_lang").joinpath("syntax.lark").read_text()
-_PARSER = Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True)
+
+
+class _JoinLines:
+    """Python's implicit line joining: a newline inside () or [] continues the line.
+
+    Braces keep their newlines, because records, decision tables and summaries
+    use a newline as a separator between their entries.
+    """
+    always_accept = ("_NL",)
+
+    def process(self, stream):
+        stack = []
+        for token in stream:
+            kind = token.type
+            if kind in ("LPAR", "LSQB", "LBRACE"):
+                stack.append(kind)
+            elif kind in ("RPAR", "RSQB", "RBRACE") and stack:
+                stack.pop()
+            elif kind == "_NL" and stack and stack[-1] in ("LPAR", "LSQB"):
+                continue
+            yield token
+_PARSER = Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, postlex=_JoinLines())
 
 
 @cache
 def positioned_parser():
     """Only source-rewriting callers need token offsets."""
-    return Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, propagate_positions=True)
+    return Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, propagate_positions=True,
+                postlex=_JoinLines())
+
+
+_CONTINUED = re.compile(r"\r?\n[ \t]*(?=then\b|else\b(?![ \t]*=>))")
 
 
 def parser_input(source: str) -> str:
     # Preserve character offsets for source rewriters, including CRLF pairs.
     if "\r" in source:
         source = re.sub(r"\r(?!\n)", "\n", source)
+    # A line starting with `then` or `else` continues the if above it. Spaces of the
+    # same length keep every offset; strings cannot contain a raw newline.
+    source = _CONTINUED.sub(lambda m: " " * len(m.group(0)), source)
     return source + ("\n" if source and not source.endswith("\n") else "")
 
 
@@ -182,6 +274,10 @@ def parse(source: str) -> list[Stmt]:
             raise LarkError(f"Expected a final 'else => result' row before '}}' "
                             f"at line {error.line}, column {error.column}") from error
         raise
+    for token in tree.scan_values(lambda t: getattr(t, "type", None) == "NAME"):
+        if not token.isidentifier() or unicodedata.normalize("NFKC", token) != token:
+            raise LarkError(f"Name {str(token)!r} at line {token.line} is not in normalized form; "
+                            "write it with ordinary letters")
     try:
         return ToModel().transform(tree)
     except VisitError as error:

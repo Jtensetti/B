@@ -1,0 +1,48 @@
+use py:builtins as io
+use py:json as json
+use py:carrier as carrier
+use js:"fastest-levenshtein" as words
+
+record Order { id: Text, product: Text, qty: Int, express: Option[Bool] }
+record Item { weight_kg: Float, volume_l: Option[Float] }
+record Request { orders: List[Order], catalog: Dict[Text, Item], usd_to_sek: Float }
+
+foreign io.input() -> Text
+foreign io.sum(List[Float]) -> Float
+foreign io.round(Float, Int) -> Float
+foreign io.min(List[Int]) -> Int
+foreign json.loads(Text) -> Request
+foreign json.dumps(Text) -> Text
+
+fn nearest(product: Text, names: List[Text]) -> Option[Text] =
+    let best = io.min([words.distance(product, n) for n in names] + [99])
+    let picks = [n for n in names where words.distance(product, n) == best]
+    if best <= 2 then picks[0] else none
+
+fn resolve(product: Text, names: List[Text]) -> Option[Text] =
+    if product in names then product else nearest(product, names)
+
+fn billable_lb(qty: Int, item: Item) -> Float =
+    let actual = qty * item.weight_kg / 0.45359237
+    let vol = item.volume_l
+    let dim = if vol != none then qty * vol * 1000.0 / 16.387064 / 139.0 else 0.0
+    if dim > actual then dim else actual
+
+fn parcel_quote(qty: Int, catalog: Dict[Text, Item], name: Text, express: Bool) -> Float =
+    let item = catalog[name]
+    if item != none then carrier.rate(billable_lb(qty, item), express) else 0.0
+
+fn sek_quote(qty: Int, catalog: Dict[Text, Item], name: Text, express: Bool, rate: Float) -> Float =
+    io.round(parcel_quote(qty, catalog, name, express) * rate, 2)
+
+let req = json.loads(io.input())
+let names = sorted(keys(req.catalog))
+let known = [o for o in req.orders where resolve(o.product, names) != none]
+let unknown = sorted([o.id for o in req.orders where resolve(o.product, names) == none])
+let unknown_text = "[" + join([json.dumps(i) for i in unknown], ", ") + "]"
+let quotes = [sek_quote(o.qty, req.catalog, resolve(o.product, names) ?? "", o.express ?? false, req.usd_to_sek) for o in known]
+let entries = [json.dumps(o.id) + ": " + text(sek_quote(o.qty, req.catalog, resolve(o.product, names) ?? "", o.express ?? false, req.usd_to_sek)) for o in known]
+let matched = [o for o in known where not (o.product in req.catalog)]
+let matched_entries = [json.dumps(o.id) + ": " + json.dumps(resolve(o.product, names) ?? "") for o in matched]
+let total = io.round(io.sum(quotes), 2)
+print "{\"quotes_sek\": {" + join(entries, ", ") + "}, \"total_sek\": " + text(total) + ", \"unknown\": " + unknown_text + ", \"matched\": {" + join(matched_entries, ", ") + "}}"

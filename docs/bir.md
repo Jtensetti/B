@@ -81,3 +81,5 @@ For a strict prefix with integer projections, an earlier value exceeds a thresho
 ## Executable changes in B 0.18
 
 `also` lowers to typed comparisons and a conditional in the existing Boolean function. The checker validates each `keeping` clause on the unoptimized dependency graph. Revising an independently implemented program uses the accepted source plus the declaration as the reference. For 32 or more exact scalar tuples the Python backend can compile the same check into a constant membership index. [Semantics and comparison](executable-changes.md) · [Lookup measurements](../experiments/executable-changes/indexed/README.md).
+
+A `like` clause adds no BIR. The checker evaluates it on the extended program before lowering and rejects the module if the new case and the existing case differ. [Precedent questions](precedent-questions.md).

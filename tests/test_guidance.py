@@ -31,10 +31,8 @@ fn uncertain(x: Int) -> Int ensures result > 0 = x
 """) == []
 
 
-def test_float_with_a_zero_guard_does_not_request_a_second_guard():
-    row, = explain("fn f(x: Float) -> Float = if 0.0 < x then 10.0 / x else 0.0")
-    assert row["type"] == "Float" and row["status"] == "unknown"
-    assert "already tests" in row["detail"] and "Keep the guard" in row["suggestion"]
+def test_float_with_a_zero_guard_proves_the_division():
+    assert explain("fn f(x: Float) -> Float = if 0.0 < x then 10.0 / x else 0.0") == []
 
 
 def test_unknown_foreign_behavior_is_never_run_or_assumed_pure(tmp_path, monkeypatch):

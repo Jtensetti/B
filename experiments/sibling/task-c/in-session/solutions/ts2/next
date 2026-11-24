@@ -1,0 +1,2 @@
+#!/bin/sh
+exec python3 /home/user/B/experiments/sibling/next.py /tmp/claude-0/-home-user-B/bc1bd2a3-1ba0-5a86-9b4b-8c9b2f90e18b/scratchpad/sibC/state /tmp/claude-0/-home-user-B/bc1bd2a3-1ba0-5a86-9b4b-8c9b2f90e18b/scratchpad/sibC/ts2

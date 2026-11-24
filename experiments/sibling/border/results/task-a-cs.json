@@ -1,0 +1,239 @@
+{
+ "tools": {
+  "python": "Python 3.12.14",
+  "mypy": "mypy 2.4.1 (compiled: yes)",
+  "node": "v24.22.3",
+  "typescript": "Version 5.9.3",
+  "go": "go version go1.24.6 linux/amd64",
+  "rust": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "cargo": "cargo 1.89.0 (c24e10642 2025-06-23)",
+  "dotnet": "8.0.415 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]\n10.0.100 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]",
+  "B": "01a91593241803567c35534acbe3e041d4936b11",
+  "npm_packages": {
+   "fastest-levenshtein": "1.0.16",
+   "semver": "7.8.5",
+   "@types/node": "22.20.5"
+  }
+ },
+ "rows": [
+  {
+   "task": "task-a",
+   "solver": "cs1",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-w_n1yk2r/cs1/app/App.csproj (in 6.17 sec).\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-w_n1yk2r/cs1/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:11.49\n"
+    },
+    "comment": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-w_ta1iw_/cs1/app/App.csproj (in 186 ms).\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-w_ta1iw_/cs1/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:04.55\n"
+    },
+    "unit": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-yobvsuho/cs1/app/App.csproj (in 230 ms).\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-yobvsuho/cs1/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:04.29\n"
+    },
+    "currency": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-eq6lf5rp/cs1/app/App.csproj (in 305 ms).\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-eq6lf5rp/cs1/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:04.59\n"
+    },
+    "behavior": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-e74381fu/cs1/app/App.csproj (in 220 ms).\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-e74381fu/cs1/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:04.84\n"
+    },
+    "signature": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-wxtgsw9h/cs1/app/App.csproj (in 333 ms).\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs1-wxtgsw9h/cs1/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:04.42\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "cs2",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-tv04f9zl/cs2/libs/Tax/Tax.csproj (in 251 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-tv04f9zl/cs2/app/App.csproj (in 268 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-tv04f9zl/cs2/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-tv04f9zl/cs2/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.87\n"
+    },
+    "comment": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-534ed03u/cs2/libs/Tax/Tax.csproj (in 259 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-534ed03u/cs2/app/App.csproj (in 269 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-534ed03u/cs2/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-534ed03u/cs2/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:07.00\n"
+    },
+    "unit": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-3remmm0n/cs2/app/App.csproj (in 276 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-3remmm0n/cs2/libs/Tax/Tax.csproj (in 267 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-3remmm0n/cs2/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-3remmm0n/cs2/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:07.42\n"
+    },
+    "currency": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-smcgr639/cs2/app/App.csproj (in 474 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-smcgr639/cs2/libs/Tax/Tax.csproj (in 468 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-smcgr639/cs2/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-smcgr639/cs2/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.57\n"
+    },
+    "behavior": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-ffhbrk_p/cs2/libs/Tax/Tax.csproj (in 338 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-ffhbrk_p/cs2/app/App.csproj (in 345 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-ffhbrk_p/cs2/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-ffhbrk_p/cs2/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.18\n"
+    },
+    "signature": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-stxax3f2/cs2/app/App.csproj (in 205 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-stxax3f2/cs2/libs/Tax/Tax.csproj (in 192 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-stxax3f2/cs2/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs2-stxax3f2/cs2/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:05.83\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "cs3",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-_7jg_8p0/cs3/libs/Tax/Tax.csproj (in 206 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-_7jg_8p0/cs3/app/App.csproj (in 213 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-_7jg_8p0/cs3/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-_7jg_8p0/cs3/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.13\n"
+    },
+    "comment": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-2c9zxyum/cs3/app/App.csproj (in 203 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-2c9zxyum/cs3/libs/Tax/Tax.csproj (in 201 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-2c9zxyum/cs3/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-2c9zxyum/cs3/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.28\n"
+    },
+    "unit": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-pm9pdrbo/cs3/libs/Tax/Tax.csproj (in 205 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-pm9pdrbo/cs3/app/App.csproj (in 211 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-pm9pdrbo/cs3/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-pm9pdrbo/cs3/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.08\n"
+    },
+    "currency": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-4lnjr1mb/cs3/app/App.csproj (in 199 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-4lnjr1mb/cs3/libs/Tax/Tax.csproj (in 187 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-4lnjr1mb/cs3/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-4lnjr1mb/cs3/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:05.63\n"
+    },
+    "behavior": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-3q190rs0/cs3/libs/Tax/Tax.csproj (in 238 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-3q190rs0/cs3/app/App.csproj (in 244 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-3q190rs0/cs3/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-3q190rs0/cs3/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.42\n"
+    },
+    "signature": {
+     "command": [
+      "dotnet",
+      "build",
+      "app"
+     ],
+     "exit": 0,
+     "diagnostic": "  Determining projects to restore...\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-vy7gkki6/cs3/app/App.csproj (in 210 ms).\n  Restored /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-vy7gkki6/cs3/libs/Tax/Tax.csproj (in 201 ms).\n  Tax -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-vy7gkki6/cs3/libs/Tax/bin/Debug/net8.0/Tax.dll\n  App -> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-cs3-vy7gkki6/cs3/app/bin/Debug/net8.0/App.dll\n\nBuild succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.35\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  }
+ ]
+}

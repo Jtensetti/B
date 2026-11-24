@@ -17,6 +17,80 @@ _EXACT_BY_DESCRIPTOR = {typ.name: native for typ, native in _EXACT_SCALARS.items
 class BAssertionError(AssertionError):
     pass
 
+class BExampleError(AssertionError):
+    """A stated example of an imported function no longer holds."""
+    pass
+
+def to_json(value) -> str:
+    """One line of JSON, as json.dumps writes it."""
+    return json.dumps(value, ensure_ascii=False)
+
+
+def coalesce(value, fallback):
+    """B's `value ?? fallback`: the fallback is evaluated only when the value is none."""
+    return fallback() if value is None else value
+
+
+def go_module(path: str):
+    from .goadapter import go_module as load
+    return load(path)
+
+
+def cs_module(path: str):
+    from .csadapter import cs_module as load
+    return load(path)
+
+
+def rust_module(path: str):
+    from .rustadapter import rust_module as load
+    return load(path)
+
+
+def catch(call, names):
+    """A foreign call declared `on E`: none when it raises an exception named in names.
+
+    Exceptions are matched by class name along their hierarchy, so a library's own
+    exception classes need no import. Any other exception propagates unchanged."""
+    try:
+        return call()
+    except Exception as exc:
+        if any(cls.__name__ in names for cls in type(exc).__mro__):
+            return None
+        if "error" in names and isinstance(exc, ForeignError):
+            return None
+        raise
+
+
+def read_line() -> str:
+    """One line of standard input without its line break; an empty text at the end of input."""
+    import sys
+    return sys.stdin.readline().rstrip("\r\n")
+
+
+def min_of(items):
+    return min(items) if items else None
+
+
+def max_of(items):
+    return max(items) if items else None
+
+
+def index(sequence, position):
+    """B's xs[i]: an Option. Negative positions count from the end, as in Python and JavaScript's at()."""
+    if -len(sequence) <= position < len(sequence):
+        return sequence[position]
+    return None
+
+
+def text(value) -> str:
+    """B's spelling of a scalar: true/false in lower case, as B source writes them."""
+    if value is True:
+        return "true"
+    if value is False:
+        return "false"
+    return str(value)
+
+
 class BContractError(AssertionError):
     """A B function requires/ensures condition failed at execution."""
     pass
@@ -52,7 +126,11 @@ def _guard_type(value: Any, typ: Type) -> Any:
         return result
     if typ.name == "Option":
         return None if value is None else _guard_type(value, typ.args[0])
+    if typ.name == "Opaque":
+        return value  # another language's object, used only through declared methods
     if typ.name == "List":
+        if isinstance(value, tuple):
+            value = list(value)  # a Python tuple crosses the border as a list
         if type(value) is not list:
             raise _type_mismatch(value, typ)
         # Snapshots prevent mutation of the foreign value through B's binding.
@@ -67,6 +145,16 @@ def _guard_type(value: Any, typ: Type) -> Any:
                     raise _type_mismatch(item, element_type)
             return snapshot
         return [_guard_type(item, element_type) for item in value]
+    if typ.name == "Record":
+        if type(value) is not dict:
+            raise _type_mismatch(value, typ)
+        snapshot = {}
+        for field in typ.args:
+            if field.name in value:
+                snapshot[field.name] = _guard_type(value[field.name], field.args[0])
+            elif field.args[0].name != "Option":
+                raise BBoundaryError(f"Missing field {field.name} at boundary")
+        return snapshot  # fields B does not declare are not carried along
     if typ.name == "Dict":
         if type(value) is not dict:
             raise _type_mismatch(value, typ)
@@ -88,6 +176,10 @@ def guard(value: Any, btype: str) -> Any:
     if type(value) is _EXACT_BY_DESCRIPTOR.get(btype):
         return value
     return _guard_type(value, _descriptor(btype))
+
+class ForeignError(BBoundaryError):
+    """An error value returned by a Go or Rust function. `foreign ... on error` turns it into none."""
+
 
 def py_module(path: str):
     return importlib.import_module(path)

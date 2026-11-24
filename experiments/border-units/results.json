@@ -1,0 +1,43 @@
+{
+  "mistakes": [
+    {
+      "mistake": "speed and weight swapped",
+      "b": "rejected before running",
+      "typed_python": "wrong result, no error"
+    },
+    {
+      "mistake": "km/h passed where the library expects knots",
+      "b": "rejected before running",
+      "typed_python": "wrong result, no error"
+    },
+    {
+      "mistake": "kg passed where the library expects pounds",
+      "b": "rejected before running",
+      "typed_python": "wrong result, no error"
+    },
+    {
+      "mistake": "meters passed where the library expects feet",
+      "b": "rejected before running",
+      "typed_python": "wrong result, no error"
+    },
+    {
+      "mistake": "feet result used as meters",
+      "b": "rejected before running",
+      "typed_python": "wrong result, no error"
+    },
+    {
+      "mistake": "gallons added to liters",
+      "b": "rejected before running",
+      "typed_python": "wrong result, no error"
+    },
+    {
+      "mistake": "minutes passed where the library expects hours",
+      "b": "wrong result, no error",
+      "typed_python": "wrong result, no error"
+    }
+  ],
+  "nonblank_lines": {
+    "b": 12,
+    "typed_python": 12
+  }
+}

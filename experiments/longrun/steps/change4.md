@@ -1,0 +1,1 @@
+Change 4 of the trial. The owner says: "Customers can change plan. A customer may have "changes": [{"date": "YYYY-MM-DD", "plan": "<name>"}, ...], sorted by date. From that date on, the customer is on the new plan. Each billable day is billed at the price of the plan in force that day, divided by the number of days in the month. Discounts, coupons and the trial apply as before."

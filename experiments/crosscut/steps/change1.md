@@ -1,0 +1,1 @@
+Change 1 of the trial. The owner says: "Customers in Norway are now invoiced in Norwegian kronor. The input's rates.NOK is the value of 1 NOK in SEK. Every amount on a Norwegian customer's invoice is in NOK and its currency is "NOK". Shipping and the free-shipping limit are still set in SEK. The accountant's report stays in SEK."

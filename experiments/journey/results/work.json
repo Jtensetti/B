@@ -1,0 +1,234 @@
+{
+ "b1": {
+  "1": {
+   "tool_calls": 9,
+   "output_tokens": 5186,
+   "input_tokens": 1100007,
+   "assistant_turns": 12,
+   "seconds": 31
+  },
+  "2": {
+   "tool_calls": 2,
+   "output_tokens": 2396,
+   "input_tokens": 404232,
+   "assistant_turns": 4,
+   "seconds": 12
+  },
+  "3": {
+   "tool_calls": 4,
+   "output_tokens": 2970,
+   "input_tokens": 618782,
+   "assistant_turns": 6,
+   "seconds": 18
+  },
+  "4": {
+   "tool_calls": 3,
+   "output_tokens": 3530,
+   "input_tokens": 633524,
+   "assistant_turns": 6,
+   "seconds": 16
+  },
+  "5": {
+   "tool_calls": 2,
+   "output_tokens": 544,
+   "input_tokens": 214653,
+   "assistant_turns": 2,
+   "seconds": 7
+  },
+  "6": {
+   "tool_calls": 3,
+   "output_tokens": 2850,
+   "input_tokens": 544742,
+   "assistant_turns": 5,
+   "seconds": 16
+  },
+  "7": {
+   "tool_calls": 2,
+   "output_tokens": 2194,
+   "input_tokens": 443698,
+   "assistant_turns": 4,
+   "seconds": 12
+  },
+  "8": {
+   "tool_calls": 3,
+   "output_tokens": 3588,
+   "input_tokens": 680108,
+   "assistant_turns": 6,
+   "seconds": 18
+  }
+ },
+ "b2": {
+  "1": {
+   "tool_calls": 6,
+   "output_tokens": 3519,
+   "input_tokens": 847162,
+   "assistant_turns": 10,
+   "seconds": 24
+  },
+  "2": {
+   "tool_calls": 2,
+   "output_tokens": 1937,
+   "input_tokens": 274667,
+   "assistant_turns": 3,
+   "seconds": 12
+  },
+  "3": {
+   "tool_calls": 2,
+   "output_tokens": 1977,
+   "input_tokens": 279609,
+   "assistant_turns": 3,
+   "seconds": 11
+  },
+  "4": {
+   "tool_calls": 5,
+   "output_tokens": 5640,
+   "input_tokens": 866439,
+   "assistant_turns": 9,
+   "seconds": 28
+  },
+  "5": {
+   "tool_calls": 2,
+   "output_tokens": 518,
+   "input_tokens": 198872,
+   "assistant_turns": 2,
+   "seconds": 7
+  },
+  "6": {
+   "tool_calls": 2,
+   "output_tokens": 2912,
+   "input_tokens": 302744,
+   "assistant_turns": 3,
+   "seconds": 18
+  },
+  "7": {
+   "tool_calls": 2,
+   "output_tokens": 2024,
+   "input_tokens": 413362,
+   "assistant_turns": 4,
+   "seconds": 10
+  },
+  "8": {
+   "tool_calls": 2,
+   "output_tokens": 2383,
+   "input_tokens": 314870,
+   "assistant_turns": 3,
+   "seconds": 12
+  }
+ },
+ "py1": {
+  "1": {
+   "tool_calls": 5,
+   "output_tokens": 31309,
+   "input_tokens": 824928,
+   "assistant_turns": 9,
+   "seconds": 106
+  },
+  "2": {
+   "tool_calls": 2,
+   "output_tokens": 1774,
+   "input_tokens": 321082,
+   "assistant_turns": 3,
+   "seconds": 9
+  },
+  "3": {
+   "tool_calls": 2,
+   "output_tokens": 1479,
+   "input_tokens": 325453,
+   "assistant_turns": 3,
+   "seconds": 8
+  },
+  "4": {
+   "tool_calls": 2,
+   "output_tokens": 1000,
+   "input_tokens": 329162,
+   "assistant_turns": 3,
+   "seconds": 7
+  },
+  "5": {
+   "tool_calls": 2,
+   "output_tokens": 514,
+   "input_tokens": 221644,
+   "assistant_turns": 2,
+   "seconds": 6
+  },
+  "6": {
+   "tool_calls": 2,
+   "output_tokens": 1534,
+   "input_tokens": 335615,
+   "assistant_turns": 3,
+   "seconds": 8
+  },
+  "7": {
+   "tool_calls": 2,
+   "output_tokens": 1360,
+   "input_tokens": 339847,
+   "assistant_turns": 3,
+   "seconds": 8
+  },
+  "8": {
+   "tool_calls": 3,
+   "output_tokens": 2253,
+   "input_tokens": 574603,
+   "assistant_turns": 5,
+   "seconds": 12
+  }
+ },
+ "py2": {
+  "1": {
+   "tool_calls": 14,
+   "output_tokens": 28404,
+   "input_tokens": 1949520,
+   "assistant_turns": 20,
+   "seconds": 282
+  },
+  "2": {
+   "tool_calls": 2,
+   "output_tokens": 2027,
+   "input_tokens": 323652,
+   "assistant_turns": 3,
+   "seconds": 10
+  },
+  "3": {
+   "tool_calls": 2,
+   "output_tokens": 1362,
+   "input_tokens": 330362,
+   "assistant_turns": 3,
+   "seconds": 8
+  },
+  "4": {
+   "tool_calls": 2,
+   "output_tokens": 1094,
+   "input_tokens": 333914,
+   "assistant_turns": 3,
+   "seconds": 7
+  },
+  "5": {
+   "tool_calls": 2,
+   "output_tokens": 488,
+   "input_tokens": 224838,
+   "assistant_turns": 2,
+   "seconds": 6
+  },
+  "6": {
+   "tool_calls": 2,
+   "output_tokens": 1655,
+   "input_tokens": 340503,
+   "assistant_turns": 3,
+   "seconds": 9
+  },
+  "7": {
+   "tool_calls": 2,
+   "output_tokens": 1316,
+   "input_tokens": 344895,
+   "assistant_turns": 3,
+   "seconds": 8
+  },
+  "8": {
+   "tool_calls": 3,
+   "output_tokens": 2059,
+   "input_tokens": 466432,
+   "assistant_turns": 4,
+   "seconds": 12
+  }
+ }
+}

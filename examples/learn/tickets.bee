@@ -1,0 +1,12 @@
+domain day: "mon", "tue", "wed", "thu", "fri", "sat", "sun"
+
+fn price(child: Bool, day: Text) -> Int pure by examples
+example price(false, "mon") == 100
+example price(true, "sat") == 0
+example price(false, "sat") == 100
+example price(true, "mon") == 100
+
+fn total(child: Bool, day: Text) -> Int pure = price(child, day) + 10
+
+print total(true, "sat")
+print total(false, "mon")

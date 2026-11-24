@@ -1,0 +1,182 @@
+{
+ "b1": {
+  "0": {
+   "tool_calls": 9,
+   "output_tokens": 18364,
+   "input_tokens": 1452541,
+   "assistant_turns": 17,
+   "seconds": 54
+  },
+  "1": {
+   "tool_calls": 3,
+   "output_tokens": 2912,
+   "input_tokens": 563104,
+   "assistant_turns": 6,
+   "seconds": 15
+  },
+  "2": {
+   "tool_calls": 6,
+   "output_tokens": 11860,
+   "input_tokens": 1178130,
+   "assistant_turns": 12,
+   "seconds": 39
+  },
+  "3": {
+   "tool_calls": 3,
+   "output_tokens": 3449,
+   "input_tokens": 519827,
+   "assistant_turns": 5,
+   "seconds": 14
+  }
+ },
+ "b2": {
+  "0": {
+   "tool_calls": 12,
+   "output_tokens": 24923,
+   "input_tokens": 1990174,
+   "assistant_turns": 23,
+   "seconds": 81
+  },
+  "1": {
+   "tool_calls": 2,
+   "output_tokens": 2866,
+   "input_tokens": 573350,
+   "assistant_turns": 6,
+   "seconds": 11
+  },
+  "2": {
+   "tool_calls": 5,
+   "output_tokens": 10062,
+   "input_tokens": 989986,
+   "assistant_turns": 10,
+   "seconds": 31
+  },
+  "3": {
+   "tool_calls": 2,
+   "output_tokens": 2828,
+   "input_tokens": 413750,
+   "assistant_turns": 4,
+   "seconds": 10
+  }
+ },
+ "b3": {
+  "0": {
+   "tool_calls": 15,
+   "output_tokens": 31456,
+   "input_tokens": 3185651,
+   "assistant_turns": 33,
+   "seconds": 92
+  },
+  "1": {
+   "tool_calls": 2,
+   "output_tokens": 1528,
+   "input_tokens": 436776,
+   "assistant_turns": 4,
+   "seconds": 7
+  },
+  "2": {
+   "tool_calls": 8,
+   "output_tokens": 13804,
+   "input_tokens": 2152252,
+   "assistant_turns": 19,
+   "seconds": 39
+  },
+  "3": {
+   "tool_calls": 2,
+   "output_tokens": 2650,
+   "input_tokens": 471998,
+   "assistant_turns": 4,
+   "seconds": 10
+  }
+ },
+ "py1": {
+  "0": {
+   "tool_calls": 4,
+   "output_tokens": 17700,
+   "input_tokens": 530109,
+   "assistant_turns": 7,
+   "seconds": 28
+  },
+  "1": {
+   "tool_calls": 4,
+   "output_tokens": 5980,
+   "input_tokens": 578044,
+   "assistant_turns": 7,
+   "seconds": 11
+  },
+  "2": {
+   "tool_calls": 7,
+   "output_tokens": 14022,
+   "input_tokens": 1030514,
+   "assistant_turns": 12,
+   "seconds": 21
+  },
+  "3": {
+   "tool_calls": 4,
+   "output_tokens": 6306,
+   "input_tokens": 538758,
+   "assistant_turns": 6,
+   "seconds": 10
+  }
+ },
+ "py2": {
+  "0": {
+   "tool_calls": 4,
+   "output_tokens": 16917,
+   "input_tokens": 529657,
+   "assistant_turns": 7,
+   "seconds": 29
+  },
+  "1": {
+   "tool_calls": 4,
+   "output_tokens": 5288,
+   "input_tokens": 492802,
+   "assistant_turns": 6,
+   "seconds": 8
+  },
+  "2": {
+   "tool_calls": 7,
+   "output_tokens": 16343,
+   "input_tokens": 1027491,
+   "assistant_turns": 12,
+   "seconds": 23
+  },
+  "3": {
+   "tool_calls": 4,
+   "output_tokens": 6386,
+   "input_tokens": 539394,
+   "assistant_turns": 6,
+   "seconds": 10
+  }
+ },
+ "py3": {
+  "0": {
+   "tool_calls": 4,
+   "output_tokens": 12276,
+   "input_tokens": 617418,
+   "assistant_turns": 8,
+   "seconds": 29
+  },
+  "1": {
+   "tool_calls": 2,
+   "output_tokens": 2682,
+   "input_tokens": 330326,
+   "assistant_turns": 4,
+   "seconds": 7
+  },
+  "2": {
+   "tool_calls": 5,
+   "output_tokens": 14697,
+   "input_tokens": 950209,
+   "assistant_turns": 11,
+   "seconds": 30
+  },
+  "3": {
+   "tool_calls": 2,
+   "output_tokens": 4074,
+   "input_tokens": 368452,
+   "assistant_turns": 4,
+   "seconds": 10
+  }
+ }
+}
