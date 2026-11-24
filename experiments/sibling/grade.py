@@ -25,8 +25,8 @@ def command(ws: Path):
         return ["go", "run", "."]
     if (ws / "Cargo.toml").exists():
         return ["cargo", "run", "-q", "--release"]
-    if list(ws.glob("*.csproj")):
-        return ["dotnet", "run", "-c", "Release", "--project", str(next(ws.glob("*.csproj")))]
+    if list(ws.glob("app/*.csproj")):
+        return ["dotnet", "run", "-c", "Release", "--project", str(next(ws.glob("app/*.csproj")))]
     raise SystemExit(f"no program found in {ws}")
 
 

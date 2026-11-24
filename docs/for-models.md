@@ -81,6 +81,19 @@ foreign m.function(Int, Text) -> Float
 
 A function that raises an exception for some inputs is declared with an `Option` result: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` instead of stopping. B has no `try`.
 
+Go, Rust and C# libraries next to the program are borrowed the same way. B reads their signatures with each language's own tools:
+
+```bee
+use go:"./libs/tariff" as tariff
+use rust:"./libs/geo" as geo
+use cs:"./libs/Tax" as tax
+foreign tariff.Zone(Text) -> Option[Int] on error
+let km = geo.road_km(59.3, 18.1, 57.7, 11.9)
+let rate = tax.Vat.Rate("SE")
+```
+
+A Go module is a directory with `go.mod`, a Rust crate a directory with `Cargo.toml` and `src/lib.rs`, and a C# project a directory with one `.csproj`, whose public static methods are called as `tax.Class.Method(...)`. A Go `error`, a Rust `Err` or a C# exception stops the program, unless the function is declared `-> Option[T] on error`, which gives `none` instead. A Python module in a subfolder is `use py:libs.calendar.workdays as cal`.
+
 `use py:` imports from Python's standard library, installed packages and files next to the program. `use js:` imports npm packages from `node_modules`. `foreign` declares a signature that B could not read.
 
 Objects of another language get a name and typed methods:
