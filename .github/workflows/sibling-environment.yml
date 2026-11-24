@@ -1,0 +1,28 @@
+name: Sibling trial environment
+on:
+  pull_request:
+    paths:
+      - 'experiments/sibling/environment/**'
+      - 'experiments/sibling/collect_c.py'
+      - '.github/workflows/sibling-environment.yml'
+jobs:
+  inventory-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - run: experiments/sibling/environment/build.sh
+      - name: Check and grade the frozen inventory reference as a solver user
+        run: |
+          work=$(mktemp -d)
+          cp -r experiments/sibling/task-c/libs "$work/libs"
+          cp experiments/sibling/task-c/reference/build.bee "$work/main.bee"
+          docker run --rm --user "$(id -u):$(id -g)" -e HOME=/tmp/solver-home \
+            -v "$work:/work" -v "$PWD:/study:ro" b-sibling-c:0.32 sh -ec '
+              mkdir -p "$HOME/.cache"; cp -r /opt/seed-cache "$HOME/.cache/b"
+              cp -r /opt/deps/node_modules .
+              b check --strict main.bee
+              python /study/experiments/sibling/grade.py task-c 0 /work > /tmp/reference.json
+              python -c "import json; r=json.load(open(\"/tmp/reference.json\")); assert (r[\"wrong\"], r[\"of\"]) == (0, 24), r"
+            '

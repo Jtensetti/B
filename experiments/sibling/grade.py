@@ -30,17 +30,26 @@ def command(ws: Path):
     raise SystemExit(f"no program found in {ws}")
 
 
-def grade(task: str, step: int, ws: Path) -> dict:
+def grade(task: str, step: int, ws: Path, language: str | None = None) -> dict:
     spec = importlib.util.spec_from_file_location("oracle", HERE / task / "oracle.py")
     oracle = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(oracle)
     if hasattr(oracle, "TODAYS"):
         got_by_day, errors = {}, []
         for today in oracle.TODAYS:
+            done = None
             try:
-                done = subprocess.run(command(ws), input=json.dumps(oracle.data(step, today)) + "\n",
+                from checks import RUN
+                done = subprocess.run(RUN[language] if language else command(ws), input=json.dumps(oracle.data(step, today)) + "\n",
                                       capture_output=True, text=True, cwd=ws, timeout=600)
-                got_by_day[today] = json.loads([l for l in done.stdout.splitlines() if l.strip()][-1])
+                done.check_returncode()
+                got = json.loads([line for line in done.stdout.splitlines() if line.strip()][-1])
+                if not isinstance(got, dict) or not isinstance(got.get("orders", {}), dict):
+                    raise ValueError("expected an orders object")
+                unknown = got.get("unknown", [])
+                if not isinstance(unknown, list) or any(not isinstance(s, str) for s in unknown):
+                    raise ValueError("expected unknown to be a list of SKUs")
+                got_by_day[today] = got
             except Exception as exc:  # noqa: BLE001
                 got_by_day[today] = None
                 errors.append(f"{exc} {getattr(locals().get('done'), 'stderr', '')}"[-300:])
