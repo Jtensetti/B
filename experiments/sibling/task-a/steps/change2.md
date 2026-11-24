@@ -1,0 +1,1 @@
+Express delivery. An order may have "express": true. For express orders the BasePrice part is multiplied by 1.5 (the distance surcharge is not), and delivery is the order date itself when it is a working day (is_workday), otherwise the next working day after it.

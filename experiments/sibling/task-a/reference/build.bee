@@ -1,0 +1,32 @@
+use py:json as json
+use py:libs.calendar.workdays as cal
+use go:"./libs/tariff" as tariff
+use rust:"./libs/geo" as geo
+use cs:"./libs/Tax" as tax
+use js:"fastest-levenshtein" as lev
+
+record Point { lat: Float, lon: Float }
+record Order { id: Text, product: Text, country: Text, lat: Float, lon: Float, date: Text, business: Bool }
+record Input { depot: Point, catalog: Dict[Text, Float], orders: List[Order] }
+record Quote { price: Float, delivery: Text }
+
+foreign json.loads(Text) -> Input
+foreign tariff.Zone(Text) -> Option[Int] on error
+
+let data = json.loads(read_line())
+let names = sorted(keys(data.catalog))
+
+fn product(o: Order) -> Option[Text] =
+    let near = if len(names) == 0 then "" else lev.closest(o.product, names)
+    if len(names) > 0 and lev.distance(o.product, near) <= 2 then near else none
+
+fn quote(o: Order, name: Text, zone: Int) -> Quote =
+    let km = geo.road_km(data.depot.lat, data.depot.lon, o.lat, o.lon)
+    let net = tariff.BasePrice(zone, data.catalog[name] ?? 0.0) + 0.8 * max(0.0, km - 300.0)
+    let vat = if tax.Vat.ReverseCharge(o.country, o.business) then 0.0 else tax.Vat.Rate(o.country)
+    {price = round(net * (1.0 + vat), 2), delivery = cal.next_workday(o.date)}
+
+let known = [o for o in data.orders where product(o) != none and tariff.Zone(o.country) != none]
+print to_json({
+    quotes = {o.id: quote(o, product(o) ?? "", tariff.Zone(o.country) ?? 0) for o in known},
+    unknown = sorted([o.id for o in data.orders where not (o in known)])})
