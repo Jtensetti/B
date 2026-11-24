@@ -1,0 +1,221 @@
+{
+ "tools": {
+  "python": "Python 3.12.14",
+  "mypy": "mypy 2.4.1 (compiled: yes)",
+  "node": "v24.22.3",
+  "typescript": "Version 5.9.3",
+  "go": "go version go1.24.6 linux/amd64",
+  "rust": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "cargo": "cargo 1.89.0 (c24e10642 2025-06-23)",
+  "dotnet": "8.0.415 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]\n10.0.100 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]",
+  "B": "01a91593241803567c35534acbe3e041d4936b11",
+  "npm_packages": {
+   "fastest-levenshtein": "1.0.16",
+   "semver": "7.8.5",
+   "@types/node": "22.20.5"
+  }
+ },
+ "rows": [
+  {
+   "task": "task-b",
+   "solver": "rs1",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-5q3zt_h_/rs1/libs/quarter)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-5q3zt_h_/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 10.47s\n"
+    },
+    "comment": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-h44q9j3y/rs1/libs/quarter)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-h44q9j3y/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.67s\n"
+    },
+    "unit": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-gaq99r4d/rs1/libs/quarter)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-gaq99r4d/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 9.98s\n"
+    },
+    "currency": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-4v_hnmni/rs1/libs/quarter)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-4v_hnmni/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.95s\n"
+    },
+    "behavior": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-nv3tjld4/rs1/libs/quarter)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-nv3tjld4/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.76s\n"
+    },
+    "signature": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 101,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-7560yu4p/rs1/libs/quarter)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-7560yu4p/rs1)\nerror[E0061]: this function takes 2 arguments but 1 argument was supplied\n   --> src/main.rs:299:21\n    |\n299 |         let hours = quarter::round_up(span - brk);\n    |                     ^^^^^^^^^^^^^^^^^------------ argument #2 of type `bool` is missing\n    |\nnote: function defined here\n   --> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-7560yu4p/rs1/libs/quarter/src/lib.rs:5:8\n    |\n5   | pub fn round_up(hours: f64, _paid: bool) -> f64 {\n    |        ^^^^^^^^\nhelp: provide the argument\n    |\n299 |         let hours = quarter::round_up(span - brk, /* bool */);\n    |                                                 ++++++++++++\n\nFor more information about this error, try `rustc --explain E0061`.\nerror: could not compile `payslips` (bin \"payslips\") due to 1 previous error\n"
+    }
+   },
+   "step5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-b",
+   "solver": "rs2",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 11 packages to latest compatible versions\n   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-khuvdsvx/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 11.32s\n"
+    },
+    "comment": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 11 packages to latest compatible versions\n   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-n22i2wsk/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.95s\n"
+    },
+    "unit": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 11 packages to latest compatible versions\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-1jzn05hg/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.62s\n"
+    },
+    "currency": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 11 packages to latest compatible versions\n   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-zqhe9349/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.55s\n"
+    },
+    "behavior": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 11 packages to latest compatible versions\n   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-mv3urolb/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.49s\n"
+    },
+    "signature": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 11 packages to latest compatible versions\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-ketfx4fg/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.81s\n"
+    }
+   },
+   "step5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-b",
+   "solver": "rs3",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-xo42m8oy/rs3/libs/quarter)\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-xo42m8oy/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.80s\n"
+    },
+    "comment": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-ea7i1o1j/rs3/libs/quarter)\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-ea7i1o1j/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.04s\n"
+    },
+    "unit": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-f88wci1w/rs3/libs/quarter)\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-f88wci1w/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.50s\n"
+    },
+    "currency": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-iijub82k/rs3/libs/quarter)\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-iijub82k/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.62s\n"
+    },
+    "behavior": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-85os3tow/rs3/libs/quarter)\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-85os3tow/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 8.37s\n"
+    },
+    "signature": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 101,
+     "diagnostic": "    Updating crates.io index\n     Locking 12 packages to latest compatible versions\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling quarter v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-mih6nmwq/rs3/libs/quarter)\n   Compiling payslips v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-mih6nmwq/rs3)\nerror[E0061]: this function takes 2 arguments but 1 argument was supplied\n  --> src/main.rs:95:5\n   |\n95 |     quarter::round_up(hours)\n   |     ^^^^^^^^^^^^^^^^^------- argument #2 of type `bool` is missing\n   |\nnote: function defined here\n  --> /workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-mih6nmwq/rs3/libs/quarter/src/lib.rs:5:8\n   |\n5  | pub fn round_up(hours: f64, _paid: bool) -> f64 {\n   |        ^^^^^^^^\nhelp: provide the argument\n   |\n95 |     quarter::round_up(hours, /* bool */)\n   |                            ++++++++++++\n\nFor more information about this error, try `rustc --explain E0061`.\nerror: could not compile `payslips` (bin \"payslips\") due to 1 previous error\n"
+    }
+   },
+   "step5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  }
+ ]
+}

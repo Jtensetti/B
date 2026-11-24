@@ -31,3 +31,5 @@ Each solver runs the whole trial in one agent run. It gets the build brief and i
 ## Which tasks count (fixed before task C)
 
 Conditions 1–3 of the goal are judged on exactly three tasks: A, B and C. No task is added, re-run or dropped to change the sums, whatever A and B showed. Task C uses the same scale as A and B: five libraries of 40–120 lines each, a build and five changes. B may improve between tasks. Each task records the B version it ran, and every task's result counts as measured.
+
+The [boundary registration](border/PREREGISTRATION.md) fixes the faults and controls. [A/B results](border/RESULTS.md) report the checks on all 36 archived programs. The [inventory collector](task-c/COLLECTION.md) records task C runs.

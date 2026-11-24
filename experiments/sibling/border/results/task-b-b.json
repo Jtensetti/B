@@ -1,0 +1,257 @@
+{
+ "tools": {
+  "python": "Python 3.12.14",
+  "mypy": "mypy 2.4.1 (compiled: yes)",
+  "node": "v24.22.3",
+  "typescript": "Version 5.9.3",
+  "go": "go version go1.24.6 linux/amd64",
+  "rust": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "cargo": "cargo 1.89.0 (c24e10642 2025-06-23)",
+  "dotnet": "8.0.415 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]\n10.0.100 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]",
+  "B": "01a91593241803567c35534acbe3e041d4936b11",
+  "npm_packages": {
+   "fastest-levenshtein": "1.0.16",
+   "semver": "7.8.5",
+   "@types/node": "22.20.5"
+  }
+ },
+ "rows": [
+  {
+   "task": "task-b",
+   "solver": "b1",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[List[Text]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "comment": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[List[Text]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "unit": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[List[Text]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "currency": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[List[Text]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "behavior": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[List[Text]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "signature": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 1,
+     "diagnostic": "B check: E_ARITY: rust:./libs/quarter.round_up expects 2 arguments, got 1\n"
+    }
+   },
+   "step5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-b",
+   "solver": "b2",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "comment": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "unit": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "currency": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "behavior": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: method Date.strftime: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "signature": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 1,
+     "diagnostic": "B check: E_FOREIGN: A binding already exists for rust:./libs/quarter.round_up\n"
+    }
+   },
+   "step5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-b",
+   "solver": "b3",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "comment": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "unit": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "currency": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "behavior": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[employees[List[Record[contract[Text], hourly[Float], id[Text], table[Int]]]], holidays[Option[List[Text]]], month[Text], shifts[List[Record[break[Option[Text]], date[Text], employee[Text], hours[Text], id[Text]]]]]\nASSUMED FOREIGN CONTRACT: py:datetime.date.fromisoformat(Text) -> Opaque[Date]\nASSUMED FOREIGN CONTRACT: method Date.weekday: signature declared, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: go:./libs/hours.Parse (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/quarter.round_up (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:semver.satisfies (curated-semver-7): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Holiday (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Rules.Overtime.Multiplier (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.payroll.withholding.withholding (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "signature": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 1,
+     "diagnostic": "B check: E_ARITY: rust:./libs/quarter.round_up expects 2 arguments, got 1\n"
+    }
+   },
+   "step5": {
+    "task": "task-b",
+    "step": 5,
+    "wrong": 0,
+    "of": 7,
+    "examples": []
+   }
+  }
+ ]
+}

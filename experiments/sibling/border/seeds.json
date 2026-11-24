@@ -1,0 +1,19 @@
+{
+  "task-a": [
+    {"kind": "unit", "file": "geo/src/lib.rs", "symbol": "road_km", "before": "distance_km(lat1, lon1, lat2, lon2) * 1.25", "after": "distance_km(lat1, lon1, lat2, lon2) * 1250.0"},
+    {"kind": "currency", "file": "tariff/tariff.go", "symbol": "BasePrice", "before": "return start[zone] + perKg[zone]*billed", "after": "return (start[zone] + perKg[zone]*billed) / 10.0"},
+    {"kind": "behavior", "file": "Tax/Vat.cs", "symbol": "Rate", "before": "[\"FI\"] = 0.255", "after": "[\"FI\"] = 0.20"},
+    {"kind": "signature", "file": "tariff/tariff.go", "symbol": "Zone", "before": "func Zone(country string)", "after": "func Zone(country string, priority bool)"}
+  ],
+  "task-b": [
+    {"kind": "unit", "file": "hours/hours.go", "symbol": "Parse", "before": "return float64(h) + float64(m)/60.0, nil", "after": "return float64(60*h + m), nil"},
+    {"kind": "currency", "file": "payroll/withholding.py", "symbol": "withholding", "before": "return math.floor(low + high)", "after": "return math.floor((low + high) / 10.0)"},
+    {"kind": "behavior", "file": "Rules/Overtime.cs", "symbol": "Multiplier", "before": "\"Sat\" => 1.5", "after": "\"Sat\" => 1.0"},
+    {"kind": "signature", "file": "quarter/src/lib.rs", "symbol": "round_up", "before": "pub fn round_up(hours: f64)", "after": "pub fn round_up(hours: f64, _paid: bool)"}
+  ],
+  "task-c": [
+    {"kind": "unit", "file": "leadtime/leadtime.go", "symbol": "Days", "before": "return d, nil", "after": "return 24 * d, nil"},
+    {"kind": "behavior", "file": "leadtime/leadtime.go", "symbol": "Days", "before": "\"Baltic Steel\": 9", "after": "\"Baltic Steel\": 19"},
+    {"kind": "signature", "file": "Packaging/Packs.cs", "symbol": "RoundUp", "before": "RoundUp(int quantity, int packSize)", "after": "RoundUp(int quantity, int packSize, bool expedited)"}
+  ]
+}

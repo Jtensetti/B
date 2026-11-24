@@ -99,13 +99,15 @@ def _b_type(go: str) -> str | None:
     return None
 
 
-_described: dict[str, dict[str, GoFunction]] = {}
+_described: dict[str, tuple[str, dict[str, GoFunction]]] = {}
 
 
 def describe(path: str) -> dict[str, GoFunction]:
     target = resolve(path)
-    if target in _described:
-        return _described[target]
+    digest = _source_digest(target) if Path(target).is_absolute() else ""
+    cached = _described.get(target)
+    if cached is not None and cached[0] == digest:
+        return cached[1]
     done = subprocess.run([str(_describe_tool()), target], capture_output=True, text=True,
                           env=_env(), timeout=120)
     if done.returncode:
@@ -124,7 +126,7 @@ def describe(path: str) -> dict[str, GoFunction]:
             continue
         signature = Signature(tuple(parse_descriptor(p) for p in params), parse_descriptor(result))
         functions[f["name"]] = GoFunction(f["name"], tuple(f["params"]), results[0], fails, signature)
-    _described[target] = functions
+    _described[target] = (digest, functions)
     return functions
 
 

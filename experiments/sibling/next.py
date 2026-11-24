@@ -1,20 +1,32 @@
-"""The solver's `next` command: snapshot the workspace for grading and print the next change.
-
-Usage (by the trial driver, not the solver): python next.py STATE_DIR WORKSPACE
-STATE_DIR holds steps/change<N>.md and the counter; snapshots go to STATE_DIR/snapshots/<workspace>/step<N>.
-"""
+"""Snapshot one finished step and reveal the next change. The controller owns state."""
 import shutil
 import sys
+import tempfile
 from pathlib import Path
 
-state, ws = Path(sys.argv[1]), Path(sys.argv[2]).resolve()
-counter = state / "progress" / ws.name
-counter.parent.mkdir(parents=True, exist_ok=True)
-done = int(counter.read_text()) if counter.exists() else 0
-target = state / "snapshots" / ws.name / f"step{done}"
-if target.exists():
-    shutil.rmtree(target)
-shutil.copytree(ws, target, ignore=shutil.ignore_patterns("node_modules", "target", "obj", "__pycache__", ".git"))
-counter.write_text(str(done + 1))
-change = state / "steps" / f"change{done + 1}.md"
-print(change.read_text() if change.exists() else "END. The trial is over. Reply DONE.")
+END = "END. The trial is over. Reply DONE."
+
+
+def advance(state: Path, ws: Path) -> str:
+    root = state / "snapshots" / ws.name
+    root.mkdir(parents=True, exist_ok=True)
+    # Published snapshots are the counter, including after a controller restart.
+    step = 0
+    while (root / f"step{step}").exists():
+        step += 1
+    if step and not (state / "steps" / f"change{step}.md").is_file():
+        return END
+    with tempfile.TemporaryDirectory(dir=root) as staging:
+        snapshot = Path(staging) / "workspace"
+        shutil.copytree(ws, snapshot, symlinks=True,
+                        ignore=shutil.ignore_patterns("node_modules", "target", "obj", "__pycache__", ".git"))
+        snapshot.rename(root / f"step{step}")
+    progress = state / "progress" / ws.name
+    progress.parent.mkdir(parents=True, exist_ok=True)
+    progress.write_text(str(step + 1))
+    change = state / "steps" / f"change{step + 1}.md"
+    return change.read_text() if change.exists() else END
+
+
+if __name__ == "__main__":
+    print(advance(Path(sys.argv[1]), Path(sys.argv[2]).resolve()))

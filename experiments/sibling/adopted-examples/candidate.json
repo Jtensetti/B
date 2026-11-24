@@ -1,0 +1,26 @@
+{
+  "clean": {
+    "exit": 0,
+    "diagnostic": "B check: 0 warning(s), 0 unproved obligation(s)\n"
+  },
+  "equivalent": {
+    "exit": 0,
+    "diagnostic": "B check: 0 warning(s), 0 unproved obligation(s)\n"
+  },
+  "unit": {
+    "exit": 1,
+    "diagnostic": "B check: E_EXAMPLE: example seconds(3) == 180, but the program gives 180000\n"
+  },
+  "currency": {
+    "exit": 1,
+    "diagnostic": "B check: E_EXAMPLE: example kronor(7) == 77, but the program gives 70\n"
+  },
+  "behavior": {
+    "exit": 1,
+    "diagnostic": "B check: E_EXAMPLE: example alert(8) == true, but the program gives false\n"
+  },
+  "signature": {
+    "exit": 1,
+    "diagnostic": "B check: E_ARITY: seconds expects 2 arguments, got 1\n"
+  }
+}

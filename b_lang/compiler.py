@@ -1,4 +1,4 @@
-"""B 0.32 compiler: parse -> typed BIR -> Python backend.
+"""B compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -984,7 +984,7 @@ class Compiler:
                 rows.setdefault(statement.parts[0], []).append(statement)
         for name, statements in rows.items():
             for arguments, expected in resolve_examples(name, statements):
-                known, actual = evaluate_scalar(program, name, arguments)
+                known, actual = evaluate_scalar(program, name, arguments, adopted_examples=True)
                 if not known:
                     self.warn("W_EXAMPLE_UNCHECKED", f"Cannot evaluate example {call_text(name, arguments)} "
                               "before running")
