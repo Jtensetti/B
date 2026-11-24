@@ -36,7 +36,10 @@ for solver, agent in sorted(agents.items()):
     snaps = run_dir / "state" / "snapshots" / solver
     cargo_target = Path(tempfile.gettempdir()) / f"bgrade-target-{task}-{solver}"
     os.environ["CARGO_TARGET_DIR"] = str(cargo_target)
+    last = len(list((run_dir / "state" / "steps").glob("change*.md")))  # a `next` after END adds nothing
     for snap in sorted(snaps.glob("step*"), key=lambda p: int(p.name[4:])):
+        if int(snap.name[4:]) > last:
+            continue
         work = Path(tempfile.mkdtemp(prefix=f"bgrade-{solver}-"))
         ws = work / solver
         shutil.copytree(snap, ws)
