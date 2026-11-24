@@ -8,6 +8,7 @@ import subprocess
 import tempfile
 import threading
 from pathlib import Path
+from uuid import uuid4
 
 from checks import CHECK
 from next import advance
@@ -68,7 +69,8 @@ def collect(root, solver, image, model, network, credential):
     transcripts.mkdir(exist_ok=True)
     instructions = prompt(solver[:-1])
     (transcripts / f"{solver}.prompt").write_text(instructions)
-    cli = ["claude", "-p", "--model", model, "--output-format", "stream-json", "--verbose",
+    session = str(uuid4())
+    cli = ["claude", "-p", "--session-id", session, "--model", model, "--output-format", "stream-json", "--verbose",
            "--tools", "Bash,Read,Edit,Write,Glob,Grep", "--allowedTools", "Bash,Read,Edit,Write,Glob,Grep",
            "--strict-mcp-config", "--mcp-config", '{"mcpServers":{}}']
     startup = ('set -eu; mkdir -p "$HOME/.cache"; cp -r /opt/seed-cache "$HOME/.cache/b"; cp -a /opt/deps/node_modules .; '
@@ -82,19 +84,28 @@ def collect(root, solver, image, model, network, credential):
         with socketserver.UnixStreamServer(str(Path(control) / "next.sock"), Next) as server:
             thread = threading.Thread(target=server.serve_forever, daemon=True)
             thread.start()
-            cmd = ["docker", "run", "--rm", "-i", "--init", "--network", network,
+            cidfile = Path(control) / "cid"
+            cmd = ["docker", "run", "--cidfile", str(cidfile), "-i", "--init", "--network", network,
                    "--user", f"{os.getuid()}:{os.getgid()}", "-e", "HOME=/tmp/solver-home",
-                   "-e", credential, "-e", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1",
+                   "-e", credential, "-e", "CLAUDE_CONFIG_DIR=/tmp/solver-config",
+                   "-e", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1",
                    "-v", f"{ws}:/work", "-v", f"{control}:/control:ro",
                    "-w", "/work", image, "sh", "-c", startup, "sh", *cli]
             try:
-                with (transcripts / f"{solver}.output").open("xb") as out, (
+                with (transcripts / f"{solver}.stream.jsonl").open("xb") as out, (
                         transcripts / f"{solver}.stderr").open("xb") as err:
                     p = subprocess.run(cmd, input=instructions.encode(), stdout=out, stderr=err)
+                if cidfile.is_file():
+                    container = cidfile.read_text().strip()
+                    journal = f"/tmp/solver-config/projects/-work/{session}.jsonl"
+                    subprocess.run(["docker", "cp", f"{container}:{journal}",
+                                    str(transcripts / f"{solver}.output")], check=True)
             finally:
                 server.shutdown()
                 thread.join()
-    usage = measure(transcripts / f"{solver}.output")
+                if cidfile.is_file():
+                    subprocess.run(["docker", "rm", "-f", cidfile.read_text().strip()], check=True)
+    usage = measure(transcripts / f"{solver}.output", transcripts / f"{solver}.stream.jsonl")
     snaps = root / "state" / "snapshots" / solver
     if (p.returncode or not snaps.is_dir()
             or {s.name for s in snaps.iterdir()} != {f"step{n}" for n in range(6)}):

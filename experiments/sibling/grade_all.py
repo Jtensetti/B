@@ -35,11 +35,15 @@ def output_tokens(agent: str) -> int:
 if task == "task-c":
     if set(agents) != {f"{lang}{n}" for lang in CHECK for n in range(1, 4)} or len(set(agents.values())) != 18:
         raise SystemExit("C requires all 18 distinct transcripts")
+    session_ids = set()
     for solver, agent in agents.items():
         snaps = run_dir / "state" / "snapshots" / solver
         if {p.name for p in snaps.glob("step*")} != {f"step{n}" for n in range(6)}:
             raise SystemExit(f"{solver}: expected six snapshots")
-        measure(tasks_dir / f"{agent}.output")
+        usage = measure(tasks_dir / f"{agent}.output", tasks_dir / f"{agent}.stream.jsonl")
+        if usage["session_id"] in session_ids:
+            raise SystemExit(f"{solver}: Claude session already counted")
+        session_ids.add(usage["session_id"])
 
 results = {}
 for solver, agent in sorted(agents.items()):
@@ -79,7 +83,7 @@ for solver, agent in sorted(agents.items()):
     results[solver] = {"steps": steps, "wrong": sum(s["wrong"] for s in steps.values()),
                        "units": sum(s["of"] for s in steps.values()), "output_tokens": output_tokens(agent)}
     if task == "task-c":
-        results[solver].update(measure(tasks_dir / f"{agent}.output"))
+        results[solver].update(measure(tasks_dir / f"{agent}.output", tasks_dir / f"{agent}.stream.jsonl"))
         if results[solver]["units"] != 144:
             raise SystemExit(f"{solver}: expected 144 units")
     print(solver, results[solver]["wrong"], "/", results[solver]["units"], "tokens", results[solver]["output_tokens"],
