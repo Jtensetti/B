@@ -1,4 +1,4 @@
-"""B 0.29 compiler: parse -> typed BIR -> Python backend.
+"""B 0.30 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -170,6 +170,9 @@ class Compiler:
     def _check_type(self, value: Value, expected: Type, context: str):
         if not assignable(value.type, expected):
             raise BError("E_TYPE", f"{context}: expected {expected}, got {value.type}")
+        empty = value.node.op in ("list", "dict") and not value.node.operands
+        if empty and expected.name in ("List", "Dict"):
+            return  # an empty literal belongs to every List[T] and Dict[K, V]
         if needs_dynamic_guard(value.type, expected):
             self.warn("W_DYNAMIC_TYPE", f"{context} comes from an untyped boundary; checked at runtime")
             value.node = self.guard(value.node, expected)

@@ -1,2 +1,2 @@
 """B: experimental language, type checker and backend-neutral BIR."""
-__version__ = "0.29.0"
+__version__ = "0.30.0"

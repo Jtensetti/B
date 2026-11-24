@@ -27,6 +27,34 @@ print stats.median([1.0, 3.0, 7.0])
 
 Use when automatic discovery cannot represent the signature. Explicit declarations describe the B boundary but are **trusted claims made by the author**, checked only for type compatibility at runtime. A declaration cannot override a known built-in or auto-discovered signature.
 
+## Go and Rust (B 0.30)
+
+```b
+use go:"strings" as s
+use go:"./geo" as geo
+use rust:"./pricing" as p
+foreign geo.Zone(Text) -> Option[Int] on error
+print s.Repeat("ab", 3)
+print p.discounted(200.0, 15)
+```
+
+B reads a Go package with Go's own type checker (`go/types`), and a Rust crate's `src/lib.rs` with Rust's own parser (`syn`). Every exported, non-generic function whose types B can represent becomes a typed B function. The others are left out, and calling one is a compile error. B never invents a signature.
+
+| Go | Rust | B |
+| --- | --- | --- |
+| `int`, `int64`, other integers | `i64`, `usize`, other integers | `Int` |
+| `float64`, `float32` | `f64`, `f32` | `Float` |
+| `string` | `String`, `&str` | `Text` |
+| `bool` | `bool` | `Bool` |
+| `[]T` | `Vec<T>`, `&[T]` | `List[T]` |
+| `map[string]T` | `HashMap<String, T>` | `Dict[Text, T]` |
+| | `Option<T>` | `Option[T]` |
+| `(T, error)` | `Result<T, E>` | `T`, which stops the program on an error, or `Option[T]` with `on error` |
+
+- **Go:** standard library packages by import path, and local modules (a directory with `go.mod`) by a path relative to the program. Hosts are built offline (`GOPROXY=off`).
+- **Rust:** local crates only, written as a path. The first build fetches `serde_json` from crates.io. Methods, structs, traits and modules other than `lib.rs` are not read yet.
+- **The border:** calls cross a JSON-lines process boundary to a host that B generates for the package. B builds it once with the relative's own toolchain and caches it by content hash. Results are checked against the B type at runtime, and units at the border work as for Python (`foreign geo.HaversineKm(Float, Float, Float, Float) -> Length[km]`).
+
 ## A call that can fail
 
 ```b
