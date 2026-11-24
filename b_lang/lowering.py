@@ -317,6 +317,12 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                 return ast.Call(func=_load("_b_list"), args=[view], keywords=[])
             if data == "text":
                 return ast.Call(func=_load("_b_text"), args=args, keywords=[])
+            if data == "range":
+                return ast.Call(func=_load("_b_list"), args=[ast.Call(func=ast.Name(id="range", ctx=ast.Load()),
+                                                                       args=args, keywords=[])], keywords=[])
+            if data in ("ceil", "floor"):
+                math_module = ast.Call(func=ast.Name(id="__import__", ctx=ast.Load()), args=[ast.Constant("math")], keywords=[])
+                return ast.Call(func=ast.Attribute(value=math_module, attr=data, ctx=ast.Load()), args=args, keywords=[])
             if data in ("upper", "lower", "trim"):
                 method = "strip" if data == "trim" else data
                 return ast.Call(func=ast.Attribute(value=args[0], attr=method, ctx=ast.Load()), args=[], keywords=[])

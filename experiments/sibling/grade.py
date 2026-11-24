@@ -34,6 +34,19 @@ def grade(task: str, step: int, ws: Path) -> dict:
     spec = importlib.util.spec_from_file_location("oracle", HERE / task / "oracle.py")
     oracle = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(oracle)
+    if hasattr(oracle, "TODAYS"):
+        got_by_day, errors = {}, []
+        for today in oracle.TODAYS:
+            try:
+                done = subprocess.run(command(ws), input=json.dumps(oracle.data(step, today)) + "\n",
+                                      capture_output=True, text=True, cwd=ws, timeout=600)
+                got_by_day[today] = json.loads([l for l in done.stdout.splitlines() if l.strip()][-1])
+            except Exception as exc:  # noqa: BLE001
+                got_by_day[today] = None
+                errors.append(f"{exc} {getattr(locals().get('done'), 'stderr', '')}"[-300:])
+        wrong, units = oracle.grade(step, got_by_day)
+        return {"task": task, "step": step, "wrong": len(wrong), "of": units, "examples": wrong[:6],
+                **({"error": errors[0]} if errors else {})}
     feed = oracle.data(step)
     want = oracle.expected(step)
     try:

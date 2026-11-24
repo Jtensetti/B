@@ -1,0 +1,31 @@
+use py:json as json
+use py:libs.weeks.dates as dates
+use go:"./libs/leadtime" as leadtime
+use rust:"./libs/stats" as stats
+use cs:"./libs/Packaging" as packaging
+foreign leadtime.Days(Text) -> Option[Int] on error
+
+record Item { sku: Text, supplier: Text, stock: Int, pack: Int }
+record Sale { sku: Text, date: Text, qty: Int }
+record Input { today: Text, items: List[Item], sales: List[Sale] }
+record Order { qty: Int, arrive: Text }
+foreign json.loads(Text) -> Input
+
+let data = json.loads(read_line())
+let window = [dates.add_days(data.today, d - 28) for d in [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]]
+
+fn series(sku: Text) -> List[Float] =
+    [sum([s.qty for s in data.sales where s.sku == sku and s.date == d]) * 1.0 for d in window]
+
+fn need(i: Item, lead: Int) -> Float =
+    let xs = series(i.sku)
+    stats.mean(xs) * (lead + 7) + stats.percentile(xs, 90.0) - i.stock
+
+fn ceil(x: Float) -> Int = if round(x) * 1.0 >= x then round(x) else round(x) + 1
+
+let known = [i for i in data.items where leadtime.Days(i.supplier) != none]
+let wanted = [i for i in known where need(i, leadtime.Days(i.supplier) ?? 0) > 0.0]
+print to_json({
+    orders = {i.sku: Order { qty = packaging.Packs.RoundUp(ceil(need(i, leadtime.Days(i.supplier) ?? 0)), i.pack),
+                             arrive = dates.add_days(data.today, leadtime.Days(i.supplier) ?? 0) } for i in wanted},
+    unknown = sorted([i.sku for i in data.items where not (i in known)])})

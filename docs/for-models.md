@@ -66,7 +66,7 @@ print to_json({
 | Records | `record R { a: Int, b: Option[Text] }`, build `{a = 1}` or `R { a = 1 }`, read `r.a` |
 | Output | `print value`, `print to_json(value)` |
 | Input | `read_line()` reads one line of standard input |
-| Core words | `len sorted keys values text join round sum min max abs upper lower trim to_json read_line` |
+| Core words | `len sorted keys values text join round ceil floor sum min max abs upper lower trim range to_json read_line` (`range(3)` is `[0, 1, 2]`) |
 | Long expressions | wrap in `( ... )` or `[ ... ]` to continue on the next line |
 
 There are no loops, no assignment, no statements inside functions and **no comments**: `#` is a syntax error. Transform collections with `for ... in ... where` and summarize with `sum`, `min`, `max` and `len`.

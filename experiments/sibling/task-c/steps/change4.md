@@ -1,0 +1,1 @@
+Supplier names are often misspelled. Match the supplier to Suppliers() with the smallest Levenshtein distance, if it is at most 2 (ties: alphabetically first), and use that name. Otherwise the item is unknown.

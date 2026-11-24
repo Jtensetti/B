@@ -45,3 +45,9 @@ def test_a_field_divisor_is_proved_by_its_own_test_only():
     assert unproved(record + "fn f(x: Float, d: R) -> Float = if d.r > 0.0 then x / d.r else 0.0\n") == []
     assert len(unproved(record + "fn f(x: Float, d: R) -> Float = if d.r > 0.0 then x / d.s else 0.0\n")) == 1
     assert len(unproved("fn f(x: Float, r: Float) -> Float = if r > 0.0 then 0.0 else x / r\n")) == 1
+
+
+def test_range_ceil_and_floor():
+    assert run('print to_json(range(3))\nprint ceil(2.1)\nprint floor(-2.5)\nprint ceil(4)\n') == ["[0, 1, 2]", "3", "-3", "4"]
+    with pytest.raises(BError):
+        compile_b('print range(1.5)\n')

@@ -1,4 +1,4 @@
-"""B 0.31 compiler: parse -> typed BIR -> Python backend.
+"""B 0.32 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -40,7 +40,7 @@ NOT_CONST = object()
 NUMERIC = (INT, FLOAT)
 CORE_WORDS = frozenset({"len", "sorted", "keys", "values", "text", "join",
                         "round", "sum", "min", "max", "abs", "read_line", "to_json",
-                        "upper", "lower", "trim"})
+                        "upper", "lower", "trim", "range", "ceil", "floor"})
 
 
 def _narrowed(test: Expr, scope: dict, outcome: bool) -> dict:
@@ -344,6 +344,14 @@ class Compiler:
             if kind != "Dict":
                 raise BError("E_TYPE", f"{word} needs a Dict[Text, T], got {first.type}")
             result = Type("List", (TEXT,)) if word == "keys" else Type("List", (first.type.args[1],))
+        elif word == "range":
+            if first.type != INT:
+                raise BError("E_TYPE", f"range needs an Int, got {first.type}")
+            result = Type("List", (INT,))
+        elif word in ("ceil", "floor"):
+            if first.type not in (INT, FLOAT):
+                raise BError("E_TYPE", f"{word} needs a number, got {first.type}")
+            result = INT
         elif word in ("upper", "lower", "trim"):
             if first.type != TEXT:
                 raise BError("E_TYPE", f"{word} needs a Text, got {first.type}")
