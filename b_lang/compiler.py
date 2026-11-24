@@ -250,10 +250,10 @@ class Compiler:
         sym = self.symbols.get(parts[0])
         if len(parts) < 2 or not sym or sym.type != MODULE or not sym.foreign:
             raise BError("E_FOREIGN", f"{parts[0]} must be an imported foreign module")
-        if not sym.foreign.startswith(("py:", "go:", "rust:")):
+        if not sym.foreign.startswith(("py:", "go:", "rust:", "cs:")):
             raise BError("E_FOREIGN", "'on' catches Python exceptions and Go or Rust errors; npm and .NET errors are not mapped yet")
-        if sym.foreign.startswith(("go:", "rust:")) and names != ("error",):
-            raise BError("E_FOREIGN", "A Go or Rust function fails with an error value: write 'on error'")
+        if sym.foreign.startswith(("go:", "rust:", "cs:")) and names != ("error",):
+            raise BError("E_FOREIGN", "A Go, Rust or C# function's failure is caught as 'on error'")
         declared = from_syntax(result)
         if declared.name != "Option":
             raise BError("E_FOREIGN", f"A call that can fail gives an Option: write -> Option[{declared}] on {', '.join(names)}")
@@ -599,8 +599,9 @@ class Compiler:
                 return self.val(Type("Function"), "attr", bv.node, data=name, foreign=path)
             if path and path.startswith("js:"):
                 raise BError("E_FOREIGN", f"Unregistered Node export {path}; declare its foreign signature")
-            if path and path.startswith(("go:", "rust:")):
-                raise BError("E_FOREIGN", f"{path} is not a function B can type: it is missing, generic, "
+            declared_below = path and any(key.startswith(path + ".") for key in self.registry.symbols)
+            if path and path.startswith(("go:", "rust:", "cs:")) and not declared_below:
+                raise BError("E_FOREIGN", f"{path} is not a function B can type: it is missing, overloaded, generic, "
                              "variadic, or uses types B does not map (structs, pointers, channels)")
             if path and path.startswith("net:"):
                 raise BError("E_FOREIGN", f"Unregistered .NET symbol {path}")
@@ -832,9 +833,11 @@ class Compiler:
                     key = f"js:{path}.{name}"
                     if not self.registry.lookup(key):
                         self.registry.add(key, sig, jsmeta.provenance(path))
-            elif backend in ("go", "rust"):
+            elif backend in ("go", "rust", "cs"):
                 if backend == "go":
                     from .goadapter import describe as describe_foreign
+                elif backend == "cs":
+                    from .csadapter import describe as describe_foreign
                 else:
                     from .rustadapter import describe as describe_foreign
                 found = describe_foreign(path)

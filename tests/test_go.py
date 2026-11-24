@@ -82,7 +82,7 @@ def test_a_go_error_becomes_none_when_declared(geo):
     ('use go:"strings" as s\nlet x: Int = s.Repeat("a", 2)\n', "expected Int, got Text"),
     ('use go:"strings" as s\nprint s.Repeat(2, "a")\n', "argument 1"),
     ('use go:"./geo" as geo\nprint geo.Origin()\n', "not a function B can type"),
-    ('use go:"./geo" as geo\nforeign geo.Zone(Text) -> Option[Int] on KeyError\n', "write 'on error'"),
+    ('use go:"./geo" as geo\nforeign geo.Zone(Text) -> Option[Int] on KeyError\n', "is caught as 'on error'"),
 ])
 def test_mistakes_at_the_go_border_are_compile_errors(geo, source, fragment):
     with pytest.raises(BError) as exc:

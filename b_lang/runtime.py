@@ -36,6 +36,11 @@ def go_module(path: str):
     return load(path)
 
 
+def cs_module(path: str):
+    from .csadapter import cs_module as load
+    return load(path)
+
+
 def rust_module(path: str):
     from .rustadapter import rust_module as load
     return load(path)

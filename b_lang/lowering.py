@@ -379,9 +379,9 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
 
     def statement(self, s: StmtIR) -> ast.stmt:
         if s.op == "import":
-            if s.backend not in ("py", "net", "js", "go", "rust") or not s.target or not s.name:
+            if s.backend not in ("py", "net", "js", "go", "rust", "cs") or not s.target or not s.name:
                 raise BError("E_INTERNAL", "Invalid import BIR")
-            adapter = {"py": "_b_py", "net": "_b_net", "js": "_b_js_module", "go": "_b_go", "rust": "_b_rust"}[s.backend]
+            adapter = {"py": "_b_py", "net": "_b_net", "js": "_b_js_module", "go": "_b_go", "rust": "_b_rust", "cs": "_b_cs"}[s.backend]
             return ast.Assign(targets=[ast.Name(id=_python_name(s.name), ctx=ast.Store())], value=ast.Call(
                 func=ast.Name(id=adapter, ctx=ast.Load()),
                 args=[ast.Constant(s.target)], keywords=[]))
@@ -486,6 +486,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="catch", asname="_b_catch"),
             ast.alias(name="go_module", asname="_b_go"),
             ast.alias(name="rust_module", asname="_b_rust"),
+            ast.alias(name="cs_module", asname="_b_cs"),
             ast.alias(name="read_line", asname="_b_read_line"),
             ast.alias(name="to_json", asname="_b_to_json"),
             ast.alias(name="min_of", asname="_b_min_of"),

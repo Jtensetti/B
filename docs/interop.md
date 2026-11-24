@@ -27,7 +27,7 @@ print stats.median([1.0, 3.0, 7.0])
 
 Use when automatic discovery cannot represent the signature. Explicit declarations describe the B boundary but are **trusted claims made by the author**, checked only for type compatibility at runtime. A declaration cannot override a known built-in or auto-discovered signature.
 
-## Go and Rust (B 0.30)
+## Go, Rust and C# (B 0.30)
 
 ```b
 use go:"strings" as s
@@ -53,6 +53,7 @@ B reads a Go package with Go's own type checker (`go/types`), and a Rust crate's
 
 - **Go:** standard library packages by import path, and local modules (a directory with `go.mod`) by a path relative to the program. Hosts are built offline (`GOPROXY=off`).
 - **Rust:** local crates only, written as a path. The first build fetches `serde_json` from crates.io. Methods, structs, traits and modules other than `lib.rs` are not read yet.
+- **C#:** `use cs:"./Tax" as tax` builds a local project (a directory with one `.csproj`) and reads the public static methods of its public static classes by .NET reflection, called as `tax.Vat.Rate("SE")`. Overloaded, generic and `out`/`ref` methods are left out. `int`/`long` map to `Int`, `double`/`decimal` to `Float`, `T[]` and `List<T>` to `List[T]`, `Dictionary<string, T>` to `Dict[Text, T]` and `T?` to `Option[T]`. An exception stops the program, or gives none with `on error`. The older `net:` binding to `System.Math` and `Regex` stays as it was.
 - **The border:** calls cross a JSON-lines process boundary to a host that B generates for the package. B builds it once with the relative's own toolchain and caches it by content hash. Results are checked against the B type at runtime, and units at the border work as for Python (`foreign geo.HaversineKm(Float, Float, Float, Float) -> Length[km]`).
 
 ## A call that can fail
