@@ -40,6 +40,11 @@ for solver, agent in sorted(agents.items()):
         work = Path(tempfile.mkdtemp(prefix=f"bgrade-{solver}-"))
         ws = work / solver
         shutil.copytree(snap, ws)
+        # Fresh timestamps: copied sources keep their old mtimes, and cargo then reuses the previous step's
+        # build from the shared target directory. Touching every file forces each step to be rebuilt.
+        for f in ws.rglob("*"):
+            if f.is_file():
+                os.utime(f)
         if (run_dir / solver / "node_modules").exists():
             shutil.copytree(run_dir / solver / "node_modules", ws / "node_modules")
         # The stepper skipped every directory named bin, meant for C# build output. A solver that built
