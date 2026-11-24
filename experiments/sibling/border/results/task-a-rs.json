@@ -1,0 +1,221 @@
+{
+ "tools": {
+  "python": "Python 3.12.14",
+  "mypy": "mypy 2.4.1 (compiled: yes)",
+  "node": "v24.22.3",
+  "typescript": "Version 5.9.3",
+  "go": "go version go1.24.6 linux/amd64",
+  "rust": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "cargo": "cargo 1.89.0 (c24e10642 2025-06-23)",
+  "dotnet": "8.0.415 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]\n10.0.100 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]",
+  "B": "01a91593241803567c35534acbe3e041d4936b11",
+  "npm_packages": {
+   "fastest-levenshtein": "1.0.16",
+   "semver": "7.8.5",
+   "@types/node": "22.20.5"
+  }
+ },
+ "rows": [
+  {
+   "task": "task-a",
+   "solver": "rs1",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n    Blocking waiting for file lock on package cache\n Downloading crates ...\n  Downloaded serde_derive v1.0.229\n  Downloaded serde v1.0.229\n  Downloaded syn v3.0.10\n   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-n5q0iox4/rs1/libs/geo)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling rs1 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-n5q0iox4/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 16.03s\n"
+    },
+    "comment": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-tkbvtmit/rs1/libs/geo)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling rs1 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-tkbvtmit/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.05s\n"
+    },
+    "unit": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-t4h3hukm/rs1/libs/geo)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling rs1 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-t4h3hukm/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.36s\n"
+    },
+    "currency": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-nz3gftl_/rs1/libs/geo)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling rs1 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-nz3gftl_/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.18s\n"
+    },
+    "behavior": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-8lqzfltv/rs1/libs/geo)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling rs1 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-8lqzfltv/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.97s\n"
+    },
+    "signature": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-k6lk6sz3/rs1/libs/geo)\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling rs1 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs1-k6lk6sz3/rs1)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.99s\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "rs2",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling delivery-quotes v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-cnb6krs0/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.08s\n"
+    },
+    "comment": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling delivery-quotes v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-b539ndxk/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 6.12s\n"
+    },
+    "unit": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling delivery-quotes v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-m2xqkyu8/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.27s\n"
+    },
+    "currency": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling delivery-quotes v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-oqxdcc31/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.19s\n"
+    },
+    "behavior": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling quote v1.0.47\n   Compiling unicode-ident v1.0.27\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling serde v1.0.229\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling delivery-quotes v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-3kr3s0sc/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 4.82s\n"
+    },
+    "signature": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling proc-macro2 v1.0.107\n   Compiling unicode-ident v1.0.27\n   Compiling quote v1.0.47\n   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling syn v3.0.10\n   Compiling serde_derive v1.0.229\n   Compiling delivery-quotes v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs2-okagk8wz/rs2)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 5.04s\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "rs3",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "miss"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-vonl5qct/rs3/libs/geo)\n   Compiling rs3 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-vonl5qct/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.06s\n"
+    },
+    "comment": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-0xzqt9t4/rs3/libs/geo)\n   Compiling rs3 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-0xzqt9t4/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.84s\n"
+    },
+    "unit": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-ar1txxi0/rs3/libs/geo)\n   Compiling rs3 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-ar1txxi0/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.34s\n"
+    },
+    "currency": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling memchr v2.8.3\n   Compiling itoa v1.0.19\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-mr4fy8zg/rs3/libs/geo)\n   Compiling rs3 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-mr4fy8zg/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 2.93s\n"
+    },
+    "behavior": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling serde_core v1.0.229\n   Compiling zmij v1.0.23\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-jnuu63wp/rs3/libs/geo)\n   Compiling rs3 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-jnuu63wp/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.26s\n"
+    },
+    "signature": {
+     "command": [
+      "cargo",
+      "build"
+     ],
+     "exit": 0,
+     "diagnostic": "   Compiling zmij v1.0.23\n   Compiling serde_core v1.0.229\n   Compiling serde_json v1.0.154\n   Compiling itoa v1.0.19\n   Compiling memchr v2.8.3\n   Compiling geo v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-rdvohr8s/rs3/libs/geo)\n   Compiling rs3 v0.1.0 (/workspace/scratch/adbb8f5ebd9d/tmp/sibling-rs3-rdvohr8s/rs3)\n    Finished `dev` profile [unoptimized + debuginfo] target(s) in 3.10s\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  }
+ ]
+}

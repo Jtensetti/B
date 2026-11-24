@@ -1,0 +1,257 @@
+{
+ "tools": {
+  "python": "Python 3.12.14",
+  "mypy": "mypy 2.4.1 (compiled: yes)",
+  "node": "v24.22.3",
+  "typescript": "Version 5.9.3",
+  "go": "go version go1.24.6 linux/amd64",
+  "rust": "rustc 1.89.0 (29483883e 2025-08-04)",
+  "cargo": "cargo 1.89.0 (c24e10642 2025-06-23)",
+  "dotnet": "8.0.415 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]\n10.0.100 [/workspace/scratch/adbb8f5ebd9d/toolchains/dotnet/sdk]",
+  "B": "01a91593241803567c35534acbe3e041d4936b11",
+  "npm_packages": {
+   "fastest-levenshtein": "1.0.16",
+   "semver": "7.8.5",
+   "@types/node": "22.20.5"
+  }
+ },
+ "rows": [
+  {
+   "task": "task-a",
+   "solver": "b1",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "comment": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "unit": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "currency": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "behavior": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "signature": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 1,
+     "diagnostic": "B check: E_FOREIGN: tariff.Zone is known as (Text, Bool) -> Int; restate it as that signature with an Option result\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "b2",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:operator.truediv(Float, Float) -> Float\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "comment": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:operator.truediv(Float, Float) -> Float\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "unit": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:operator.truediv(Float, Float) -> Float\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "currency": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:operator.truediv(Float, Float) -> Float\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "behavior": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: py:operator.truediv(Float, Float) -> Float\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "signature": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 1,
+     "diagnostic": "B check: E_FOREIGN: tariff.Zone is known as (Text, Bool) -> Int; restate it as that signature with an Option result\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  },
+  {
+   "task": "task-a",
+   "solver": "b3",
+   "outcomes": {
+    "unit": "miss",
+    "currency": "miss",
+    "behavior": "miss",
+    "signature": "catch"
+   },
+   "checks": {
+    "clean": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.closest (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "comment": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.closest (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "unit": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.closest (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "currency": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.closest (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "behavior": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 0,
+     "diagnostic": "ASSUMED FOREIGN CONTRACT: py:json.loads(Text) -> Record[catalog[Dict[Text, Float]], depot[Record[lat[Float], lon[Float]]], orders[List[Record[business[Bool], country[Text], date[Text], express[Option[Bool]], id[Text], lat[Float], lon[Float], product[Text], qty[Option[Int]]]]], rates[Dict[Text, Float]]]\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate gives none on error: declared, not proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.closest (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: js:fastest-levenshtein.distance (curated-fastest-levenshtein-1): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: rust:./libs/geo.road_km (rust-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.BasePrice (go-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.ReverseCharge (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: cs:./libs/Tax.Vat.Rate (cs-metadata): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.is_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: py:libs.calendar.workdays.next_workday (py): signature assumed, not behavior proved\nASSUMED FOREIGN CONTRACT: go:./libs/tariff.Zone (go-metadata): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)\n"
+    },
+    "signature": {
+     "command": [
+      "b",
+      "check",
+      "--strict",
+      "main.bee"
+     ],
+     "exit": 1,
+     "diagnostic": "B check: E_FOREIGN: tariff.Zone is known as (Text, Bool) -> Int; restate it as that signature with an Option result\n"
+    }
+   },
+   "step5": {
+    "task": "task-a",
+    "step": 5,
+    "wrong": 0,
+    "of": 24,
+    "examples": []
+   }
+  }
+ ]
+}
