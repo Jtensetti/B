@@ -1,0 +1,48 @@
+use go:"./libs/tariff" as tariff
+use rust:"./libs/geo" as geo
+use cs:"./libs/Tax" as tax
+use py:libs.calendar.workdays as cal
+use js:"fastest-levenshtein" as words
+use py:json as json
+
+record Point { lat: Float, lon: Float }
+record Order { id: Text, product: Text, country: Text, lat: Float, lon: Float, date: Text, business: Bool, qty: Option[Int], express: Option[Bool] }
+record Input { depot: Point, catalog: Dict[Text, Float], rates: Dict[Text, Float], orders: List[Order] }
+record Quote { price: Float, delivery: Text, currency: Text }
+
+foreign json.loads(Text) -> Input
+foreign tariff.Zone(Text) -> Option[Int] on error
+
+let data = json.loads(read_line())
+let names = sorted(keys(data.catalog))
+
+fn nearest(product: Text) -> Option[Text] =
+    let best = min([words.distance(product, n) for n in names]) ?? 99
+    let ties = [n for n in names where words.distance(product, n) == best]
+    if best <= 2 then ties[0] else none
+
+fn surcharge(km: Float) -> Float =
+    if km > 300.0 then min((km - 300.0) * 0.80, 400.0) else 0.0
+
+fn to_eur(gross: Float, rate: Float) -> Float =
+    if rate != 0.0 then round(gross / rate, 2) else round(gross, 2)
+
+fn price(o: Order, name: Text) -> Quote =
+    let zone = tariff.Zone(o.country) ?? 0
+    let km = geo.road_km(data.depot.lat, data.depot.lon, o.lat, o.lon)
+    let weight = ((o.qty ?? 1) * 1.0) * (data.catalog[name] ?? 0.0)
+    let speed = if o.express ?? false then 1.5 else 1.0
+    let base = if o.business and weight >= 50.0 then 0.0 else tariff.BasePrice(zone, weight)
+    let net = base * speed + surcharge(km)
+    let vat = if tax.Vat.ReverseCharge(o.country, o.business) then 0.0 else tax.Vat.Rate(o.country)
+    let day = if (o.express ?? false) and cal.is_workday(o.date) then o.date else cal.next_workday(o.date)
+    let gross = net * (1.0 + vat)
+    if o.country == "SE"
+    then {price = round(gross, 2), delivery = day, currency = "SEK"}
+    else {price = to_eur(gross, data.rates["EUR"] ?? 0.0), delivery = day, currency = "EUR"}
+
+let found = {o.id: nearest(o.product) ?? "" for o in data.orders where nearest(o.product) != none}
+let quotes = {o.id: price(o, found[o.id] ?? "") for o in data.orders where o.id in found and tariff.Zone(o.country) != none}
+print to_json({
+    quotes = quotes,
+    unknown = sorted([o.id for o in data.orders where not (o.id in quotes)])})

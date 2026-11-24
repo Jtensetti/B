@@ -1,0 +1,7 @@
+{"depot": {"lat": 59.33, "lon": 18.07}, "catalog": {"Oak Table": 25.0, "Pine Chair": 7.2}, "rates": {"EUR": 11.0},
+ "orders": [
+  {"id": "f1", "product": "Oak Table", "qty": 2, "country": "SE", "lat": 59.33, "lon": 18.07, "date": "2026-11-24", "business": true, "express": true},
+  {"id": "f2", "product": "Oak Table", "qty": 2, "country": "DE", "lat": 52.52, "lon": 13.40, "date": "2026-11-24", "business": true},
+  {"id": "f3", "product": "Oak Table", "country": "DE", "lat": 52.52, "lon": 13.40, "date": "2026-11-24", "business": true},
+  {"id": "f4", "product": "Oak Table", "qty": 2, "country": "NO", "lat": 59.91, "lon": 10.75, "date": "2026-11-24", "business": false}
+ ]}

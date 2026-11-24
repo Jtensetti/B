@@ -1,0 +1,4 @@
+{"rates": {"EUR": 11.0}, "depot": {"lat": 59.33, "lon": 18.06}, "catalog": {"oak table": 25.0, "oak chair": 6.2, "sofa": 40.0}, "orders": [
+{"id": "a", "product": "oak tabel", "country": "se", "lat": 59.4, "lon": 18.0, "date": "2026-12-24", "business": false},
+{"id": "b", "product": "sofa", "country": "DE", "lat": 52.52, "lon": 13.40, "date": "2026-06-05", "business": true}
+]}

@@ -1,0 +1,5 @@
+{"depot": {"lat": 59.3293, "lon": 18.0686}, "catalog": {"Chair": 4.2},
+ "orders": [
+  {"id": "q1", "product": "Chair", "country": "SE", "lat": 59.3293, "lon": 18.0686, "date": "2026-06-18", "business": false},
+  {"id": "q2", "product": "Chair", "qty": 3, "country": "SE", "lat": 59.3293, "lon": 18.0686, "date": "2026-06-18", "business": false}
+ ]}

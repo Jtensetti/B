@@ -1,0 +1,5 @@
+{"rates": {"EUR": 11.0}, "depot": {"lat": 59.33, "lon": 18.06}, "catalog": {"oak table": 25.0, "oak chair": 6.2, "sofa": 40.0}, "orders": [
+{"id": "h", "product": "sofa", "qty": 2, "country": "SE", "lat": 59.4, "lon": 18.0, "date": "2026-06-05", "business": true, "express": true},
+{"id": "i", "product": "sofa", "qty": 2, "country": "SE", "lat": 59.4, "lon": 18.0, "date": "2026-06-05", "business": false},
+{"id": "j", "product": "oak table", "qty": 2, "country": "SE", "lat": 59.4, "lon": 18.0, "date": "2026-06-05", "business": true}
+]}

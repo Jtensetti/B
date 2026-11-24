@@ -1,0 +1,62 @@
+use py:json as json
+use py:operator as op
+use go:"./libs/tariff" as tariff
+use rust:"./libs/geo" as geo
+use cs:"./libs/Tax" as tax
+use py:libs.calendar.workdays as cal
+use js:"fastest-levenshtein" as words
+
+record Point { lat: Float, lon: Float }
+record Order { id: Text, product: Text, country: Text, lat: Float, lon: Float, date: Text, business: Bool, qty: Option[Int], express: Option[Bool] }
+record Input { depot: Point, catalog: Dict[Text, Float], orders: List[Order], rates: Dict[Text, Float] }
+
+foreign json.loads(Text) -> Input
+foreign tariff.Zone(Text) -> Option[Int] on error
+foreign op.truediv(Float, Float) -> Float
+
+let data = json.loads(read_line())
+let names = sorted(keys(data.catalog))
+
+fn nearest(name: Text) -> Option[Text] =
+    let best = min([words.distance(name, c) for c in names]) ?? 99
+    let picks = [c for c in names where words.distance(name, c) == best]
+    if best <= 2 then picks[0] else none
+
+fn product(name: Text) -> Option[Text] = if len(names) == 0 then none else nearest(name)
+
+fn is_sweden(country: Text) -> Bool = country == "SE" or country == "se"
+
+fn eur_rate() -> Float = data.rates["EUR"] ?? 0.0
+
+fn to_eur(sek: Float, rate: Float) -> Float =
+    if rate > 0.0 then round(op.truediv(sek, rate), 2) else sek
+
+fn price_in(o: Order, sek: Float) -> Float =
+    if is_sweden(o.country) then sek else to_eur(sek, data.rates["EUR"] ?? 0.0)
+
+fn currency_of(o: Order) -> Text = if is_sweden(o.country) then "SEK" else "EUR"
+
+fn priced(o: Order, name: Text, zone: Int) -> Float =
+    let weight = (data.catalog[name] ?? 0.0) * (o.qty ?? 1)
+    let speed = if o.express ?? false then 1.5 else 1.0
+    let carried = if o.business and weight >= 50.0 then 0.0 else tariff.BasePrice(zone, weight)
+    let base = carried * speed
+    let km = geo.road_km(data.depot.lat, data.depot.lon, o.lat, o.lon)
+    let surcharge = min(400.0, 0.80 * max(0.0, km - 300.0))
+    let net = base + surcharge
+    let vat = if tax.Vat.ReverseCharge(o.country, o.business) then 0.0 else tax.Vat.Rate(o.country)
+    round(net * (1.0 + vat), 2)
+
+fn delivery_of(o: Order) -> Text =
+    let same_day = (o.express ?? false) and cal.is_workday(o.date)
+    if same_day then o.date else cal.next_workday(o.date)
+
+fn quote_sek(o: Order) -> Option[Float] =
+    let name = product(o.product) ?? ""
+    let zone = tariff.Zone(o.country) ?? 0
+    if name == "" or zone == 0 or (not is_sweden(o.country) and eur_rate() <= 0.0) then none else priced(o, name, zone)
+
+let quotes = {o.id: {price = price_in(o, quote_sek(o) ?? 0.0), delivery = delivery_of(o), currency = currency_of(o)} for o in data.orders where quote_sek(o) != none}
+let unknown = sorted([o.id for o in data.orders where quote_sek(o) == none])
+
+print to_json({quotes = quotes, unknown = unknown})

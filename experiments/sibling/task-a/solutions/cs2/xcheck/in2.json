@@ -1,0 +1,5 @@
+{"depot": {"lat": 59.33, "lon": 18.07}, "catalog": {"Oak Table": 25.0, "Pine Chair": 7.2},
+ "orders": [
+  {"id": "q1", "product": "Oak Table", "qty": 3, "country": "SE", "lat": 59.33, "lon": 18.07, "date": "2026-11-24", "business": false},
+  {"id": "q2", "product": "Pine Chair", "country": "SE", "lat": 59.33, "lon": 18.07, "date": "2026-11-24", "business": false}
+ ]}

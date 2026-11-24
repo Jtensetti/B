@@ -1,0 +1,7 @@
+{"depot": {"lat": 59.33, "lon": 18.07}, "catalog": {"Oak table": 25.0, "Oak chair": 6.2, "Sofa": 40.0}, "orders": [
+{"id": "a", "product": "Oak tabel", "country": "SE", "lat": 59.33, "lon": 18.07, "date": "2026-06-18", "business": false},
+{"id": "b", "product": "Sofa", "country": "de", "lat": 52.52, "lon": 13.40, "date": "2026-12-24", "business": true},
+{"id": "c", "product": "Oak chair", "country": "US", "lat": 40.7, "lon": -74.0, "date": "2026-06-05", "business": false},
+{"id": "d", "product": "Lamp", "country": "SE", "lat": 59.0, "lon": 18.0, "date": "2026-06-05", "business": false},
+{"id": "e", "product": "Sofa", "country": "IT", "lat": 41.9, "lon": 12.5, "date": "2026-12-31", "business": false}
+]}
