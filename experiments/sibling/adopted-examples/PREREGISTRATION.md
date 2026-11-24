@@ -1,0 +1,7 @@
+# Fixed examples for adopted provider code
+
+The A/B boundary study found that unchanged primitive signatures can conceal wrong values. This separate mechanism study asks whether B can check a stated value when it already translates a supported Python function into native B. It evaluates one hand-written program and a single provider. It contributes zero observations to the six-language sibling totals.
+
+Freeze the program, provider and source substitutions in [run.py](run.py) before changing the compiler or running the study. Compare the registered B 0.32 commit `01a91593241803567c35534acbe3e041d4936b11` with the first candidate adding fixed examples on adopted functions. Run only `b check --strict main.bee`, in fresh processes. Both compilers receive identical source. The provider raises an exception at import time so that accidental execution is visible.
+
+The good controls are the original source and an equivalent reversal of the operands of an integer multiplication. Both must pass. Faults change minutes to milliseconds instead of seconds, substitute a different fixed exchange rate, change a threshold at its endpoint, and add a required argument. All four must fail with a diagnostic about the example or call, before running the program. A compiler that rejects either good control receives no detection score. This pilot deliberately supplies discriminating examples and integer-valued functions. It does not estimate how often a solver will write such examples or how well the method transfers to opaque libraries.
