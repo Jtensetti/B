@@ -1,7 +1,0 @@
-{"depot": {"lat": 59.33, "lon": 18.07}, "catalog": {"Oak Table": 25.0, "Pine Chair": 7.2},
- "orders": [
-  {"id": "e1", "product": "Oak Table", "country": "SE", "lat": 59.33, "lon": 18.07, "date": "2026-11-24", "business": false, "express": true},
-  {"id": "e2", "product": "Oak Table", "country": "SE", "lat": 59.33, "lon": 18.07, "date": "2026-12-25", "business": false, "express": true},
-  {"id": "e3", "product": "Pine Chair", "country": "SE", "lat": 59.33, "lon": 18.07, "date": "2026-11-24", "business": false, "express": false},
-  {"id": "e4", "product": "Oak Table", "qty": 2, "country": "DE", "lat": 52.52, "lon": 13.40, "date": "2026-11-28", "business": false, "express": true}
- ]}

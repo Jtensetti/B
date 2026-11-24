@@ -1,9 +1,0 @@
-{"depot": {"lat": 59.33, "lon": 18.07}, "catalog": {"Oak Table": 25.0, "Pine Chair": 7.2, "Desk Lamp": 1.1},
- "orders": [
-  {"id": "a1", "product": "Oak Tabel", "country": "SE", "lat": 59.86, "lon": 17.64, "date": "2026-12-24", "business": false},
-  {"id": "a2", "product": "Pine Chiar", "country": "de", "lat": 52.52, "lon": 13.40, "date": "2026-06-18", "business": true},
-  {"id": "a3", "product": "Desk Lamp", "country": "US", "lat": 40.7, "lon": -74.0, "date": "2026-05-01", "business": false},
-  {"id": "a4", "product": "Sofa", "country": "FR", "lat": 48.85, "lon": 2.35, "date": "2026-11-27", "business": false},
-  {"id": "a5", "product": "Desk Lmp", "country": "FI", "lat": 60.17, "lon": 24.94, "date": "2026-12-31", "business": true},
-  {"id": "a6", "product": "Oak Table", "country": "NO", "lat": 59.91, "lon": 10.75, "date": "2026-04-02", "business": false}
- ]}
