@@ -26,3 +26,6 @@ jobs:
               python /study/experiments/sibling/grade.py task-c 0 /work > /tmp/reference.json
               python -c "import json; r=json.load(open(\"/tmp/reference.json\")); assert (r[\"wrong\"], r[\"of\"]) == (0, 24), r"
             '
+      - name: Exercise six snapshot handoffs and final session accounting without a model
+        timeout-minutes: 4
+        run: python experiments/sibling/environment/smoke.py
