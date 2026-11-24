@@ -8,6 +8,10 @@ from b_lang.compiler import compile_b
 from b_lang.types import BError
 
 
+def unproved(source):
+    return [o for o in compile_b(source).analysis.obligations if o.status != "proved"]
+
+
 def run(source):
     buffer = io.StringIO()
     with redirect_stdout(buffer):
@@ -28,14 +32,16 @@ def test_text_words():
 
 @pytest.mark.parametrize("guard", ["r > 0.0", "0.0 < r", "r != 0.0", "not (r <= 0.0)", "r > 0.0 and x > 0.0"])
 def test_a_branch_condition_proves_its_divisor_nonzero(guard):
-    assert compile_b(f"fn f(x: Float, r: Float) -> Float = if {guard} then x / r else 0.0\n", strict=True)
+    assert unproved(f"fn f(x: Float, r: Float) -> Float = if {guard} then x / r else 0.0\n") == []
+
+
+@pytest.mark.parametrize("guard", ["r >= 0.0", "r < 1.0", "r == 0.0", "r > 0.0 or x > 0.0"])
+def test_a_condition_that_allows_zero_proves_nothing(guard):
+    assert len(unproved(f"fn f(x: Float, r: Float) -> Float = if {guard} then x / r else 0.0\n")) == 1
 
 
 def test_a_field_divisor_is_proved_by_its_own_test_only():
-    assert compile_b("record R { r: Float, s: Float }\n"
-                     "fn f(x: Float, d: R) -> Float = if d.r > 0.0 then x / d.r else 0.0\n", strict=True)
-    with pytest.raises(BError):
-        compile_b("record R { r: Float, s: Float }\n"
-                  "fn f(x: Float, d: R) -> Float = if d.r > 0.0 then x / d.s else 0.0\n", strict=True)
-    with pytest.raises(BError):
-        compile_b("fn f(x: Float, r: Float) -> Float = if r > 0.0 then 0.0 else x / r\n", strict=True)
+    record = "record R { r: Float, s: Float }\n"
+    assert unproved(record + "fn f(x: Float, d: R) -> Float = if d.r > 0.0 then x / d.r else 0.0\n") == []
+    assert len(unproved(record + "fn f(x: Float, d: R) -> Float = if d.r > 0.0 then x / d.s else 0.0\n")) == 1
+    assert len(unproved("fn f(x: Float, r: Float) -> Float = if r > 0.0 then 0.0 else x / r\n")) == 1

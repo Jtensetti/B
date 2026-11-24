@@ -106,6 +106,8 @@ def _nonzero_tests(test: ExprIR, when: bool):
         op = {"<": ">", "<=": ">=", ">": "<", ">=": "<=", "==": "==", "!=": "!="}[op]
     if right.op != "literal" or type(right.data) not in (int, float) or left.op not in ("name", "field"):
         return
+    if "<" in _render(left):  # a placeholder rendering is not specific enough to stand for one expression
+        return
     if not when:
         op = {"<": ">=", "<=": ">", ">": "<=", ">=": "<", "==": "!=", "!=": "=="}[op]
     k = right.data
@@ -149,6 +151,8 @@ def _render(node: ExprIR) -> str:
         return f"{prefix}{_render(args[0])}"
     if op == "guard":
         return _render(args[0])
+    if op == "field":
+        return f"{_render(args[0])}.{node.data}"
     if op == "call":
         return f"{_render(args[0])}({', '.join(_render(a) for a in args[1:])})"
     if op == "list":
