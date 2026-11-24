@@ -1,0 +1,51 @@
+"""Grade every snapshot of a trial and measure each solver's work.
+
+Usage: python grade_all.py TASK RUN_DIR AGENTS_JSON TASKS_DIR
+RUN_DIR holds state/snapshots/<solver>/step<N>; AGENTS_JSON maps solver -> agent id; TASKS_DIR holds
+<agent id>.output transcripts. Writes results.json next to AGENTS_JSON and prints a summary table.
+"""
+import json
+import os
+import shutil
+import sys
+import tempfile
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from grade import grade  # noqa: E402
+
+task, run_dir, agents_file, tasks_dir = sys.argv[1], Path(sys.argv[2]), Path(sys.argv[3]), Path(sys.argv[4])
+agents = json.loads(agents_file.read_text())
+
+
+def output_tokens(agent: str) -> int:
+    total = 0
+    for line in (tasks_dir / f"{agent}.output").read_text().splitlines():
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        if d.get("type") == "assistant":
+            total += ((d.get("message") or {}).get("usage") or {}).get("output_tokens", 0)
+    return total
+
+
+results = {}
+for solver, agent in sorted(agents.items()):
+    steps = {}
+    snaps = run_dir / "state" / "snapshots" / solver
+    cargo_target = Path(tempfile.gettempdir()) / f"bgrade-target-{task}-{solver}"
+    os.environ["CARGO_TARGET_DIR"] = str(cargo_target)
+    for snap in sorted(snaps.glob("step*"), key=lambda p: int(p.name[4:])):
+        work = Path(tempfile.mkdtemp(prefix=f"bgrade-{solver}-"))
+        ws = work / solver
+        shutil.copytree(snap, ws)
+        if (run_dir / solver / "node_modules").exists():
+            shutil.copytree(run_dir / solver / "node_modules", ws / "node_modules")
+        steps[int(snap.name[4:])] = grade(task, int(snap.name[4:]), ws)
+        shutil.rmtree(work, ignore_errors=True)
+    results[solver] = {"steps": steps, "wrong": sum(s["wrong"] for s in steps.values()),
+                       "units": sum(s["of"] for s in steps.values()), "output_tokens": output_tokens(agent)}
+    print(solver, results[solver]["wrong"], "/", results[solver]["units"], "tokens", results[solver]["output_tokens"],
+          {k: v["wrong"] for k, v in steps.items()}, flush=True)
+(agents_file.parent / "results.json").write_text(json.dumps(results, indent=1))
