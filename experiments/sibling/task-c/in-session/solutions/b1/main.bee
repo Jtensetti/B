@@ -1,0 +1,67 @@
+use go:"./libs/leadtime" as leadtime
+use rust:"./libs/stats" as stats
+use cs:"./libs/Packaging" as packaging
+use py:libs.weeks.dates as dates
+use py:json as json
+use js:"fastest-levenshtein" as words
+
+record Item { sku: Text, supplier: Text, stock: Int, pack: Int, price: Float }
+record Sale { sku: Text, date: Text, qty: Int }
+record Input { today: Text, items: List[Item], sales: List[Sale] }
+record Order { qty: Int, arrive: Text }
+record Plan { sku: Text, known: Bool, qty: Int, arrive: Text }
+record Output { orders: Dict[Text, Order], unknown: List[Text] }
+
+foreign json.loads(Text) -> Input
+foreign leadtime.Days(Text) -> Option[Int] on error
+foreign leadtime.Suppliers() -> List[Text]
+foreign words.distance(Text, Text) -> Int
+foreign stats.trailing_mean(List[Float], Int) -> Float
+foreign stats.percentile(List[Float], Float) -> Float
+foreign packaging.Packs.RoundUp(Int, Int) -> Int
+foreign dates.add_days(Text, Int) -> Text
+foreign dates.iso_week(Text) -> Int
+foreign dates.to_weekday(Text) -> Text
+
+let data = json.loads(read_line())
+let supplier_names = sorted(leadtime.Suppliers())
+let window = [dates.add_days(data.today, d - 28) for d in range(28)]
+
+fn daily(sku: Text, days: List[Text], sales: List[Sale]) -> List[Float] =
+    [sum([s.qty for s in sales where s.sku == sku and s.date == day]) * 1.0 for day in days]
+
+fn sized(it: Item, today: Text, lead: Int, q: Int) -> Plan =
+    if (q * 1.0) * it.price < 500.0 then Plan { sku = it.sku, known = true, qty = 0, arrive = "" }
+    else Plan { sku = it.sku, known = true, qty = q, arrive = dates.to_weekday(dates.add_days(today, lead)) }
+
+fn order(it: Item, today: Text, lead: Int, need: Float) -> Plan =
+    sized(it, today, lead, packaging.Packs.RoundUp(ceil(need), it.pack))
+
+fn season(today: Text) -> Float =
+    if dates.iso_week(today) >= 48 and dates.iso_week(today) <= 52 then 1.25 else 1.0
+
+fn plan_known(it: Item, today: Text, lead: Int, days: List[Text], sales: List[Sale]) -> Plan =
+    let series = daily(it.sku, days, sales)
+    let need = stats.trailing_mean(series, 7) * season(today) * ((lead + 7) * 1.0) + stats.percentile(series, 90.0) - it.stock * 1.0
+    if need > 0.0 then order(it, today, lead, need)
+    else Plan { sku = it.sku, known = true, qty = 0, arrive = "" }
+
+fn matched(s: Text, known_names: List[Text]) -> Option[Text] =
+    let best = min([words.distance(s, n) for n in known_names]) ?? 99
+    let cands = [n for n in known_names where words.distance(s, n) == best]
+    if best <= 2 then cands[0] else none
+
+fn lead_of(s: Text, known_names: List[Text]) -> Option[Int] =
+    let m = matched(s, known_names)
+    if m == none then none else leadtime.Days(m ?? "")
+
+fn plan(it: Item, today: Text, days: List[Text], sales: List[Sale], known_names: List[Text]) -> Plan =
+    let lead = lead_of(it.supplier, known_names)
+    if lead == none then Plan { sku = it.sku, known = false, qty = 0, arrive = "" }
+    else plan_known(it, today, lead ?? 0, days, sales)
+
+let plans = [plan(it, data.today, window, data.sales, supplier_names) for it in data.items]
+
+print to_json(Output {
+    orders = {p.sku: Order { qty = p.qty, arrive = p.arrive } for p in plans where p.qty > 0},
+    unknown = sorted([p.sku for p in plans where not p.known])})
