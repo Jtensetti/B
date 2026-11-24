@@ -43,6 +43,10 @@ def grade(task: str, step: int, ws: Path) -> dict:
         err = ""
     except Exception as exc:  # noqa: BLE001 - any failure to run counts against the program
         got, err = None, f"{exc} {getattr(locals().get('done'), 'stderr', '')}"[-300:]
+    if hasattr(oracle, "grade"):
+        wrong, units = oracle.grade(step, got)
+        return {"task": task, "step": step, "wrong": len(wrong), "of": units, "examples": wrong[:6],
+                **({"error": err} if got is None else {})}
     quotes = (got or {}).get("quotes") or {}
     unknown = set((got or {}).get("unknown") or [])
     wrong = []
