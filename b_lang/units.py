@@ -360,7 +360,7 @@ class _Checker:
 
     HANDLED = {"quantity", "convert", "name", "literal", "add", "sub", "mul", "div", "mod", "neg", "cmp",
                "conditional", "coalesce", "and", "or", "not", "invoke", "each", "locals",
-               "summarize", "history_count", "attr", "record"}
+               "summarize", "history_count", "attr", "record", "named_record"}
 
     def __init__(self, signatures: dict[str, tuple[list[Dim | None], Dim | None]], foreign=None,
                  fields=None, aliases=frozenset()):
@@ -565,6 +565,9 @@ class _Checker:
             return self._children(node, env, "A value"), ()
         if kind == "attr":
             return self._children(node, env, "A value"), ()
+        if kind == "named_record":
+            inner, _ = self.expr(parts[1], env)
+            return Expr(kind, (parts[0], inner)), ()
         if kind == "record":
             entries = []
             for field, raw in parts:

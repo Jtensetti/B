@@ -1,4 +1,4 @@
-"""B 0.30 compiler: parse -> typed BIR -> Python backend.
+"""B 0.31 compiler: parse -> typed BIR -> Python backend.
 
 The checker never evaluates B source or foreign implementations. Foreign
 signatures are assumptions, not proofs. The executable backend consumes typed
@@ -39,7 +39,8 @@ from .types import (
 NOT_CONST = object()
 NUMERIC = (INT, FLOAT)
 CORE_WORDS = frozenset({"len", "sorted", "keys", "values", "text", "join",
-                        "round", "sum", "min", "max", "abs", "read_line", "to_json"})
+                        "round", "sum", "min", "max", "abs", "read_line", "to_json",
+                        "upper", "lower", "trim"})
 
 
 def _narrowed(test: Expr, scope: dict, outcome: bool) -> dict:
@@ -343,6 +344,10 @@ class Compiler:
             if kind != "Dict":
                 raise BError("E_TYPE", f"{word} needs a Dict[Text, T], got {first.type}")
             result = Type("List", (TEXT,)) if word == "keys" else Type("List", (first.type.args[1],))
+        elif word in ("upper", "lower", "trim"):
+            if first.type != TEXT:
+                raise BError("E_TYPE", f"{word} needs a Text, got {first.type}")
+            result = TEXT
         elif word == "text":
             if first.type not in (INT, FLOAT, TEXT, BOOL, ANY):
                 raise BError("E_TYPE", f"text needs an Int, Float, Text or Bool, got {first.type}")
@@ -484,7 +489,13 @@ class Compiler:
         if kind == "coalesce":
             left = self.infer(p[0], symbols)
             if left.type.name != "Option":
-                raise BError("E_TYPE", "Left side of ?? must be Option[T]")
+                # A value that is never none needs no fallback. The fallback must still fit,
+                # so a mistaken fallback of another type is caught.
+                right = self.infer(p[1], symbols)
+                empty = p[1].kind in ("list", "dict") and not p[1].parts
+                if not empty and unify(left.type, right.type) == ANY and ANY not in (left.type, right.type):
+                    raise BError("E_TYPE", f"?? fallback {right.type} does not fit {left.type}")
+                return left
             right = self.infer(p[1], symbols)
             inner = left.type.args[0]
             empty = p[1].kind in ("list", "dict") and not p[1].parts
@@ -569,6 +580,14 @@ class Compiler:
             flattened = [node for key, val in pairs
                          for node in (key.node, self._widen(val, value_type).node)]
             return self.val(Type("Dict", (TEXT, value_type)), "dict", *flattened)
+        if kind == "named_record":
+            name, literal = p
+            from .types import RECORDS
+            if name not in RECORDS:
+                raise BError("E_TYPE", f"Unknown record {name}")
+            value = self.infer(literal, symbols)
+            self._check_type(value, RECORDS[name], f"{name} {{...}}")
+            return self.val(RECORDS[name], value.node.op, *value.node.operands, data=value.node.data)
         if kind == "record":
             fields = [(name, self.infer(value, symbols)) for name, value in p]
             typ = record_type([(name, value.type) for name, value in fields])
@@ -807,7 +826,7 @@ class Compiler:
                 # can only restate it: B never overrides what the relative's metadata says.
                 same = (getattr(existing.binding, "params", None) == sig.params
                         and getattr(existing.binding, "result", None) == sig.result)
-                if kind == "foreign_units" and same:
+                if same:  # restating what B read from the relative changes nothing
                     return StmtIR("foreign", target=fullname)
                 raise BError("E_FOREIGN", f"A binding already exists for {fullname}"
                              + (" with a different signature" if kind == "foreign_units" else ""))

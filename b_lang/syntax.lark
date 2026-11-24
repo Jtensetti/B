@@ -109,6 +109,7 @@ unit: NAME ["per" NAME]
      | NAME                          -> identifier
      | "[" expr "for" binders "in" expr ["where" expr] "]"          -> list_each
      | "{" _NL* record_entry ("," _NL* record_entry)* ","? _NL* "}" -> record_literal
+     | RECORD_NAME "{" _NL* record_entry ("," _NL* record_entry)* ","? _NL* "}" -> named_record_literal
      | "{" _NL* expr ":" expr _NL* "for" binders "in" expr _NL* ["where" expr _NL*] "}" -> dict_each
      | "[" [args] "]"                -> list_literal
      | "{" _NL* pairs _NL* "}"       -> dict_literal
@@ -124,6 +125,8 @@ HISTORY_MODE: "adjacent" | "earlier"
 EXTREMUM: "min" | "max"
 SUMMARY_INT: /0|[1-9][0-9]*/
 BACKEND: "py" | "net"
+// A record name directly followed by a brace starts a named record literal: Quote { price = 1.0 }.
+RECORD_NAME.2: /[A-Z][A-Za-z0-9_]*(?=[ \t]*\{)/
 COMP: "==" | "!=" | "<=" | ">=" | "<" | ">"
 NAME: /(?!\d)\w+/
 NUMBER: /(?:0|[1-9][0-9]*)(?:\.[0-9]+)?/

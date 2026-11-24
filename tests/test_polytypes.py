@@ -198,9 +198,10 @@ def test_null_coalescing_rejects_wrong_fallback_before_execution():
     assert e.value.code == 'E_TYPE'
 
 
-def test_null_coalescing_rejects_non_option_lhs():
+def test_null_coalescing_on_a_plain_value_keeps_it_but_checks_the_fallback():
+    assert compile_b('print 4 ?? 5')
     with pytest.raises(BError) as e:
-        compile_b('print 4 ?? 5')
+        compile_b('print 4 ?? "five"')
     assert e.value.code == 'E_TYPE'
 
 

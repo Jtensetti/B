@@ -49,12 +49,16 @@ def test_wrong_units_at_the_border_fail_before_running(extra, fragment):
     ("foreign aviation.fuel_burn(Duration) -> Volume[gal]", "E_UNIT", "say which unit it uses, for example Duration[s]"),
     ("foreign aviation.fuel_burn(Duration[kg]) -> Volume[gal]", "E_UNIT", "measures Mass, not Duration"),
     ("foreign aviation.fuel_burn(Duration[h]) -> Text", "E_FOREIGN", "different signature"),
-    ("foreign aviation.fuel_burn(Float) -> Float", "E_FOREIGN", "already exists"),
 ])
 def test_a_unit_declaration_can_only_restate_the_relatives_signature(declaration, code, fragment):
     with pytest.raises(BError) as exc:
         compile_b("use py:b_examples.aviation as aviation\n" + declaration + "\n")
     assert exc.value.code == code and fragment in exc.value.message
+
+
+def test_restating_the_relatives_exact_signature_changes_nothing():
+    assert compile_b("use py:b_examples.aviation as aviation\nforeign aviation.fuel_burn(Float) -> Float\n"
+                     "print aviation.fuel_burn(1.5)\n")
 
 
 def test_registered_dotnet_methods_can_carry_units():

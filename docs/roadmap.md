@@ -14,6 +14,14 @@ The [long-run trial](../experiments/longrun/PREREGISTRATION.md) followed the goa
 
 The [cross-cutting trial](../experiments/crosscut/PREREGISTRATION.md) first ran three typed-Python solvers on an inherited invoicing program of 169 lines in seven modules. They made three changes that each reach several modules: Norwegian invoices in NOK while the report stays in SEK, Norwegian VAT, and prices that include VAT. Every amount was right in all nine steps. The only graded errors came from one solver's reading of a sentence in change 2. The B stage was not run, because there was nothing for B's dimension types to prevent. Seven trials with 31 runs show that today's models make no substantive errors on tasks of this size in either language.
 
+## B 0.31: friction from the first sibling trial
+
+[Sibling task A](../experiments/sibling/task-a/PREREGISTRATION.md) gave B 0 errors but the most output tokens of six languages, 2.8 times TypeScript. The B solvers' transcripts show where the extra turns went, and this release removes those causes. A record can be built by name, `Quote { price = 1.0 }`. There are new core words `upper`, `lower` and `trim`. A condition such as `if r > 0.0 then x / r` now proves the divisor nonzero, for fields too. `x ?? y` on a value that is never none keeps the value. A `foreign` line that restates exactly what B read is accepted.
+
+## B 0.30: Go, Rust and C#
+
+`use go:`, `use rust:` and `use cs:` read signatures with each relative's own tools: go/types, syn and .NET reflection. Calls cross a JSON-lines border to generated, cached hosts, and `on error` turns an error value into none.
+
 ## B 0.29
 
 A foreign call that can fail is declared as one: `foreign tariff.zone(Text) -> Option[Int] on KeyError` gives `none` when the library raises `KeyError`, matched by class name along the exception's hierarchy. This removes the gap that made every B solver in the upgrade trial write a Python wrapper. Record fields can now hold quantities, `Money[SEK]` or `Mass`, so an order line can carry its currency. A quantity field keeps one dimension under its name in every record. `sum`, `min` and `max` over a comprehension keep the dimension. The declaration only restates the signature B read, with an `Option` result. Python only. npm and .NET errors are not mapped yet.

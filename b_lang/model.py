@@ -61,6 +61,7 @@ class ToModel(Transformer):
     def record_entry(self, xs): return (str(xs[0]), xs[1])
     def record_stmt(self, xs): return Stmt("record", (str(xs[0]), tuple(xs[1:])))
     def record_literal(self, xs): return Expr("record", tuple(xs))
+    def named_record_literal(self, xs): return Expr("named_record", (str(xs[0]), Expr("record", tuple(xs[1:]))))
     def binders(self, xs): return tuple(str(x) for x in xs if x is not None)
     def list_each(self, xs):
         value, binders, source, condition = xs

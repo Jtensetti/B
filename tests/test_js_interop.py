@@ -62,7 +62,7 @@ def test_bir_and_inspect_record_assumptions_without_node(monkeypatch, tmp_path, 
     ('use js:"./relative.cjs" as lib', "E_IMPORT"),
     ('use js:"https://example.org/mod.js" as lib', "E_IMPORT"),
     ('use js:"node:path/posix" as p\nforeign p.other(Int) -> Int', "E_FOREIGN"),
-    ('use js:semver as v\nforeign v.compare(Text, Text) -> Int', "E_FOREIGN"),
+    ('use js:semver as v\nforeign v.compare(Text, Int) -> Int', "E_FOREIGN"),
     ('permit []\nuse js:semver as v', "E_EFFECT"),
     ('use js:semver as v\nfn good(s: Text) -> Bool pure = v.satisfies(s, "^1")', "E_EFFECT"),
 ])

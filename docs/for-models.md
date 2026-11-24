@@ -58,15 +58,15 @@ print to_json({
 | A function | `fn f(a: Int, b: Text) -> Text = expression` |
 | Local steps | lines `let y = ...` after `=`, then the result expression on the last line |
 | A condition | `if c then a else b`. Lines may start with `then` or `else`. Every `if` needs an `else` |
-| A missing value | `x ?? fallback`, also `x ?? {}` and `x ?? []`. After `if x != none then ...`, `x` is no longer optional |
+| A missing value | `x ?? fallback`, also `x ?? {}` and `x ?? []`. After `if x != none then ...`, `x` is no longer optional. Division by a value is accepted inside `if r > 0.0 then ... / r` |
 | A list from a list | `[f(x) for x in xs where cond]` |
 | A dictionary from anything | `{key: value for k, v in d where cond}` (keys are Text) |
 | An item, a key | `xs[0]` and `d["key"]` both give an `Option`; use `??` |
 | Membership | `x in xs`, `key in d`, `"sub" in text` |
-| Records | `record R { a: Int, b: Option[Text] }`, build `{a = 1}`, read `r.a` |
+| Records | `record R { a: Int, b: Option[Text] }`, build `{a = 1}` or `R { a = 1 }`, read `r.a` |
 | Output | `print value`, `print to_json(value)` |
 | Input | `read_line()` reads one line of standard input |
-| Core words | `len sorted keys values text join round sum min max abs to_json read_line` |
+| Core words | `len sorted keys values text join round sum min max abs upper lower trim to_json read_line` |
 | Long expressions | wrap in `( ... )` or `[ ... ]` to continue on the next line |
 
 There are no loops, no assignment, no statements inside functions and **no comments**: `#` is a syntax error. Transform collections with `for ... in ... where` and summarize with `sum`, `min`, `max` and `len`.

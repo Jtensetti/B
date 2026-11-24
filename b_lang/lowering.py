@@ -317,6 +317,9 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                 return ast.Call(func=_load("_b_list"), args=[view], keywords=[])
             if data == "text":
                 return ast.Call(func=_load("_b_text"), args=args, keywords=[])
+            if data in ("upper", "lower", "trim"):
+                method = "strip" if data == "trim" else data
+                return ast.Call(func=ast.Attribute(value=args[0], attr=method, ctx=ast.Load()), args=[], keywords=[])
             if data in ("round", "sum", "min", "max", "abs"):
                 return ast.Call(func=_load("_b_" + data), args=args, keywords=[])
             if data == "to_json":
