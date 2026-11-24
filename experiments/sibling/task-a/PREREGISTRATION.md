@@ -14,7 +14,7 @@ Three Claude Haiku solvers in each of six languages: B, typed Python, TypeScript
 | --- | --- | --- | --- |
 | B | `main.bee` | `b run main.bee` | `b check --strict main.bee` |
 | Python | `main.py` | `python main.py` | `mypy --strict main.py` |
-| TypeScript | `main.ts` | `node main.ts` | `tsc --strict --noEmit main.ts` |
+| TypeScript | `main.ts` | `node main.ts` | `tsc --strict --noEmit --types node main.ts` |
 | Go | `go.mod`, `main.go` | `go run .` | `go vet .` |
 | Rust | `Cargo.toml`, `src/main.rs` | `cargo run -q --release` | `cargo build` |
 | C# | `app/App.csproj` | `dotnet run -c Release --project app/App.csproj` | `dotnet build app` |
