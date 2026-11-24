@@ -14,7 +14,7 @@ done = int(counter.read_text()) if counter.exists() else 0
 target = state / "snapshots" / ws.name / f"step{done}"
 if target.exists():
     shutil.rmtree(target)
-shutil.copytree(ws, target, ignore=shutil.ignore_patterns("node_modules", "target", "bin", "obj", "__pycache__", ".git"))
+shutil.copytree(ws, target, ignore=shutil.ignore_patterns("node_modules", "target", "obj", "__pycache__", ".git"))
 counter.write_text(str(done + 1))
 change = state / "steps" / f"change{done + 1}.md"
 print(change.read_text() if change.exists() else "END. The trial is over. Reply DONE.")

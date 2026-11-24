@@ -42,6 +42,10 @@ for solver, agent in sorted(agents.items()):
         shutil.copytree(snap, ws)
         if (run_dir / solver / "node_modules").exists():
             shutil.copytree(run_dir / solver / "node_modules", ws / "node_modules")
+        # The stepper skipped every directory named bin, meant for C# build output. A solver that built
+        # its own bridge binaries into <workspace>/bin gets them back from the live workspace.
+        if (run_dir / solver / "bin").is_dir() and not (ws / "bin").exists():
+            shutil.copytree(run_dir / solver / "bin", ws / "bin")
         steps[int(snap.name[4:])] = grade(task, int(snap.name[4:]), ws)
         shutil.rmtree(work, ignore_errors=True)
     results[solver] = {"steps": steps, "wrong": sum(s["wrong"] for s in steps.values()),
