@@ -2,9 +2,16 @@
 
 ## Long-term goal
 
-**B is a sibling of Python, C# and JavaScript, not their child.** It speaks its own grammar and borrows its vocabulary from the libraries its relatives already have. A program written in B states its owner's decisions. B derives the code from them, uses existing libraries in any of the three ecosystems, and checks before anything runs that the decisions still hold, including across the borders between the languages.
+**B is a sibling of Python, C#, JavaScript, Go and Rust, not their child.** It speaks its own grammar and borrows its vocabulary from the libraries its relatives already have. B runs no relative's grammar. It reads each relative's metadata, calls its libraries across a typed border, and checks before anything runs that the owner's decisions still hold, including at every border between the languages.
 
-The goal is reached when a model can start from an empty file and a brief, build something people actually need using libraries from at least two ecosystems, and carry it through a sequence of changes with fewer wrong results and less total work than with typed Python or C# alone. That claim must be measured.
+The goal is reached when all four conditions are met in pre-registered trials:
+
+1. **Several relatives.** On at least three different tasks, a model starts from an empty file and builds a working program that uses libraries from at least three of the five ecosystems (Python, .NET, npm, Go, Rust). It then carries the program through at least five changes. Every task has at least three solvers per language.
+2. **No more errors.** Summed over all tasks, B delivers no more wrong results on hidden fixtures than the best of typed Python, C#, TypeScript, Go and Rust, each used alone with its own libraries.
+3. **Less work.** Summed over all tasks, B uses fewer output tokens than each of the five languages.
+4. **Fewer faults reach run time.** On the finished programs, a pre-registered set of seeded border faults is injected into every language's version: a wrong unit, a wrong currency, a changed library behavior and a drifted signature. B rejects at least 80 % of them before the program runs. Each of the five languages rejects fewer.
+
+Each condition is measured, not claimed. A trial that fails a condition is reported as a failure. Condition 4 exists because eight trials showed that models make almost no errors on tasks of this size in any language. Whether a language stops a fault before it runs can still be measured, by injecting the faults, without waiting for a model to make them.
 
 ## The sibling principle
 
