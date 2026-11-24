@@ -1,0 +1,9 @@
+[package]
+name = "bridge"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+quarter = { path = "../../libs/quarter" }
+
+[workspace]
