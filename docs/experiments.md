@@ -1,5 +1,9 @@
 # B experiments — reproducible evidence
 
+## B 0.29 the long run, Python calibration (pre-registered)
+
+[A build from an empty file and eight interacting changes](../experiments/longrun/PREREGISTRATION.md) to a subscription-invoicing program. Three typed-Python Haiku solvers delivered 0 wrong units in 1 908. The B stage was not run.
+
 ## B 0.29 cross-cutting changes, Python calibration (pre-registered)
 
 [Three changes that reach several modules](../experiments/crosscut/PREREGISTRATION.md) of an inherited invoicing program. Three typed-Python Haiku solvers. Every amount was right. The only graded errors came from how one solver read a sentence. The B stage was not run.

@@ -6,6 +6,10 @@ B is an independent language with a parser, type checker and Python-AST lowering
 
 **A sibling of the old languages, not their child.** B owns a grammar of decisions, questions and checks across language borders, and borrows its vocabulary from Python, .NET and npm libraries. [Goal, sibling principle, milestones and working protocol](vision.md).
 
+## After B 0.29: the long-run calibration
+
+The [long-run trial](../experiments/longrun/PREREGISTRATION.md) followed the goal's own wording: a build from an empty file, then eight changes with interacting rules (semver pricing, coupons by calendar month, a trial period, plan changes within a month, reverse-charge VAT, annual plans, a minimum invoice and whole-krona rounding). Three typed-Python Haiku solvers delivered 0 wrong units in 27 graded steps, 1 908 units. The B stage was not run. Eight trials have found no task on which typed Python makes substantive errors, so the goal's error criterion is unreachable by measurement with today's models.
+
 ## After B 0.29: the cross-cutting calibration
 
 The [cross-cutting trial](../experiments/crosscut/PREREGISTRATION.md) first ran three typed-Python solvers on an inherited invoicing program of 169 lines in seven modules. They made three changes that each reach several modules: Norwegian invoices in NOK while the report stays in SEK, Norwegian VAT, and prices that include VAT. Every amount was right in all nine steps. The only graded errors came from one solver's reading of a sentence in change 2. The B stage was not run, because there was nothing for B's dimension types to prevent. Seven trials with 31 runs show that today's models make no substantive errors on tasks of this size in either language.

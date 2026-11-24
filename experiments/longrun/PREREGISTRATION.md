@@ -24,3 +24,17 @@ Three B solvers take the same build and changes.
 - **H4 (errors).** B solvers deliver fewer wrong units than the Python solvers, summed over changes 1–8.
 - **H5 (work).** B solvers use fewer output tokens in total, build and changes together.
 - **Kill criterion.** If H4 fails, B no longer claims to reduce errors in long change sequences. The goal counts as met by this trial only if both H4 and H5 hold.
+
+---
+
+## Results of stage 1 (added after the run)
+
+Three typed-Python Haiku solvers built the program from an empty workspace and took all eight changes. Grader log: [`results/grades.txt`](results/grades.txt). Final programs: [`solutions/`](solutions/), 251–294 lines each.
+
+**Every solver delivered 0 wrong units at every step: 27 graded steps and 1 908 units.** No solver asked a question, and the oracle-error rule was never needed. All three wrote their own semantic-version comparison instead of calling npm `semver`, and all three got prereleases and `1.10.0 > 1.9.0` right. They also handled month boundaries for coupons, a trial that crosses a month, plan changes within a month, annual billing every twelfth month, the minimum invoice on the converted total, and rounding halves up to whole kronor.
+
+**Stage 2 is not run**, as the decision rule says. H4 and H5 are not tested.
+
+### What this means for the goal
+
+Eight trials and 34 solver runs have now produced no substantive error in typed Python written by Claude Haiku. The tasks covered a complete specification, ambiguous changes, a silent library upgrade, cross-cutting changes in inherited code, and eight interacting rules from an empty file. The goal's condition, fewer errors than typed Python, assumes there are errors to reduce. On every task tried so far, there are none, so the condition cannot be met by measurement. It can only be met by a task chosen because Python fails on it, and that would not be a measurement of B.
