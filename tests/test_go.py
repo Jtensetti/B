@@ -88,3 +88,13 @@ def test_mistakes_at_the_go_border_are_compile_errors(geo, source, fragment):
     with pytest.raises(BError) as exc:
         compile_b(source, strict=True)
     assert fragment in exc.value.message
+
+
+def test_rechecks_a_changed_signature_in_the_same_process(geo, tmp_path):
+    source = 'use go:"./geo" as geo\nprint geo.Zone("1")\n'
+    compile_b(source, strict=True)
+    provider = tmp_path / "geo" / "geo.go"
+    provider.write_text(GEO.replace("Zone(prefix string)", "Zone(prefix string, local bool)"))
+    with pytest.raises(BError, match="argument"):
+        compile_b(source, strict=True)
+    compile_b(source.replace('Zone("1")', 'Zone("1", true)'), strict=True)

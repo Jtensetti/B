@@ -580,8 +580,10 @@ def expand(statements: list[Stmt]) -> tuple[list[Stmt], dict[str, Learned]]:
         found = learn(name, [(n, t[0]) for n, t in params], result[0], examples, hints, domains, groups)
         learned[name] = found
         expanded.append(Stmt("fn", (name, params, result, to_expr(found.rule, found.names), True, None, None)))
+    functions = {s.parts[0] for s in statements if s.kind == "fn"}
+    adopted = {s.parts[1] for s in statements if s.kind == "adopt"}
     for name in rows:
-        if name not in learned and not any(s.kind == "fn" and s.parts[0] == name for s in statements):
+        if name not in learned and name not in functions and name not in adopted:
             raise BError("E_EXAMPLE", f"example names no function {name!r}")
     expanded = [Stmt(s.kind, desugar_membership(s.parts, groups)) for s in expanded]
     return expanded, learned

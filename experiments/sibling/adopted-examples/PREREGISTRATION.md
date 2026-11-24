@@ -5,3 +5,14 @@ The A/B boundary study found that unchanged primitive signatures can conceal wro
 Freeze the program, provider and source substitutions in [run.py](run.py) before changing the compiler or running the study. Compare the registered B 0.32 commit `01a91593241803567c35534acbe3e041d4936b11` with the first candidate adding fixed examples on adopted functions. Run only `b check --strict main.bee`, in fresh processes. Both compilers receive identical source. The provider raises an exception at import time so that accidental execution is visible.
 
 The good controls are the original source and an equivalent reversal of the operands of an integer multiplication. Both must pass. Faults change minutes to milliseconds instead of seconds, substitute a different fixed exchange rate, change a threshold at its endpoint, and add a required argument. All four must fail with a diagnostic about the example or call, before running the program. A compiler that rejects either good control receives no detection score. This pilot deliberately supplies discriminating examples and integer-valued functions. It does not estimate how often a solver will write such examples or how well the method transfers to opaque libraries.
+
+---
+
+## Results
+
+| Compiler | Clean | Equivalent rewrite | Unit | Currency | Threshold | Signature |
+| --- | --- | --- | --- | --- | --- | --- |
+| B 0.32 | Rejected | Rejected | Ineligible | Ineligible | Ineligible | Ineligible |
+| B 0.33 candidate | Accepted | Accepted | E_EXAMPLE | E_EXAMPLE | E_EXAMPLE | E_ARITY |
+
+The candidate met the registered pilot criterion. The baseline rejected the alias as an unknown example target. The candidate evaluated three explicit integer/boolean examples against translated B expressions. It diagnosed the fourth case at a call site. Both compilers used the same source and strict command. [Baseline diagnostics](baseline.json) and [candidate diagnostics](candidate.json).

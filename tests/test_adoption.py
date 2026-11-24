@@ -206,3 +206,17 @@ def test_editable_install_meta_path_finder_without_importing_package(tmp_path, m
     _, ns = _run("permit []\nadopt py:virtual_editable_package.leaf.safe as f")
     assert ns["f"](7) == 12
     assert "virtual_editable_package" not in sys.modules
+
+
+def test_fixed_example_tracks_the_adopted_body_without_importing_it(tmp_path, monkeypatch):
+    provider = tmp_path / "tariff_probe.py"
+    def write_rate(rate):
+        provider.write_text(f'raise RuntimeError("imported provider")\n'
+                            f'def fee(q: int) -> int:\n    return q * {rate}\n')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    source = "adopt py:tariff_probe.fee as fee\nexample fee(3) == 21\n"
+    write_rate(7)
+    compile_b(source, strict=True)
+    write_rate(8)
+    with pytest.raises(BError, match="program gives 24"):
+        compile_b(source, strict=True)

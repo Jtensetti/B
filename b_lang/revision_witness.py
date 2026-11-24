@@ -51,7 +51,8 @@ def _exact(value, typ: Type) -> bool:
 
 
 class _Fragment:
-    def __init__(self, program: ProgramIR, domain: _Domain):
+    def __init__(self, program: ProgramIR, domain: _Domain, *, adopted_examples: bool = False):
+        self.adopted_examples = adopted_examples
         self.functions = {fn.name: fn for fn in program.statements if fn.op == "fn"}
         self.domain = domain
         self.checked: set[str] = set()
@@ -59,7 +60,8 @@ class _Fragment:
 
     def check(self, name: str, visiting: frozenset[str] = frozenset()) -> StmtIR:
         fn = self.functions.get(name)
-        if (fn is None or fn.typ not in _SCALARS or fn.expr is None or fn.effects or fn.backend
+        if (fn is None or fn.typ not in _SCALARS or fn.expr is None or fn.effects
+                or (fn.backend and not (self.adopted_examples and fn.backend == "py-source"))
                 or fn.requires is not None or fn.ensures is not None
                 or any(t not in _SCALARS for _, t in fn.params)):
             raise _Outside(f"{name} needs a closed scalar function without contracts or effects")
@@ -139,10 +141,11 @@ class _Fragment:
         return value
 
 
-def evaluate_scalar(program: ProgramIR, name: str, arguments: tuple) -> tuple[bool, object]:
+def evaluate_scalar(program: ProgramIR, name: str, arguments: tuple, *,
+                    adopted_examples: bool = False) -> tuple[bool, object]:
     """Evaluate a fixed native scalar call. Unsupported cases yield (False, None)."""
     try:
-        fragment = _Fragment(program, _Domain())
+        fragment = _Fragment(program, _Domain(), adopted_examples=adopted_examples)
         fragment.check(name)
         return True, fragment.evaluate(name, arguments, _Budget(_MAX_WORK))
     except (_Outside, RecursionError):
