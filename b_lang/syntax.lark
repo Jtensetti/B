@@ -2,17 +2,30 @@ start: (_NL | stmt _NL)* stmt?
 _NL: NEWLINE
 
 ?stmt: "permit" "[" [names] "]"                          -> permit_stmt
+     | _UNIT_START NAME "=" number_literal NAME          -> unit_scale_stmt
+     | _UNIT_START names                                 -> unit_base_stmt
+     | _CURRENCY_START names                             -> currency_stmt
+     | _RECORD_START NAME "{" _NL* record_field (_row_sep record_field)* _row_sep? "}" -> record_stmt
+     | _PROBE_START expr                                 -> probe_stmt
+     | _EXPECT_START path NAME "=" NAME                  -> expect_stmt
      | "use" "js" ":" ESCAPED_STRING "as" NAME            -> js_string_use
      | "use" "js" ":" path "as" NAME                     -> js_use
      | "use" BACKEND ":" path "as" NAME                   -> use_stmt
-     | "adopt" "py" ":" path "as" NAME                  -> adopt_stmt
+     | "adopt" "py" ":" path "as" NAME                    -> adopt_stmt
      | "let" NAME [":" type_expr] "=" _NL* expr          -> let_stmt
-     | "fn" NAME "(" [params] ")" "->" type_expr fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
+     | "fn" NAME "(" _NL* [params] ")" ["->" type_expr] fn_pure? fn_requires? fn_ensures? "=" _NL* expr -> fn_stmt
      | "also" NAME "(" [also_args] ")" ["keeping" names]   -> also_stmt
      | "next" NAME "when" expr "=>" expr                   -> next_stmt
      | "print" expr                                       -> print_stmt
      | "assert" expr                                      -> assert_stmt
-     | "foreign" path "(" [type_list] ")" "->" type_expr -> foreign_stmt
+     | "foreign" path "(" [type_list] ")" "->" type_expr ["with" facet_list] -> foreign_stmt
+
+facet_list: facet ("," facet)*
+facet: NAME "=" NAME
+record_field: NAME ":" type_expr
+record_entry: NAME ":" _NL* expr                         -> record_entry_kv
+            | NAME                                       -> record_entry_shorthand
+record_lit: _RECORD_LIT_START "{" _NL* record_entry (_row_sep_comma record_entry)* _row_sep_comma? "}"
 
 fn_pure: "pure"
 fn_requires: "requires" expr
@@ -21,13 +34,16 @@ names: NAME ("," NAME)*
 
 path: NAME ("." NAME)*
 type_list: type_expr ("," type_expr)*
-params: param ("," param)*
+params: param ("," _NL* param)* [","] _NL*
 param: NAME ":" type_expr
 type_expr: NAME ["[" type_expr ("," type_expr)* "]"]
 
-?expr: "if" expr "then" expr "else" expr -> conditional
+?expr: "if" _NL* expr _NL* "then" _NL* expr _NL* "else" _NL* expr -> conditional
+     | "let" NAME [":" type_expr] "=" _NL* expr _NL* "in" _NL* expr -> let_expr
      | history_count
-     | coalesce_expr
+     | pipe_expr
+?pipe_expr: pipe_expr "|>" _NL* coalesce_expr -> pipe
+          | coalesce_expr
 history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL* "where" _NL* expr
 ?coalesce_expr: or_expr "??" coalesce_expr -> coalesce
               | or_expr
@@ -40,20 +56,26 @@ history_count: _HISTORY_START HISTORY_MODE NAME "," _NL* NAME "in" _NL* expr _NL
 ?sum_expr: sum_expr "+" mul_expr  -> add
          | sum_expr "-" mul_expr   -> subtract
          | mul_expr
-?mul_expr: mul_expr "*" unary_expr -> multiply
-         | mul_expr "/" unary_expr -> divide
-         | mul_expr "%" unary_expr -> modulo
-         | unary_expr
+?mul_expr: mul_expr "*" unit_expr -> multiply
+         | mul_expr "/" unit_expr -> divide
+         | mul_expr "%" unit_expr -> modulo
+         | unit_expr
+?unit_expr: unary_expr "as" NAME  -> unit_tag
+          | unary_expr "to" NAME  -> unit_convert
+          | unary_expr
 ?unary_expr: "not" unary_expr     -> not_op
            | "-" unary_expr       -> neg
            | postfix
 ?postfix: atom tail*                -> postfix
 ?tail: "." NAME                    -> attribute
-     | "(" [args] ")"              -> invoke
-     | "[" expr "]"                -> lookup
-args: expr ("," expr)*
-pairs: pair ("," pair)*
-pair: expr ":" expr
+     | "(" _NL* [call_args] ")"    -> invoke
+     | "[" _NL* expr _NL* "]"      -> lookup
+     | "with" "{" _NL* record_entry (_row_sep_comma record_entry)* _row_sep_comma? "}" -> record_with
+call_args: call_arg ("," _NL* call_arg)* [","] _NL*
+call_arg: NAME ":" _NL* expr        -> named_arg
+        | expr                      -> pos_arg
+pairs: pair ("," _NL* pair)* [","] _NL*
+pair: expr ":" _NL* expr
 ?scalar: number_literal
        | ESCAPED_STRING              -> string
        | "true"                      -> true
@@ -63,38 +85,48 @@ number_literal: NUMBER               -> number
 ?case_literal: scalar
              | "-" number_literal    -> neg
 also_args: case_literal ("," case_literal)*
-case_row: COMP case_literal "=>" expr
+case_row: COMP case_literal "=>" _NL* expr
 _ROW_SEMI: ";"
 _row_sep: _ROW_SEMI _NL* | _NL+
-case_table: CASES NAME "{" _NL* (case_row _row_sep)+ "else" "=>" expr _ROW_SEMI? _NL* "}"
+_row_sep_comma: "," _NL* | _ROW_SEMI _NL* | _NL+
+case_table: CASES NAME "{" _NL* (case_row _row_sep)+ "else" "=>" _NL* expr _ROW_SEMI? _NL* "}"
 
 summary: _SUMMARY_START NAME "in" expr "{" _NL* summary_field (_row_sep summary_field)* _row_sep? "}"
 summary_field: NAME ":" summary_reduction
-?summary_reduction: "count" ["where" expr]                  -> summary_count
-                  | "sum" expr ["where" expr]               -> summary_sum
-                  | EXTREMUM expr "default" summary_default -> summary_extremum
-?summary_default: SUMMARY_INT     -> default_int
-                | "+" SUMMARY_INT -> default_int
-                | "-" SUMMARY_INT -> default_negative_int
+?summary_reduction: "count" ["where" _NL* expr]                           -> summary_count
+                  | "sum" expr ["where" _NL* expr]                        -> summary_sum
+                  | EXTREMUM expr ["where" _NL* expr] "default" summary_default -> summary_extremum
+?summary_default: NUMBER          -> default_num
+                | "+" NUMBER      -> default_num
+                | "-" NUMBER      -> default_negative_num
+
+list_body: expr "for" NAME "in" expr ["where" _NL* expr] _NL* -> list_comp
+         | expr ("," _NL* expr)* [","] _NL*                   -> list_items
 
 ?atom: case_table
      | CASES                         -> identifier
+     | EXTREMUM                      -> identifier
      | summary
+     | record_lit
      | scalar
      | NAME                          -> identifier
-     | "[" [args] "]"                -> list_literal
-     | "{" [pairs] "}"               -> dict_literal
-     | "(" expr ")"                  -> grouped
+     | "[" _NL* [list_body] "]"      -> list_bracket
+     | "{" _NL* [pairs] "}"          -> dict_literal
+     | "(" _NL* expr _NL* ")"        -> grouped
 
-// Both words can also be ordinary variables and functions. Recognize a
-// summary only at its binder; "summarize and in" is still a Bool expression.
+// Contextual keywords preserve backward compatibility when used as variable names.
 CASES: "cases"
 _SUMMARY_START.2: /summarize(?=[ \t]+(?!(?:and|or|then|else)\b)[A-Za-z_][A-Za-z0-9_]*[ \t]+in\b)/
 _HISTORY_START.2: /count(?=[ \t]+(?:adjacent|earlier)\b)/
+_RECORD_START.2: /record(?=[ \t]+[A-Za-z_][A-Za-z0-9_]*[ \t]*\{)/
+_RECORD_LIT_START.2: /record(?=[ \t]*\{)/
+_UNIT_START.2: /unit(?=[ \t]+[A-Za-z_])/
+_CURRENCY_START.2: /currency(?=[ \t]+[A-Za-z_])/
+_PROBE_START.2: /probe(?=[ \t]+)/
+_EXPECT_START.2: /expect(?=[ \t]+[A-Za-z_])/
 HISTORY_MODE: "adjacent" | "earlier"
 EXTREMUM: "min" | "max"
-SUMMARY_INT: /0|[1-9][0-9]*/
-BACKEND: "py" | "net"
+BACKEND: "py" | "net" | "go" | "rs"
 COMP: "==" | "!=" | "<=" | ">=" | "<" | ">"
 NAME: /[A-Za-z_][A-Za-z0-9_]*/
 NUMBER: /(?:0|[1-9][0-9]*)(?:\.[0-9]+)?/

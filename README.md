@@ -1,10 +1,22 @@
 # B
 
-**B is an experimental programming language for making small, checked changes to programs.** A declaration can extend an existing rule, execute as part of the new program and constrain which results the change may affect. B also has typed functions, contracts and adapters for Python, .NET and Node.js libraries.
+**B is an independent sibling programming language to Python, C#, TypeScript, Go, and Rust**—composing libraries directly across all five ecosystems while standing on its own semantics, readable expression-oriented syntax, dimensioned units/currencies, records, typed summaries, ordered history counts, contracts, and active pre-execution protection against cross-ecosystem "false friends".
 
-**Version 0.18 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
+**Version 0.20 (research prototype).** The preferred source suffix is `.bee`. B also accepts `.b4`, `.bsrc` and `.b`. The historical Bell Labs B is a separate language.
 
-> **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*. Import signatures are assumptions, not proofs. Executing B can run arbitrary installed Python code.
+> **Safety and maturity:** B is not a sandbox, a general-purpose native compiler, a proof assistant or a complete Python/.NET/Go/Rust type checker. `b check --strict` only accepts programs without *known static warnings in the supported subset*, and `b lock` / `b check --lock` verifies dependency signatures and behavioral probes before execution. Executing B can run arbitrary installed foreign code.
+
+## Five sibling ecosystems & active false-friend protection (v0.19–0.20)
+
+B imports directly from **Python (`py:`)**, **.NET (`net:`)**, **Node/npm (`js:`)**, **Go (`go:`)**, and **Rust (`rs:`)** in one statically checked program, while guarding boundaries against cross-ecosystem semantic traps:
+
+- **Units & currencies:** `unit m`, `unit km = 1000 m`, `currency EUR, SEK`, `as`, `to`, `scalar()` catch unit/currency mismatches statically (`E_UNIT`, `E_CURRENCY`).
+- **Nominal & structural records + heterogeneous summaries:** `record Name { ... }`, `record { field, ... }`, `rec with { ... }`, and heterogeneous `summarize` with direct typed `.field` access.
+- **Cross-ecosystem semantic checks & behavioral locking:** `expect alias.member facet = val` (`E_FALSE_FRIEND`), static JS 53-bit safe-integer checking, and `b lock FILE` / `b check FILE --strict --lock FILE.lock.json` (`E_LOCK_SIGNATURE`, `E_BEHAVIOR_DRIFT`).
+- **Two independent BIR backends:** Python (`b run`) and standalone Node.js JavaScript (`b build --target js`, `b run --backend js`).
+- **Preregistered empirical evaluations:**
+  - **Study A — False Friends Stopped Before Execution** ([`experiments/false-friends/README.md`](experiments/false-friends/README.md)): B stops **25/25 (100.0%)** of planted cross-ecosystem boundary faults (wrong unit, wrong currency, changed signature, silent behavior drift, semantic differences) with **0/5 false positives**, versus **5/25 (20.0%)** for Python/C#/Go/Rust and **4/25 (16.0%)** for TypeScript.
+  - **Study B — 6-Language Multi-Ecosystem Lifecycle Study** ([`experiments/sibling-study/README.md`](experiments/sibling-study/README.md)): Across 3 tasks × 6 stages (empty file + 5 consecutive edits) × 3 independent solvers per language (54 runs, 3,240 hidden black-box oracle checks), B 0.20.1 achieves **0/540 remaining errors** (54/54 first-try passes) and uses **fewer total lifecycle output tokens** (`11,402` added / `23,565` diff / `45,422` full / `1,099.9` Stage-5 `o200k_base` tokens, with `B_GUIDE.md` = `1,494` ≤ `1,500` tokens) than **every single sibling language** (TypeScript `13,095`, Python `16,723`, Go `17,460`, Rust `19,838`, C# `20,575`).
 
 ## Extend a rule and protect the rest of a booking
 
@@ -253,16 +265,16 @@ This limitation matters more than adding new punctuation or another file extensi
 
 | Layer | Working today | Not yet provided |
 | --- | --- | --- |
-| B language | Own grammar, immutable names, typed functions, conditions, ordered decision tables, named list reductions, ordered counts, optional dictionary lookups, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt` | General loops, records, pattern matching, user generics |
-| BIR v2 | Typed semantic nodes, function contracts, effect inventory, foreign catalog, JSON view, pure constant optimization | Independently verified IR loading, source maps, multi-target lowering |
-| Python libraries | Actual import/call, limited annotation discovery, overloads, dynamic fallback and narrow source adoption | Full typeshed, re-export tracking, package-version locking |
-| Node.js libraries | Typed POSIX path and semver functions, plus explicit declarations for synchronous named npm exports | Automatic TypeScript signature discovery, promises, callbacks and object handles |
-| .NET libraries | Restricted `System.Math` and `Regex` host, metadata verified in CI | Arbitrary assemblies, object models, reflection-based adapters |
-| Correctness | Static types/errors, integer bounds, conditional guarantees, affine equalities, revision comparison, runtime contracts and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
-| AI advantage | Explicit machine-readable IR and diagnostics | Any measured improvement in AI's correctness or tokens |
+| B language | Own grammar, immutable names, typed functions (with optional return inference), nominal & structural records (`record { ... }`, `with`), dimensioned `unit`/`currency` types (`as`, `to`, `scalar`), conditions, ordered decision tables, heterogeneous `summarize` with `.field` access, ordered counts, list comprehensions, `|>`, `??`, `pure`, `requires`, `ensures`, `permit`, `adopt`, `probe`, `expect` | General loops, sum types/pattern matching, user generics |
+| BIR v2 | Typed semantic nodes, units/currencies/records, function contracts, effect inventory, foreign catalog with semantic facets, JSON view, pure constant optimization, **two independent lowering backends** (Python & Node.js JS) | Independently verified IR loading, source maps, native AOT backend |
+| Sibling interop | Direct live bridges for **Python (`py:`)**, **.NET (`net:`)**, **Node/npm (`js:`)**, **Go (`go:`)**, and **Rust (`rs:`)**; behavioral dependency lockfiles (`b lock` / `b check --lock`) | Full typeshed / arbitrary external crate/Go-module discovery, async/promises, object handles |
+| Correctness | Static types/units/currencies/false-friend checks, integer bounds, conditional guarantees, affine equalities, revision comparison, runtime contracts, behavioral drift locking, and conservative effect classification | General proof system, fine-grained external effects, sandboxing |
+| Measured studies | Preregistered [Study A (false friends)](experiments/false-friends/README.md) (`25/25 = 100%` vs max sibling `5/25`) and [Study B (54-run 6-language lifecycle)](experiments/sibling-study/README.md) (`0/540` errors; lowest `o200k_base` tokens on every lifecycle metric under `1,494`-token guide cap) | Human developer studies, cross-model ensembles, multi-file systems codebases |
 
 ## Project references
 
+- [Study B: 6-language multi-ecosystem lifecycle study (0.20)](experiments/sibling-study/README.md)
+- [Study A: False friends stopped before execution (0.19–0.20)](experiments/false-friends/README.md)
 - [Contract questions about proposed edits (0.11)](docs/contract-questions.md)
 - [Discovering and checking contracts (0.10)](docs/contract-discovery.md)
 - [Contract analysis and revision comparison (0.8)](docs/composition.md)
@@ -277,6 +289,6 @@ This limitation matters more than adding new punctuation or another file extensi
 - [Research directions beyond interoperability](docs/research-directions.md)
 - [Roadmap](docs/roadmap.md)
 
-**Status:** the code is a research prototype, with tests on the implemented subset. An independent AI building and modifying a substantial B application has **not** yet been evaluated.
+**Status:** research prototype with 681 passing tests, live 5-ecosystem adapters (`py`, `net`, `js`, `go`, `rs`), two BIR lowering backends, and preregistered reproducible empirical evaluations ([Study A](experiments/false-friends/README.md) & [Study B](experiments/sibling-study/README.md)).
 
 MIT licensed.

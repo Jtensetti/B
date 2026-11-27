@@ -1,0 +1,88 @@
+use py:statistics as stats
+use go:strings as gstr
+use go:math as gmath
+use rs:std.str as rstr
+use rs:std.i64 as ri
+
+unit ms
+unit s = 1000 ms
+
+record Sample {
+    service: Text
+    ms: Int
+    offset: Int
+}
+
+record Request {
+    sla_s: Float
+    samples: List[Sample]
+}
+
+record EnrichedSample {
+    service: Text
+    ms: Int
+    offset: Int
+    breach: Bool
+    overage: Int
+    bucket_zero: Bool
+    sev: Text
+}
+
+fn sla_to_ms(sla_s: Float) -> Float[ms] pure = (sla_s as s) to ms
+
+fn is_breach(sample_ms: Int, sla_ms: Float[ms]) -> Bool pure =
+    (to_float(sample_ms) as ms) > sla_ms
+
+fn severity(sample_ms: Int) -> Text pure = cases sample_ms {
+    < 200 => "ok"
+    <= 500 => "warn"
+    <= 1000 => "slow"
+    else => "critical"
+}
+
+fn round_even_int(x: Float) -> Int = to_int(gmath.RoundToEven(x))
+
+fn norm_service(name: Text) -> Text = rstr.to_lowercase(gstr.TrimSpace(name))
+
+fn enrich(sample: Sample, sla_ms: Float[ms], sla_ms_int: Int) -> EnrichedSample =
+    let breach = is_breach(sample.ms, sla_ms) in
+    EnrichedSample(
+        service: norm_service(sample.service),
+        ms: sample.ms,
+        offset: sample.offset,
+        breach: breach,
+        overage: if breach then sample.ms - sla_ms_int else 0,
+        bucket_zero: ri.rem_euclid(sample.offset, 4) == 0,
+        sev: severity(sample.ms)
+    )
+
+let req: Request = from_json(stdin_text())
+let sla_ms: Float[ms] = sla_to_ms(req.sla_s)
+let sla_ms_int: Int = round_even_int(scalar(sla_ms))
+let items: List[EnrichedSample] = [enrich(x, sla_ms, sla_ms_int) for x in req.samples]
+
+let summary = summarize x in items {
+    total: count
+    breaches: count where x.breach
+    overage_ms: sum x.overage where x.breach
+    max_ms: max x.ms default 0
+    bucket_zero: count where x.bucket_zero
+    critical: count where x.sev == "critical"
+    warn_or_worse: count where x.sev != "ok"
+}
+
+let ms_values: List[Float] = [to_float(x.ms) for x in items]
+let mean_ms: Int = if len(ms_values) == 0 then 0 else round_even_int(stats.mean(ms_values))
+
+let out = record {
+    count: summary.total
+    breaches: summary.breaches
+    overage_ms: summary.overage_ms
+    max_ms: summary.max_ms
+    mean_ms
+    bucket_zero: summary.bucket_zero
+    critical: summary.critical
+    warn_or_worse: summary.warn_or_worse
+}
+
+print json_encode(out)

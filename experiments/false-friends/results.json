@@ -1,0 +1,753 @@
+{
+  "study": "false-friends-before-execution",
+  "script_sha256": "cefcd5ccbc5c1f5949dec37cd1474ae46462bc9db6c836b9dbaf54cc85e94a49",
+  "preregistration_sha256": "7831d02e0c6e531d3df320198161e2e60586b0b6285e06f11ce83d33eb04b07f",
+  "summary": {
+    "B": {
+      "stopped": 25,
+      "total_faults": 25,
+      "stop_rate_pct": 100.0,
+      "control_false_positives": 0,
+      "total_controls": 5,
+      "by_category": {
+        "wrong_unit": "5/5",
+        "wrong_currency": "5/5",
+        "changed_signature": "5/5",
+        "silent_behavior_drift": "5/5",
+        "ecosystem_semantics": "5/5"
+      }
+    },
+    "Python": {
+      "stopped": 5,
+      "total_faults": 25,
+      "stop_rate_pct": 20.0,
+      "control_false_positives": 0,
+      "total_controls": 5,
+      "by_category": {
+        "wrong_unit": "0/5",
+        "wrong_currency": "0/5",
+        "changed_signature": "5/5",
+        "silent_behavior_drift": "0/5",
+        "ecosystem_semantics": "0/5"
+      }
+    },
+    "C#": {
+      "stopped": 5,
+      "total_faults": 25,
+      "stop_rate_pct": 20.0,
+      "control_false_positives": 0,
+      "total_controls": 5,
+      "by_category": {
+        "wrong_unit": "0/5",
+        "wrong_currency": "0/5",
+        "changed_signature": "5/5",
+        "silent_behavior_drift": "0/5",
+        "ecosystem_semantics": "0/5"
+      }
+    },
+    "TypeScript": {
+      "stopped": 4,
+      "total_faults": 25,
+      "stop_rate_pct": 16.0,
+      "control_false_positives": 0,
+      "total_controls": 5,
+      "by_category": {
+        "wrong_unit": "0/5",
+        "wrong_currency": "0/5",
+        "changed_signature": "4/5",
+        "silent_behavior_drift": "0/5",
+        "ecosystem_semantics": "0/5"
+      }
+    },
+    "Go": {
+      "stopped": 5,
+      "total_faults": 25,
+      "stop_rate_pct": 20.0,
+      "control_false_positives": 0,
+      "total_controls": 5,
+      "by_category": {
+        "wrong_unit": "0/5",
+        "wrong_currency": "0/5",
+        "changed_signature": "5/5",
+        "silent_behavior_drift": "0/5",
+        "ecosystem_semantics": "0/5"
+      }
+    },
+    "Rust": {
+      "stopped": 5,
+      "total_faults": 25,
+      "stop_rate_pct": 20.0,
+      "control_false_positives": 0,
+      "total_controls": 5,
+      "by_category": {
+        "wrong_unit": "0/5",
+        "wrong_currency": "0/5",
+        "changed_signature": "5/5",
+        "silent_behavior_drift": "0/5",
+        "ecosystem_semantics": "0/5"
+      }
+    }
+  },
+  "cases": [
+    {
+      "id": "U1_add_m_and_km",
+      "category": "wrong_unit",
+      "is_control": false,
+      "description": "Add meters directly to kilometers without unit conversion",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_UNIT: Cannot add incompatible dimensioned types Float[m] and Float[km]",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.39",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "U2_pass_ms_as_s",
+      "category": "wrong_unit",
+      "is_control": false,
+      "description": "Pass milliseconds into a function expecting seconds",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_UNIT: argument 1 to deadline: expected Float[s], got Float[ms]",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.11",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "U3_compare_kg_and_g",
+      "category": "wrong_unit",
+      "is_control": false,
+      "description": "Compare weight in kg directly against threshold in grams",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_UNIT: Cannot compare Float[kg] and Float[g]",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.14",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "U4_untagged_float_as_km",
+      "category": "wrong_unit",
+      "is_control": false,
+      "description": "Pass bare dimensionless float into a km-typed routing function",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_UNIT: argument 1 to range_ok: expected Float[km], got Float",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.05",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "U5_cross_dimension_m_to_s",
+      "category": "wrong_unit",
+      "is_control": false,
+      "description": "Convert meters into seconds (incompatible physical dimensions)",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_UNIT: Incompatible unit dimensions: cannot convert m (m) to s (s)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.06",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "C1_add_sek_and_eur",
+      "category": "wrong_currency",
+      "is_control": false,
+      "description": "Add SEK item price directly to EUR shipping fee",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_CURRENCY: Cannot add incompatible dimensioned types Float[SEK] and Float[EUR]",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.03",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "C2_pass_usd_to_eur_api",
+      "category": "wrong_currency",
+      "is_control": false,
+      "description": "Pass USD amount to a billing function expecting EUR",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_CURRENCY: argument 1 to charge_eur: expected Float[EUR], got Float[USD]",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.09",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "C3_return_sek_as_eur",
+      "category": "wrong_currency",
+      "is_control": false,
+      "description": "Function promises EUR return value but returns SEK amount",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_CURRENCY: return of quote_eur: expected Float[EUR], got Float[SEK]",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.03",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "C4_compare_sek_vs_eur",
+      "category": "wrong_currency",
+      "is_control": false,
+      "description": "Compare SEK invoice directly against EUR approval cap",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_CURRENCY: Cannot compare Float[SEK] and Float[EUR]",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.02",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "C5_implicit_fx_convert",
+      "category": "wrong_currency",
+      "is_control": false,
+      "description": "Attempt implicit currency conversion without exchange rate",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_CURRENCY: Cannot implicitly convert currency SEK to EUR; use an explicit exchange rate",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.05",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "S1_extra_required_param",
+      "category": "changed_signature",
+      "is_control": false,
+      "description": "Dependency adds a new required parameter (arity change)",
+      "stopped": {
+        "B": true,
+        "Python": true,
+        "C#": true,
+        "TypeScript": true,
+        "Go": true,
+        "Rust": true
+      },
+      "diagnostics": {
+        "B": "B check: E_ARITY: py:depmod.fee expects 2 arguments, got 1",
+        "Python": "main.py:2: error: Missing positional argument \"zone\" in call to \"fee\"  [call-arg]\nFound 1 error in 1 file (checked 1 source file)",
+        "C#": "/tmp/b_false_friends_tlh4xopq/S1_extra_required_param/cs/Program.cs(1,23): error CS7036: There is no argument given that corresponds to the required parameter 'zone' of 'Dep.Fee(double, string)' [/tmp/b_false_friends_tlh4xopq/S1_extra_required_param/cs/App.csproj]\n\nBuild FAILED.\n\n/tmp/b_false_friend",
+        "TypeScript": "main.ts(2,13): error TS2554: Expected 2 arguments, but got 1.",
+        "Go": "# caseapp\n# [caseapp]\nvet: ./main.go:3:35: not enough arguments in call to fee\n\thave (number)\n\twant (float64, string)",
+        "Rust": "error[E0061]: this function takes 2 arguments but 1 argument was supplied\n --> /tmp/b_false_friends_tlh4xopq/S1_extra_required_param/rs/main.rs:2:28\n  |\n2 | fn main() { println!(\"{}\", fee(10.0)); }\n  |                            ^^^------ argument #2 of type `&str` is missing\n  |\nnote: function defi"
+      }
+    },
+    {
+      "id": "S2_return_becomes_nullable",
+      "category": "changed_signature",
+      "is_control": false,
+      "description": "Dependency return type becomes nullable/Optional",
+      "stopped": {
+        "B": true,
+        "Python": true,
+        "C#": true,
+        "TypeScript": true,
+        "Go": true,
+        "Rust": true
+      },
+      "diagnostics": {
+        "B": "B check: E_TYPE: assignment to s: expected Text, got Option[Text]",
+        "Python": "main.py:2: error: Incompatible types in assignment (expression has type \"str | None\", variable has type \"str\")  [assignment]\nFound 1 error in 1 file (checked 1 source file)",
+        "C#": "/tmp/b_false_friends_tlh4xopq/S2_return_becomes_nullable/cs/Program.cs(1,12): error CS8600: Converting null literal or possible null value to non-nullable type. [/tmp/b_false_friends_tlh4xopq/S2_return_becomes_nullable/cs/App.csproj]\n\nBuild FAILED.\n\n/tmp/b_false_friends_tlh4xopq/S2_return_becomes_nu",
+        "TypeScript": "main.ts(2,7): error TS2322: Type 'string | null' is not assignable to type 'string'.\n  Type 'null' is not assignable to type 'string'.",
+        "Go": "# caseapp\n# [caseapp]\nvet: ./main.go:3:30: cannot use lookup(\"a\") (value of type *string) as string value in variable declaration",
+        "Rust": "error[E0308]: mismatched types\n --> /tmp/b_false_friends_tlh4xopq/S2_return_becomes_nullable/rs/main.rs:2:29\n  |\n2 | fn main() { let s: String = lookup(\"a\"); println!(\"{}\", s); }\n  |                    ------   ^^^^^^^^^^^ expected `String`, found `Option<String>`\n  |                    |\n  |       "
+      }
+    },
+    {
+      "id": "S3_param_type_changed",
+      "category": "changed_signature",
+      "is_control": false,
+      "description": "Dependency parameter type changes from Int to Text",
+      "stopped": {
+        "B": true,
+        "Python": true,
+        "C#": true,
+        "TypeScript": true,
+        "Go": true,
+        "Rust": true
+      },
+      "diagnostics": {
+        "B": "B check: E_TYPE: argument 1 to py:depmod.normalize: expected Text, got Int",
+        "Python": "main.py:2: error: Argument 1 to \"normalize\" has incompatible type \"int\"; expected \"str\"  [arg-type]\nFound 1 error in 1 file (checked 1 source file)",
+        "C#": "/tmp/b_false_friends_tlh4xopq/S3_param_type_changed/cs/Program.cs(1,33): error CS1503: Argument 1: cannot convert from 'int' to 'string' [/tmp/b_false_friends_tlh4xopq/S3_param_type_changed/cs/App.csproj]\n\nBuild FAILED.\n\n/tmp/b_false_friends_tlh4xopq/S3_param_type_changed/cs/Program.cs(1,33): error ",
+        "TypeScript": "main.ts(2,23): error TS2345: Argument of type 'number' is not assignable to parameter of type 'string'.",
+        "Go": "# caseapp\n# [caseapp]\nvet: ./main.go:3:37: cannot use 5 (untyped int constant) as string value in argument to normalize",
+        "Rust": "error[E0308]: mismatched types\n --> /tmp/b_false_friends_tlh4xopq/S3_param_type_changed/rs/main.rs:2:38\n  |\n2 | fn main() { println!(\"{}\", normalize(5)); }\n  |                            --------- ^ expected `&str`, found integer\n  |                            |\n  |                            argume"
+      }
+    },
+    {
+      "id": "S4_export_removed",
+      "category": "changed_signature",
+      "is_control": false,
+      "description": "External npm/library export renamed or removed",
+      "stopped": {
+        "B": true,
+        "Python": true,
+        "C#": true,
+        "TypeScript": true,
+        "Go": true,
+        "Rust": true
+      },
+      "diagnostics": {
+        "B": "B check: E_LOCK_SIGNATURE: Node/npm export js:dep-pkg.normalizeCode no longer exists",
+        "Python": "main.py:2: error: Module has no attribute \"normalize_code\"  [attr-defined]\nFound 1 error in 1 file (checked 1 source file)",
+        "C#": "/tmp/b_false_friends_tlh4xopq/S4_export_removed/cs/Program.cs(1,23): error CS0117: 'Dep' does not contain a definition for 'NormalizeCode' [/tmp/b_false_friends_tlh4xopq/S4_export_removed/cs/App.csproj]\n\nBuild FAILED.\n\n/tmp/b_false_friends_tlh4xopq/S4_export_removed/cs/Program.cs(1,23): error CS0117",
+        "TypeScript": "main.ts(1,10): error TS2305: Module '\"./dep\"' has no exported member 'normalizeCode'.",
+        "Go": "# caseapp\n# [caseapp]\nvet: ./main.go:3:27: undefined: normalizeCode",
+        "Rust": "error[E0425]: cannot find function `normalize_code` in this scope\n --> /tmp/b_false_friends_tlh4xopq/S4_export_removed/rs/main.rs:2:28\n  |\n2 | fn main() { println!(\"{}\", normalize_code(\"ab\")); }\n  |                            ^^^^^^^^^^^^^^ not found in this scope\n\nerror: aborting due to 1 previous "
+      }
+    },
+    {
+      "id": "S5_unannotated_arity_drift",
+      "category": "changed_signature",
+      "is_control": false,
+      "description": "Unannotated/JS/ambient-typed dependency changes parameter arity without updating ambient stub",
+      "stopped": {
+        "B": true,
+        "Python": true,
+        "C#": true,
+        "TypeScript": false,
+        "Go": true,
+        "Rust": true
+      },
+      "diagnostics": {
+        "B": "B check: E_LOCK_SIGNATURE: Node/npm export js:dep-pkg.score arity changed: locked=1, live=2",
+        "Python": "depmod.py:1: error: Function is missing a type annotation  [no-untyped-def]\nmain.py:1: error: Unused \"type: ignore\" comment  [unused-ignore]\nmain.py:2: error: Call to untyped function \"score\" in typed context  [no-untyped-call]\nmain.py:2: error: Missing positional argument \"mode\" in call to \"score\" ",
+        "C#": "/tmp/b_false_friends_tlh4xopq/S5_unannotated_arity_drift/cs/Program.cs(1,23): error CS7036: There is no argument given that corresponds to the required parameter 'mode' of 'Dep.Score(int, string)' [/tmp/b_false_friends_tlh4xopq/S5_unannotated_arity_drift/cs/App.csproj]\n\nBuild FAILED.\n\n/tmp/b_false_f",
+        "TypeScript": "",
+        "Go": "# caseapp\n# [caseapp]\nvet: ./main.go:3:34: not enough arguments in call to score\n\thave (number)\n\twant (int, string)",
+        "Rust": "error[E0061]: this function takes 2 arguments but 1 argument was supplied\n --> /tmp/b_false_friends_tlh4xopq/S5_unannotated_arity_drift/rs/main.rs:2:28\n  |\n2 | fn main() { println!(\"{}\", score(5)); }\n  |                            ^^^^^--- argument #2 of type `&str` is missing\n  |\nnote: function def"
+      }
+    },
+    {
+      "id": "B1_rounding_mode_flip",
+      "category": "silent_behavior_drift",
+      "is_control": false,
+      "description": "Dependency silently switches half-to-even rounding to half-up with identical type signature",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_BEHAVIOR_DRIFT: Behavioral probe #1 failed before execution (observed False)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.05",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "B2_semver_prerelease_drift",
+      "category": "silent_behavior_drift",
+      "is_control": false,
+      "description": "Dependency silently starts admitting prerelease tags with identical (Text, Text)->Bool signature",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_BEHAVIOR_DRIFT: Behavioral probe #1 failed before execution (observed False)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.09",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "B3_tax_rate_drift",
+      "category": "silent_behavior_drift",
+      "is_control": false,
+      "description": "Dependency silently changes VAT lookup table value with identical (Text)->Float signature",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_BEHAVIOR_DRIFT: Behavioral probe #1 failed before execution (observed False)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.12",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "B4_negative_mod_drift",
+      "category": "silent_behavior_drift",
+      "is_control": false,
+      "description": "Dependency silently changes negative modulo from non-negative to signed truncated remainder",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_BEHAVIOR_DRIFT: Silent behavioral drift in py:depmod.bucket on input [-5, 4]: locked 3, observed -1",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.10",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "B5_regex_anchor_drift",
+      "category": "silent_behavior_drift",
+      "is_control": false,
+      "description": "Dependency silently weakens regex from fullmatch to prefix match with identical signature",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_BEHAVIOR_DRIFT: Behavioral probe #1 failed before execution (observed False)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.06",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "E1_utf16_vs_codepoints",
+      "category": "ecosystem_semantics",
+      "is_control": false,
+      "description": "UTF-16 code-unit length/distance (JS/C#) assumed to be Unicode codepoint count",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_FALSE_FRIEND: Semantic mismatch on js:fastest-levenshtein.distance: expected string_unit=codepoints, but ecosystem provides string_unit=utf16_units",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.98",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "E2_utf8_bytes_vs_codepoints",
+      "category": "ecosystem_semantics",
+      "is_control": false,
+      "description": "UTF-8 byte length (Go len / Rust .len()) assumed to be Unicode codepoint count",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_FALSE_FRIEND: Semantic mismatch on rs:std.str.len_bytes: expected string_unit=codepoints, but ecosystem provides string_unit=utf8_bytes",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:06.67",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "E3_rounding_half_away_vs_even",
+      "category": "ecosystem_semantics",
+      "is_control": false,
+      "description": "Half-away-from-zero rounding (Go/Rust) assumed to match banker's half-even (Python/.NET)",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_FALSE_FRIEND: Semantic mismatch on go:math.Round: expected rounding=half_even, but ecosystem provides rounding=half_away_zero",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:03.90",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "E4_remainder_trunc_vs_floor",
+      "category": "ecosystem_semantics",
+      "is_control": false,
+      "description": "Truncated negative remainder (C#/TS/Go/Rust %) assumed to match floored/Euclidean non-negative remainder",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_FALSE_FRIEND: Semantic mismatch on rs:std.i64.rem_trunc: expected remainder=euclid, but ecosystem provides remainder=trunc",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:07.13",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "E5_js_safe_int_overflow",
+      "category": "ecosystem_semantics",
+      "is_control": false,
+      "description": "Integer > 2^53 - 1 passed into JavaScript Number boundary (silent precision loss)",
+      "stopped": {
+        "B": true,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: E_FALSE_FRIEND: Integer literal 9007199254740993 passed to js:dep-pkg.echo exceeds JavaScript safe integer range (2^53 - 1)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:07.98",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "CTRL_U_valid_unit_conversion",
+      "category": "control",
+      "is_control": true,
+      "description": "Valid unit conversion km -> m before addition",
+      "stopped": {
+        "B": false,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: 0 warning(s), 0 unproved obligation(s)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:08.33",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "CTRL_C_valid_explicit_fx",
+      "category": "control",
+      "is_control": true,
+      "description": "Valid explicit FX conversion EUR -> SEK before addition",
+      "stopped": {
+        "B": false,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: 0 warning(s), 0 unproved obligation(s)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:07.04",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "CTRL_S_stable_signature",
+      "category": "control",
+      "is_control": true,
+      "description": "Stable dependency signature",
+      "stopped": {
+        "B": false,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "ASSUMED FOREIGN CONTRACT: py:depmod.fee (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.10",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "CTRL_B_stable_behavior",
+      "category": "control",
+      "is_control": true,
+      "description": "Stable dependency behavior verified by probe & lockfile",
+      "stopped": {
+        "B": false,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "ASSUMED FOREIGN CONTRACT: py:depmod.round_fee (py): signature assumed, not behavior proved\nB check: 0 warning(s), 0 unproved obligation(s)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.53",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    },
+    {
+      "id": "CTRL_E_matching_semantics",
+      "category": "control",
+      "is_control": true,
+      "description": "Explicitly matching cross-ecosystem semantics (Go RoundToEven + Rust len_chars)",
+      "stopped": {
+        "B": false,
+        "Python": false,
+        "C#": false,
+        "TypeScript": false,
+        "Go": false,
+        "Rust": false
+      },
+      "diagnostics": {
+        "B": "B check: 0 warning(s), 0 unproved obligation(s)",
+        "Python": "Success: no issues found in 1 source file",
+        "C#": "Build succeeded.\n    0 Warning(s)\n    0 Error(s)\n\nTime Elapsed 00:00:02.21",
+        "TypeScript": "",
+        "Go": "",
+        "Rust": ""
+      }
+    }
+  ]
+}

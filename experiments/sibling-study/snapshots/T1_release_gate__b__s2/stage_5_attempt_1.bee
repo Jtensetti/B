@@ -1,0 +1,125 @@
+use py:urllib.parse as urls
+foreign urls.unquote(Text) -> Text
+use net:System.Text.RegularExpressions.Regex as Rx
+use js:"node:path/posix" as path
+use js:semver as sv
+
+unit kb
+unit mb = 1024 kb
+
+record Artifact {
+    raw_path: Text
+    channel: Text
+    size_kb: Int
+}
+
+record Request {
+    min_range: Text
+    budget_mb: Float
+    artifacts: List[Artifact]
+}
+
+record ParsedArtifact {
+    pkg: Text
+    ver: Text
+    norm: Text
+    channel: Text
+    size_kb: Int
+    format_ok: Bool
+    ver_valid: Bool
+    semver_ok: Bool
+}
+
+let path_regex = "^[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$"
+
+fn valid_channel(ch: Text) -> Bool pure =
+    ch == "stable" or ch == "beta" or ch == "lts"
+
+fn size_tier(size_kb: Int) -> Text pure = cases size_kb {
+    < 100 => "tiny"
+    <= 1000 => "standard"
+    <= 5000 => "large"
+    else => "oversize"
+}
+
+fn is_lts_exempt(a: ParsedArtifact) -> Bool pure =
+    a.format_ok and a.channel == "lts" and str_contains(a.pkg, "security") and a.ver_valid and str_contains(a.ver, "-") == false and size_tier(a.size_kb) != "oversize"
+
+fn is_eligible(a: ParsedArtifact) -> Bool pure =
+    (a.format_ok and a.semver_ok and size_tier(a.size_kb) != "oversize") or is_lts_exempt(a)
+
+fn became_exempt(a: ParsedArtifact) -> Bool pure =
+    is_lts_exempt(a) and a.semver_ok == false
+
+fn parse_artifact(a: Artifact, min_range: Text) -> ParsedArtifact =
+    let decoded = urls.unquote(a.raw_path) in
+    let norm = path.normalize(decoded) in
+    let ver = path.basename(norm) in
+    let pkg = path.dirname(norm) in
+    let format_ok = Rx.IsMatch(norm, path_regex) and valid_channel(a.channel) in
+    let valid_ver = sv.valid(ver) ?? "" in
+    let ver_valid = valid_ver != "" in
+    let semver_ok = if ver_valid == false then false else sv.satisfies(valid_ver, min_range) in
+    ParsedArtifact(
+        pkg: pkg,
+        ver: ver,
+        norm: norm,
+        channel: a.channel,
+        size_kb: a.size_kb,
+        format_ok: format_ok,
+        ver_valid: ver_valid,
+        semver_ok: semver_ok
+    )
+
+let req: Request = from_json(stdin_text())
+let parsed = [parse_artifact(a, req.min_range) for a in req.artifacts]
+
+let evaluated = [
+    record {
+        pkg: x.pkg,
+        ver: x.ver,
+        channel: x.channel,
+        size_kb: x.size_kb,
+        tier: size_tier(x.size_kb),
+        eligible: is_eligible(x),
+        exempt: became_exempt(x)
+    }
+    for x in parsed
+]
+
+let summary = summarize x in evaluated {
+    total: count
+    eligible: count where x.eligible
+    exempt: count where x.exempt
+    oversize: count where x.tier == "oversize"
+    total_kb: sum x.size_kb
+    max_kb: max x.size_kb default 0
+    eligible_kb: sum x.size_kb where x.eligible
+}
+
+let budget: Float[mb] = req.budget_mb as mb
+let budget_kb: Float[kb] = budget to kb
+let eligible_size: Float[kb] = to_float(summary.eligible_kb) as kb
+let within_budget = eligible_size <= budget_kb
+
+let consecutive_rejects = count adjacent past, now in evaluated where past.eligible == false and now.eligible == false
+let freeze = consecutive_rejects >= 2
+
+let eligible_versions = [x.ver for x in evaluated where x.eligible]
+let recommended = sv.maxSatisfying(eligible_versions, ">=0.0.0")
+
+let output = record {
+    total: summary.total,
+    eligible: summary.eligible,
+    oversize: summary.oversize,
+    total_kb: summary.total_kb,
+    max_kb: summary.max_kb,
+    consecutive_rejects,
+    freeze,
+    exempt: summary.exempt,
+    eligible_kb: summary.eligible_kb,
+    within_budget,
+    recommended
+}
+
+print json_encode(output)

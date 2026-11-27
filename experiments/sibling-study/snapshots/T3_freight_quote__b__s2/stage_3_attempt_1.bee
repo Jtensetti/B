@@ -1,0 +1,104 @@
+use net:System.Math as NetMath
+use net:System.Text.RegularExpressions.Regex as Rx
+use js:"node:path/posix" as path
+use go:strings as gstr
+
+unit m, g
+unit km = 1000 m
+unit kg = 1000 g
+currency EUR, SEK
+
+record LegIn {
+    route: Text
+    dx_km: Float
+    dy_km: Float
+    weight_g: Float
+    zone: Text
+}
+
+record QuoteReq {
+    eur_to_sek: Float
+    legs: List[LegIn]
+}
+
+fn is_valid_zone(zone: Text) -> Bool pure =
+    zone == "SE" or zone == "EU" or zone == "NON-EU"
+
+fn is_valid_leg(depot_ok: Bool, zone: Text) -> Bool pure =
+    depot_ok and is_valid_zone(zone)
+
+fn distance_multiplier(dist: Float[km]) -> Float pure =
+    let d = scalar(dist) in
+    cases d {
+        <= 50.0 => 1.0
+        <= 200.0 => 1.15
+        else => 1.35
+    }
+
+fn is_heavy(weight: Float[kg]) -> Bool pure =
+    scalar(weight) >= 10.0
+
+fn is_long_haul(dist: Float[km]) -> Bool pure =
+    scalar(dist) > 100.0
+
+fn leg_fee(dist: Float[km], weight: Float[kg]) -> Float[EUR] pure =
+    let base = (5.0 + 0.5 * scalar(dist) + 2.0 * scalar(weight)) as EUR in
+    let surcharge = if is_heavy(weight) then 12.0 as EUR else 0.0 as EUR in
+    base * distance_multiplier(dist) + surcharge
+
+fn apply_zone_adjustment(fee: Float[EUR], zone: Text) -> Float[EUR] pure =
+    if zone == "SE" then fee * 0.9
+    else if zone == "NON-EU" then fee + (15.0 as EUR)
+    else fee
+
+fn eur_to_sek_amount(amount: Float[EUR], rate: Float) -> Float[SEK] pure =
+    (scalar(amount) * rate) as SEK
+
+fn eval_leg(leg: LegIn) =
+    let norm = path.normalize(leg.route) in
+    let depot = path.basename(norm) in
+    let zone = gstr.ToUpper(gstr.TrimSpace(leg.zone)) in
+    let valid = is_valid_leg(Rx.IsMatch(depot, "^[a-z]{3}-[0-9]{2}$"), zone) in
+    let dist_km = NetMath.Sqrt(leg.dx_km * leg.dx_km + leg.dy_km * leg.dy_km) as km in
+    let weight_kg = (leg.weight_g as g) to kg in
+    let heavy = is_heavy(weight_kg) in
+    let long_haul = is_long_haul(dist_km) in
+    let fee_eur = apply_zone_adjustment(leg_fee(dist_km, weight_kg), zone) in
+    record {
+        depot
+        zone
+        valid
+        heavy
+        long_haul
+        dist_km
+        weight_kg
+        fee_eur
+    }
+
+let req: QuoteReq = from_json(stdin_text())
+let evaluated = [eval_leg(leg) for leg in req.legs]
+let valid_evaluated = [leg for leg in evaluated where leg.valid]
+let long_haul_pairs = count adjacent prev, curr in valid_evaluated where prev.long_haul and curr.long_haul
+let summary = summarize leg in evaluated {
+    legs: count
+    valid_legs: count where leg.valid
+    heavy_legs: count where leg.valid and leg.heavy
+    customs_legs: count where leg.valid and leg.zone == "NON-EU"
+    total_km: sum leg.dist_km where leg.valid
+    total_eur: sum leg.fee_eur where leg.valid
+}
+let total_eur = summary.total_eur + ((25.0 * to_float(long_haul_pairs)) as EUR)
+let total_m = round_even(scalar(summary.total_km to m))
+let total_eur_cents = round_even(scalar(total_eur) * 100.0)
+let total_sek = round_even(scalar(eur_to_sek_amount(total_eur, req.eur_to_sek)))
+let out = record {
+    legs: summary.legs
+    valid_legs: summary.valid_legs
+    total_m
+    total_eur_cents
+    total_sek
+    heavy_legs: summary.heavy_legs
+    customs_legs: summary.customs_legs
+    long_haul_pairs
+}
+print json_encode(out)

@@ -1,0 +1,133 @@
+{
+  "run_id": "T1_release_gate__python__s1",
+  "task_id": "T1_release_gate",
+  "lang": "Python",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__python__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s1/stage_0_attempt_1.py",
+          "full_tokens": 1552,
+          "added_tokens": 1552,
+          "diff_tokens": 1552,
+          "bytes": 5577,
+          "lines": 208,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s1/stage_1_attempt_1.py",
+          "full_tokens": 1709,
+          "added_tokens": 157,
+          "diff_tokens": 528,
+          "bytes": 6128,
+          "lines": 227,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s1/stage_2_attempt_1.py",
+          "full_tokens": 1831,
+          "added_tokens": 134,
+          "diff_tokens": 382,
+          "bytes": 6569,
+          "lines": 245,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s1/stage_3_attempt_1.py",
+          "full_tokens": 1966,
+          "added_tokens": 149,
+          "diff_tokens": 479,
+          "bytes": 7099,
+          "lines": 261,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s1/stage_4_attempt_1.py",
+          "full_tokens": 2099,
+          "added_tokens": 199,
+          "diff_tokens": 623,
+          "bytes": 7599,
+          "lines": 276,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s1/stage_5_attempt_1.py",
+          "full_tokens": 2213,
+          "added_tokens": 114,
+          "diff_tokens": 259,
+          "bytes": 8100,
+          "lines": 288,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nimport json\nimport posixpath\nimport re\nimport sys\nfrom typing import Literal, TypedDict\nfrom urllib.parse import unquote\n\nSizeTier = Literal[\"tiny\", \"standard\", \"large\", \"oversize\"]\n\nKB_PER_MB: float = 1024.0\n\nVALID_CHANNELS: frozenset[str] = frozenset({\"stable\", \"beta\", \"lts\"})\n\nNORM_PATH_RE: re.Pattern[str] = re.compile(\n    r\"^[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?\\Z\"\n)\n\nSEMVER_RE: re.Pattern[str] = re.compile(\n    r\"^(?P<major>0|[1-9][0-9]*)\"\n    r\"\\.(?P<minor>0|[1-9][0-9]*)\"\n    r\"\\.(?P<patch>0|[1-9][0-9]*)\"\n    r\"(?:-(?P<prerelease>(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*)\"\n    r\"(?:\\.(?:0|[1-9][0-9]*|[0-9]*[a-zA-Z-][0-9a-zA-Z-]*))*))?\\Z\"\n)\n\nCARET_RANGE_RE: re.Pattern[str] = re.compile(\n    r\"^\\^(?P<major>0|[1-9][0-9]*)\"\n    r\"\\.(?P<minor>0|[1-9][0-9]*)\"\n    r\"\\.(?P<patch>0|[1-9][0-9]*)\\Z\"\n)\n\n\n@dataclass(frozen=True)\nclass SemVer:\n    major: int\n    minor: int\n    patch: int\n    prerelease: tuple[str, ...] = ()\n\n    @property\n    def is_prerelease(self) -> bool:\n        return len(self.prerelease) > 0\n\n    @property\n    def core_tuple(self) -> tuple[int, int, int]:\n        return (self.major, self.minor, self.patch)\n\n    def format_core(self) -> str:\n        return f\"{self.major}.{self.minor}.{self.patch}\"\n\n\n@dataclass(frozen=True)\nclass CaretRange:\n    major: int\n    minor: int\n    patch: int\n\n    def upper_bound(self) -> tuple[int, int, int]:\n        if self.major > 0:\n            return (self.major + 1, 0, 0)\n        if self.minor > 0:\n            return (0, self.minor + 1, 0)\n        return (0, 0, self.patch + 1)\n\n    def satisfies(self, version: SemVer) -> bool:\n        if version.is_prerelease:\n            return False\n        lower = (self.major, self.minor, self.patch)\n        upper = self.upper_bound()\n        return lower <= version.core_tuple < upper\n\n\n@dataclass(frozen=True)\nclass ArtifactInput:\n    raw_path: str\n    channel: str\n    size_kb: int\n\n\n@dataclass(frozen=True)\nclass EvaluatedArtifact:\n    raw_path: str\n    norm_path: str\n    pkg: str\n    ver: str\n    channel: str\n    size_kb: int\n    size_tier: SizeTier\n    valid_format: bool\n    semver: SemVer | None\n    exempt_used: bool\n    eligible: bool\n\n\nclass GateSummary(TypedDict):\n    total: int\n    eligible: int\n    oversize: int\n    total_kb: int\n    max_kb: int\n    consecutive_rejects: int\n    freeze: bool\n    exempt: int\n    eligible_kb: int\n    within_budget: bool\n    recommended: str | None\n\n\ndef parse_semver(text: str) -> SemVer | None:\n    match = SEMVER_RE.match(text)\n    if match is None:\n        return None\n    prerelease_raw = match.group(\"prerelease\")\n    prerelease = tuple(prerelease_raw.split(\".\")) if prerelease_raw is not None else ()\n    return SemVer(\n        major=int(match.group(\"major\")),\n        minor=int(match.group(\"minor\")),\n        patch=int(match.group(\"patch\")),\n        prerelease=prerelease,\n    )\n\n\ndef parse_caret_range(spec: str) -> CaretRange | None:\n    match = CARET_RANGE_RE.match(spec.strip())\n    if match is None:\n        return None\n    return CaretRange(\n        major=int(match.group(\"major\")),\n        minor=int(match.group(\"minor\")),\n        patch=int(match.group(\"patch\")),\n    )\n\n\ndef normalize_artifact_path(raw_path: str) -> str:\n    decoded = unquote(raw_path)\n    return posixpath.normpath(decoded)\n\n\ndef classify_size_tier(size_kb: int) -> SizeTier:\n    if size_kb < 100:\n        return \"tiny\"\n    if size_kb <= 1000:\n        return \"standard\"\n    if size_kb <= 5000:\n        return \"large\"\n    return \"oversize\"\n\n\ndef evaluate_artifact(\n    artifact: ArtifactInput,\n    min_range: CaretRange | None,\n) -> EvaluatedArtifact:\n    norm = normalize_artifact_path(artifact.raw_path)\n    ver = posixpath.basename(norm)\n    pkg = posixpath.dirname(norm)\n    size_tier = classify_size_tier(artifact.size_kb)\n\n    valid_format = (\n        NORM_PATH_RE.match(norm) is not None and artifact.channel in VALID_CHANNELS\n    )\n    semver = parse_semver(ver) if valid_format else None\n    not_oversize = size_tier != \"oversize\"\n    satisfies_range = (\n        valid_format\n        and not_oversize\n        and semver is not None\n        and min_range is not None\n        and min_range.satisfies(semver)\n    )\n    lts_security_exempt = (\n        valid_format\n        and artifact.channel == \"lts\"\n        and \"security\" in pkg\n        and semver is not None\n        and not semver.is_prerelease\n        and not_oversize\n    )\n    exempt_used = lts_security_exempt and not satisfies_range\n    eligible = satisfies_range or lts_security_exempt\n\n    return EvaluatedArtifact(\n        raw_path=artifact.raw_path,\n        norm_path=norm,\n        pkg=pkg,\n        ver=ver,\n        channel=artifact.channel,\n        size_kb=artifact.size_kb,\n        size_tier=size_tier,\n        valid_format=valid_format,\n        semver=semver,\n        exempt_used=exempt_used,\n        eligible=eligible,\n    )\n\n\ndef parse_request(raw: object) -> tuple[str, float, list[ArtifactInput]]:\n    if not isinstance(raw, dict):\n        raise ValueError(\"Input must be a JSON object\")\n\n    min_range = raw.get(\"min_range\")\n    budget_mb = raw.get(\"budget_mb\")\n    artifacts_raw = raw.get(\"artifacts\")\n    if (\n        not isinstance(min_range, str)\n        or not isinstance(budget_mb, (int, float))\n        or isinstance(budget_mb, bool)\n        or not isinstance(artifacts_raw, list)\n    ):\n        raise ValueError(\"Invalid input schema\")\n\n    artifacts: list[ArtifactInput] = []\n    for item in artifacts_raw:\n        if not isinstance(item, dict):\n            raise ValueError(\"Each artifact must be a JSON object\")\n        raw_path = item.get(\"raw_path\")\n        channel = item.get(\"channel\")\n        size_kb = item.get(\"size_kb\")\n        if (\n            not isinstance(raw_path, str)\n            or not isinstance(channel, str)\n            or not isinstance(size_kb, int)\n            or isinstance(size_kb, bool)\n        ):\n            raise ValueError(\"Invalid artifact fields\")\n        artifacts.append(\n            ArtifactInput(raw_path=raw_path, channel=channel, size_kb=size_kb)\n        )\n\n    return min_range, float(budget_mb), artifacts\n\n\ndef process_release_gate(\n    min_range_spec: str,\n    budget_mb: float,\n    artifacts: list[ArtifactInput],\n) -> GateSummary:\n    min_range = parse_caret_range(min_range_spec)\n    evaluated = [evaluate_artifact(artifact, min_range) for artifact in artifacts]\n\n    total = len(evaluated)\n    eligible = sum(1 for item in evaluated if item.eligible)\n    oversize = sum(1 for item in evaluated if item.size_tier == \"oversize\")\n    exempt = sum(1 for item in evaluated if item.exempt_used)\n    total_kb = sum(item.size_kb for item in evaluated)\n    max_kb = max((item.size_kb for item in evaluated), default=0)\n    eligible_kb = sum(item.size_kb for item in evaluated if item.eligible)\n    within_budget = eligible_kb <= budget_mb * KB_PER_MB\n    consecutive_rejects = sum(\n        1\n        for prev, curr in zip(evaluated, evaluated[1:])\n        if not prev.eligible and not curr.eligible\n    )\n    freeze = consecutive_rejects >= 2\n    eligible_versions = [\n        item.semver\n        for item in evaluated\n        if item.eligible and item.semver is not None and not item.semver.is_prerelease\n    ]\n    highest_version = max(eligible_versions, key=lambda v: v.core_tuple, default=None)\n    recommended = highest_version.format_core() if highest_version is not None else None\n\n    return {\n        \"total\": total,\n        \"eligible\": eligible,\n        \"oversize\": oversize,\n        \"total_kb\": total_kb,\n        \"max_kb\": max_kb,\n        \"consecutive_rejects\": consecutive_rejects,\n        \"freeze\": freeze,\n        \"exempt\": exempt,\n        \"eligible_kb\": eligible_kb,\n        \"within_budget\": within_budget,\n        \"recommended\": recommended,\n    }\n\n\ndef main() -> None:\n    payload: object = json.loads(sys.stdin.read())\n    min_range_spec, budget_mb, artifacts = parse_request(payload)\n    result = process_release_gate(min_range_spec, budget_mb, artifacts)\n    print(json.dumps(result))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "own_language_audit": {}
+}

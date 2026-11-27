@@ -1,0 +1,70 @@
+use py:statistics as stats
+use go:strings as gstr
+use go:math as gmath
+use rs:std.str as rstr
+use rs:std.i64 as ri
+
+unit ms
+unit s = 1000 ms
+
+record RawSample {
+    service: Text
+    ms: Int
+    offset: Int
+}
+
+record Request {
+    sla_s: Float
+    samples: List[RawSample]
+}
+
+record Sample {
+    service: Text
+    ms: Int
+    offset: Int
+    bucket: Int
+}
+
+fn normalize_service(name: Text) -> Text = gstr.ToLower(rstr.trim(name))
+
+fn prepare_sample(raw: RawSample) -> Sample =
+    Sample(
+        service: normalize_service(raw.service),
+        ms: raw.ms,
+        offset: raw.offset,
+        bucket: ri.rem_euclid(raw.offset, 4)
+    )
+
+fn is_breach(sample: Sample, sla_ms: Float) -> Bool pure =
+    to_float(sample.ms) > sla_ms
+
+fn round_banker(x: Float) -> Int = to_int(gmath.RoundToEven(x))
+
+let req: Request = from_json(stdin_text())
+let sla_ms_q: Float[ms] = (req.sla_s as s) to ms
+let sla_ms: Float = scalar(sla_ms_q)
+let sla_ms_int: Int = round_banker(sla_ms)
+let samples = [prepare_sample(r) for r in req.samples]
+
+let summary = summarize x in samples {
+    total: count
+    breaches: count where is_breach(x, sla_ms)
+    overage_ms: sum (x.ms - sla_ms_int) where is_breach(x, sla_ms)
+    max_ms: max x.ms default 0
+    bucket_zero: count where x.bucket == 0
+}
+
+let mean_ms: Int =
+    if len(samples) == 0 then 0
+    else round_banker(stats.mean([to_float(x.ms) for x in samples]))
+
+let out = record {
+    count: summary.total,
+    breaches: summary.breaches,
+    overage_ms: summary.overage_ms,
+    max_ms: summary.max_ms,
+    mean_ms,
+    bucket_zero: summary.bucket_zero
+}
+
+print json_encode(out)

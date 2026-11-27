@@ -1,0 +1,133 @@
+{
+  "run_id": "T3_freight_quote__typescript__s3",
+  "task_id": "T3_freight_quote",
+  "lang": "TypeScript",
+  "solver_id": 3,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T3_freight_quote__typescript__s3",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__typescript__s3/stage_0_attempt_1.ts",
+          "full_tokens": 733,
+          "added_tokens": 733,
+          "diff_tokens": 733,
+          "bytes": 2411,
+          "lines": 101,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__typescript__s3/stage_1_attempt_1.ts",
+          "full_tokens": 862,
+          "added_tokens": 154,
+          "diff_tokens": 421,
+          "bytes": 2755,
+          "lines": 119,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__typescript__s3/stage_2_attempt_1.ts",
+          "full_tokens": 994,
+          "added_tokens": 132,
+          "diff_tokens": 343,
+          "bytes": 3157,
+          "lines": 137,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__typescript__s3/stage_3_attempt_1.ts",
+          "full_tokens": 1100,
+          "added_tokens": 106,
+          "diff_tokens": 298,
+          "bytes": 3456,
+          "lines": 149,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__typescript__s3/stage_4_attempt_1.ts",
+          "full_tokens": 1157,
+          "added_tokens": 67,
+          "diff_tokens": 276,
+          "bytes": 3624,
+          "lines": 156,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__typescript__s3/stage_5_attempt_1.ts",
+          "full_tokens": 1289,
+          "added_tokens": 152,
+          "diff_tokens": 437,
+          "bytes": 3993,
+          "lines": 168,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "import * as fs from \"fs\";\nimport * as path from \"path\";\n\ntype Zone = \"SE\" | \"EU\" | \"NON-EU\";\n\ninterface LegInput {\n  route: string;\n  dx_km: number;\n  dy_km: number;\n  weight_g: number;\n  zone: string;\n}\n\ninterface QuoteRequest {\n  eur_to_sek: number;\n  max_sek: number;\n  legs: LegInput[];\n}\n\ninterface QuoteOutput {\n  legs: number;\n  valid_legs: number;\n  total_m: number;\n  total_eur_cents: number;\n  total_sek: number;\n  heavy_legs: number;\n  customs_legs: number;\n  long_haul_pairs: number;\n  vip_exempt: number;\n  within_cap: boolean;\n  max_leg_eur_cents: number;\n}\n\nconst DEPOT_PATTERN = /^[a-z]{3}-[0-9]{2}$/;\nconst VALID_ZONES: ReadonlySet<string> = new Set<Zone>([\"SE\", \"EU\", \"NON-EU\"]);\n\nfunction isValidZone(zone: string): zone is Zone {\n  return VALID_ZONES.has(zone);\n}\n\nfunction roundHalfToEven(value: number): number {\n  if (!Number.isFinite(value) || value === 0) {\n    return 0;\n  }\n  const sign = value < 0 ? -1 : 1;\n  const absVal = Math.abs(value);\n  const floorVal = Math.floor(absVal);\n  const diff = absVal - floorVal;\n  let rounded: number;\n  if (diff < 0.5) {\n    rounded = floorVal;\n  } else if (diff > 0.5) {\n    rounded = floorVal + 1;\n  } else {\n    rounded = floorVal % 2 === 0 ? floorVal : floorVal + 1;\n  }\n  const result = sign * rounded;\n  return result === 0 ? 0 : result;\n}\n\nfunction normalizeDepot(route: string): string {\n  const normalized = path.posix.normalize(route);\n  return path.posix.basename(normalized);\n}\n\nfunction normalizeZone(zone: string): string {\n  return zone.trim().toUpperCase();\n}\n\nfunction distanceMultiplier(km: number): number {\n  if (km <= 50.0) {\n    return 1.0;\n  }\n  if (km <= 200.0) {\n    return 1.15;\n  }\n  return 1.35;\n}\n\nfunction applyZoneAdjustment(feeEur: number, zone: Zone): number {\n  switch (zone) {\n    case \"SE\":\n      return feeEur * 0.9;\n    case \"EU\":\n      return feeEur;\n    case \"NON-EU\":\n      return feeEur + 15.0;\n  }\n}\n\nfunction computeQuote(request: QuoteRequest): QuoteOutput {\n  let validLegs = 0;\n  let heavyLegs = 0;\n  let customsLegs = 0;\n  let longHaulPairs = 0;\n  let vipExempt = 0;\n  let prevWasLongHaul = false;\n  let totalKm = 0.0;\n  let totalEur = 0.0;\n  let maxLegEurCents = 0;\n\n  for (const leg of request.legs) {\n    const depot = normalizeDepot(leg.route);\n    const zone = normalizeZone(leg.zone);\n\n    if (!DEPOT_PATTERN.test(depot) || !isValidZone(zone)) {\n      continue;\n    }\n\n    validLegs += 1;\n    const km = Math.sqrt(leg.dx_km * leg.dx_km + leg.dy_km * leg.dy_km);\n    const kg = leg.weight_g / 1000.0;\n    const baseEur = 5.0 + 0.5 * km + 2.0 * kg;\n    let legEur = baseEur * distanceMultiplier(km);\n    if (kg >= 10.0) {\n      heavyLegs += 1;\n      if (depot === \"sto-01\" && zone === \"SE\") {\n        vipExempt += 1;\n      } else {\n        legEur += 12.0;\n      }\n    }\n    if (zone === \"NON-EU\") {\n      customsLegs += 1;\n    }\n    legEur = applyZoneAdjustment(legEur, zone);\n\n    const isLongHaul = km > 100.0;\n    if (prevWasLongHaul && isLongHaul) {\n      longHaulPairs += 1;\n    }\n    prevWasLongHaul = isLongHaul;\n\n    totalKm += km;\n    totalEur += legEur;\n\n    const legEurCents = roundHalfToEven(legEur * 100.0);\n    if (validLegs === 1 || legEurCents > maxLegEurCents) {\n      maxLegEurCents = legEurCents;\n    }\n  }\n\n  totalEur += 25.0 * longHaulPairs;\n  const totalSek = roundHalfToEven(totalEur * request.eur_to_sek);\n\n  return {\n    legs: request.legs.length,\n    valid_legs: validLegs,\n    total_m: roundHalfToEven(totalKm * 1000.0),\n    total_eur_cents: roundHalfToEven(totalEur * 100.0),\n    total_sek: totalSek,\n    heavy_legs: heavyLegs,\n    customs_legs: customsLegs,\n    long_haul_pairs: longHaulPairs,\n    vip_exempt: vipExempt,\n    within_cap: totalSek <= request.max_sek,\n    max_leg_eur_cents: maxLegEurCents,\n  };\n}\n\nfunction main(): void {\n  const rawInput = fs.readFileSync(0, \"utf8\");\n  const request = JSON.parse(rawInput) as QuoteRequest;\n  const output = computeQuote(request);\n  process.stdout.write(`${JSON.stringify(output)}\\n`);\n}\n\nmain();\n",
+  "own_language_audit": {}
+}

@@ -1,0 +1,133 @@
+{
+  "run_id": "T2_telemetry_sla__python__s2",
+  "task_id": "T2_telemetry_sla",
+  "lang": "Python",
+  "solver_id": 2,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T2_telemetry_sla__python__s2",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__python__s2/stage_0_attempt_1.py",
+          "full_tokens": 658,
+          "added_tokens": 658,
+          "diff_tokens": 658,
+          "bytes": 2568,
+          "lines": 116,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__python__s2/stage_1_attempt_1.py",
+          "full_tokens": 845,
+          "added_tokens": 191,
+          "diff_tokens": 479,
+          "bytes": 3271,
+          "lines": 143,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__python__s2/stage_2_attempt_1.py",
+          "full_tokens": 1022,
+          "added_tokens": 187,
+          "diff_tokens": 409,
+          "bytes": 3962,
+          "lines": 163,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__python__s2/stage_3_attempt_1.py",
+          "full_tokens": 1128,
+          "added_tokens": 132,
+          "diff_tokens": 467,
+          "bytes": 4416,
+          "lines": 177,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__python__s2/stage_4_attempt_1.py",
+          "full_tokens": 1234,
+          "added_tokens": 119,
+          "diff_tokens": 399,
+          "bytes": 4822,
+          "lines": 191,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__python__s2/stage_5_attempt_1.py",
+          "full_tokens": 1464,
+          "added_tokens": 242,
+          "diff_tokens": 623,
+          "bytes": 5778,
+          "lines": 223,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nfrom fractions import Fraction\nimport json\nimport sys\nfrom typing import Any, Literal\n\nSeverity = Literal[\"ok\", \"warn\", \"slow\", \"critical\"]\nStatus = Literal[\"green\", \"yellow\", \"red\"]\n\n\n@dataclass(frozen=True)\nclass Sample:\n    service: str\n    ms: int\n    offset: int\n\n\n@dataclass(frozen=True)\nclass AuditInput:\n    sla_s: float\n    samples: list[Sample]\n\n\n@dataclass(frozen=True)\nclass AuditResult:\n    count: int\n    breaches: int\n    overage_ms: int\n    max_ms: int\n    mean_ms: int\n    bucket_zero: int\n    critical: int\n    warn_or_worse: int\n    consecutive_breaches: int\n    spike_steps: int\n    invalid_labels: int\n    exempt: int\n    regressed: int\n    status: Status\n\n    def to_dict(self) -> dict[str, int | str]:\n        return {\n            \"count\": self.count,\n            \"breaches\": self.breaches,\n            \"overage_ms\": self.overage_ms,\n            \"max_ms\": self.max_ms,\n            \"mean_ms\": self.mean_ms,\n            \"bucket_zero\": self.bucket_zero,\n            \"critical\": self.critical,\n            \"warn_or_worse\": self.warn_or_worse,\n            \"consecutive_breaches\": self.consecutive_breaches,\n            \"spike_steps\": self.spike_steps,\n            \"invalid_labels\": self.invalid_labels,\n            \"exempt\": self.exempt,\n            \"regressed\": self.regressed,\n            \"status\": self.status,\n        }\n\n\ndef normalize_service(name: str) -> str:\n    return name.strip().lower()\n\n\ndef is_valid_service_label(service: str) -> bool:\n    return 2 <= len(service) <= 12\n\n\ndef rem_euclid(value: int, modulus: int) -> int:\n    return value % modulus\n\n\ndef is_maintenance_exempt(sample: Sample) -> bool:\n    return sample.service == \"healthcheck\" and rem_euclid(sample.offset, 4) == 0\n\n\ndef classify_severity(ms: int) -> Severity:\n    if ms < 200:\n        return \"ok\"\n    if ms <= 500:\n        return \"warn\"\n    if ms <= 1000:\n        return \"slow\"\n    return \"critical\"\n\n\ndef classify_status(\n    consecutive_breaches: int,\n    critical: int,\n    breaches: int,\n    invalid_labels: int,\n) -> Status:\n    if consecutive_breaches >= 2 or critical > 0:\n        return \"red\"\n    if breaches > 0 or invalid_labels > 0:\n        return \"yellow\"\n    return \"green\"\n\n\ndef parse_input(raw: dict[str, Any]) -> AuditInput:\n    sla_s = float(raw[\"sla_s\"])\n    raw_samples: list[dict[str, Any]] = raw[\"samples\"]\n    samples = [\n        Sample(\n            service=normalize_service(str(item[\"service\"])),\n            ms=int(item[\"ms\"]),\n            offset=int(item[\"offset\"]),\n        )\n        for item in raw_samples\n    ]\n    return AuditInput(sla_s=sla_s, samples=samples)\n\n\ndef audit_stream(data: AuditInput) -> AuditResult:\n    sla_ms = data.sla_s * 1000.0\n    sla_ms_int = round(sla_ms)\n\n    count = len(data.samples)\n    if count == 0:\n        return AuditResult(\n            count=0,\n            breaches=0,\n            overage_ms=0,\n            max_ms=0,\n            mean_ms=0,\n            bucket_zero=0,\n            critical=0,\n            warn_or_worse=0,\n            consecutive_breaches=0,\n            spike_steps=0,\n            invalid_labels=0,\n            exempt=0,\n            regressed=0,\n            status=\"green\",\n        )\n\n    breaches = 0\n    overage_ms = 0\n    valid_total_ms = 0\n    valid_count = 0\n    invalid_labels = 0\n    exempt = 0\n    max_ms = data.samples[0].ms\n    bucket_zero = 0\n    critical = 0\n    warn_or_worse = 0\n    consecutive_breaches = 0\n    spike_steps = 0\n    regressed = 0\n    prev_ms: int | None = None\n    prev_breach = False\n    earlier_min_ms: int | None = None\n\n    for sample in data.samples:\n        raw_breach = float(sample.ms) > sla_ms\n        if raw_breach and is_maintenance_exempt(sample):\n            exempt += 1\n            is_breach = False\n        else:\n            is_breach = raw_breach\n        if is_breach:\n            breaches += 1\n            overage_ms += sample.ms - sla_ms_int\n        if prev_ms is not None:\n            if prev_breach and is_breach:\n                consecutive_breaches += 1\n            if sample.ms > prev_ms + 100:\n                spike_steps += 1\n        prev_ms = sample.ms\n        prev_breach = is_breach\n        if earlier_min_ms is not None:\n            if earlier_min_ms + 300 < sample.ms:\n                regressed += 1\n            if sample.ms < earlier_min_ms:\n                earlier_min_ms = sample.ms\n        else:\n            earlier_min_ms = sample.ms\n        if is_valid_service_label(sample.service):\n            valid_total_ms += sample.ms\n            valid_count += 1\n        else:\n            invalid_labels += 1\n        if sample.ms > max_ms:\n            max_ms = sample.ms\n        if rem_euclid(sample.offset, 4) == 0:\n            bucket_zero += 1\n        severity = classify_severity(sample.ms)\n        if severity == \"critical\":\n            critical += 1\n        if severity != \"ok\":\n            warn_or_worse += 1\n\n    mean_ms = round(Fraction(valid_total_ms, valid_count)) if valid_count > 0 else 0\n    status = classify_status(consecutive_breaches, critical, breaches, invalid_labels)\n\n    return AuditResult(\n        count=count,\n        breaches=breaches,\n        overage_ms=overage_ms,\n        max_ms=max_ms,\n        mean_ms=mean_ms,\n        bucket_zero=bucket_zero,\n        critical=critical,\n        warn_or_worse=warn_or_worse,\n        consecutive_breaches=consecutive_breaches,\n        spike_steps=spike_steps,\n        invalid_labels=invalid_labels,\n        exempt=exempt,\n        regressed=regressed,\n        status=status,\n    )\n\n\ndef main() -> None:\n    payload: dict[str, Any] = json.load(sys.stdin)\n    audit_input = parse_input(payload)\n    result = audit_stream(audit_input)\n    print(json.dumps(result.to_dict()))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "own_language_audit": {}
+}

@@ -1,0 +1,182 @@
+{
+  "run_id": "T3_freight_quote__b__s2",
+  "task_id": "T3_freight_quote",
+  "lang": "B",
+  "solver_id": 2,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T3_freight_quote__b__s2",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__b__s2/stage_0_attempt_1.bee",
+          "full_tokens": 631,
+          "added_tokens": 631,
+          "diff_tokens": 631,
+          "bytes": 1997,
+          "lines": 71,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "js",
+              "net"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__b__s2/stage_1_attempt_1.bee",
+          "full_tokens": 796,
+          "added_tokens": 191,
+          "diff_tokens": 525,
+          "bytes": 2524,
+          "lines": 88,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "js",
+              "net"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__b__s2/stage_2_attempt_1.bee",
+          "full_tokens": 894,
+          "added_tokens": 116,
+          "diff_tokens": 375,
+          "bytes": 2835,
+          "lines": 95,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "js",
+              "net"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__b__s2/stage_3_attempt_1.bee",
+          "full_tokens": 1012,
+          "added_tokens": 167,
+          "diff_tokens": 598,
+          "bytes": 3228,
+          "lines": 104,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "js",
+              "net"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__b__s2/stage_4_attempt_1.bee",
+          "full_tokens": 1147,
+          "added_tokens": 218,
+          "diff_tokens": 630,
+          "bytes": 3653,
+          "lines": 115,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "js",
+              "net"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__b__s2/stage_5_attempt_1.bee",
+          "full_tokens": 1242,
+          "added_tokens": 95,
+          "diff_tokens": 415,
+          "bytes": 3932,
+          "lines": 122,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "js",
+              "net"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "use net:System.Math as NetMath\nuse net:System.Text.RegularExpressions.Regex as Rx\nuse js:\"node:path/posix\" as path\nuse go:strings as gstr\n\nunit m, g\nunit km = 1000 m\nunit kg = 1000 g\ncurrency EUR, SEK\n\nrecord LegIn {\n    route: Text\n    dx_km: Float\n    dy_km: Float\n    weight_g: Float\n    zone: Text\n}\n\nrecord QuoteReq {\n    eur_to_sek: Float\n    max_sek: Int\n    legs: List[LegIn]\n}\n\nfn is_valid_zone(zone: Text) -> Bool pure =\n    zone == \"SE\" or zone == \"EU\" or zone == \"NON-EU\"\n\nfn is_valid_leg(depot_ok: Bool, zone: Text) -> Bool pure =\n    depot_ok and is_valid_zone(zone)\n\nfn distance_multiplier(dist: Float[km]) -> Float pure =\n    let d = scalar(dist) in\n    cases d {\n        <= 50.0 => 1.0\n        <= 200.0 => 1.15\n        else => 1.35\n    }\n\nfn is_heavy(weight: Float[kg]) -> Bool pure =\n    scalar(weight) >= 10.0\n\nfn is_long_haul(dist: Float[km]) -> Bool pure =\n    scalar(dist) > 100.0\n\nfn is_vip_depot(depot: Text, zone: Text) -> Bool pure =\n    depot == \"sto-01\" and zone == \"SE\"\n\nfn heavy_surcharge(weight: Float[kg], vip_exempt: Bool) -> Float[EUR] pure =\n    if vip_exempt then 0.0 as EUR\n    else if is_heavy(weight) then 12.0 as EUR\n    else 0.0 as EUR\n\nfn leg_fee(dist: Float[km], weight: Float[kg], vip_exempt: Bool) -> Float[EUR] pure =\n    let base = (5.0 + 0.5 * scalar(dist) + 2.0 * scalar(weight)) as EUR in\n    base * distance_multiplier(dist) + heavy_surcharge(weight, vip_exempt)\n\nfn apply_zone_adjustment(fee: Float[EUR], zone: Text) -> Float[EUR] pure =\n    if zone == \"SE\" then fee * 0.9\n    else if zone == \"NON-EU\" then fee + (15.0 as EUR)\n    else fee\n\nfn eur_to_sek_amount(amount: Float[EUR], rate: Float) -> Float[SEK] pure =\n    (scalar(amount) * rate) as SEK\n\nfn eval_leg(leg: LegIn) =\n    let norm = path.normalize(leg.route) in\n    let depot = path.basename(norm) in\n    let zone = gstr.ToUpper(gstr.TrimSpace(leg.zone)) in\n    let valid = is_valid_leg(Rx.IsMatch(depot, \"^[a-z]{3}-[0-9]{2}$\"), zone) in\n    let dist_km = NetMath.Sqrt(leg.dx_km * leg.dx_km + leg.dy_km * leg.dy_km) as km in\n    let weight_kg = (leg.weight_g as g) to kg in\n    let heavy = is_heavy(weight_kg) in\n    let vip_exempt = is_vip_depot(depot, zone) and heavy in\n    let long_haul = is_long_haul(dist_km) in\n    let fee_eur = apply_zone_adjustment(leg_fee(dist_km, weight_kg, vip_exempt), zone) in\n    let fee_eur_cents = round_even(scalar(fee_eur) * 100.0) in\n    record {\n        depot\n        zone\n        valid\n        heavy\n        vip_exempt\n        long_haul\n        dist_km\n        weight_kg\n        fee_eur\n        fee_eur_cents\n    }\n\nlet req: QuoteReq = from_json(stdin_text())\nlet evaluated = [eval_leg(leg) for leg in req.legs]\nlet valid_evaluated = [leg for leg in evaluated where leg.valid]\nlet long_haul_pairs = count adjacent prev, curr in valid_evaluated where prev.long_haul and curr.long_haul\nlet summary = summarize leg in evaluated {\n    legs: count\n    valid_legs: count where leg.valid\n    heavy_legs: count where leg.valid and leg.heavy\n    customs_legs: count where leg.valid and leg.zone == \"NON-EU\"\n    vip_exempt: count where leg.valid and leg.vip_exempt\n    total_km: sum leg.dist_km where leg.valid\n    total_eur: sum leg.fee_eur where leg.valid\n    max_leg_eur_cents: max leg.fee_eur_cents where leg.valid default 0\n}\nlet total_eur = summary.total_eur + ((25.0 * to_float(long_haul_pairs)) as EUR)\nlet total_m = round_even(scalar(summary.total_km to m))\nlet total_eur_cents = round_even(scalar(total_eur) * 100.0)\nlet total_sek = round_even(scalar(eur_to_sek_amount(total_eur, req.eur_to_sek)))\nlet within_cap = total_sek <= req.max_sek\nlet out = record {\n    legs: summary.legs\n    valid_legs: summary.valid_legs\n    total_m\n    total_eur_cents\n    total_sek\n    heavy_legs: summary.heavy_legs\n    customs_legs: summary.customs_legs\n    long_haul_pairs\n    vip_exempt: summary.vip_exempt\n    within_cap\n    max_leg_eur_cents: summary.max_leg_eur_cents\n}\nprint json_encode(out)\n",
+  "own_language_audit": {
+    "used_backends": [
+      "go",
+      "js",
+      "net"
+    ],
+    "foreign_count": 6
+  }
+}

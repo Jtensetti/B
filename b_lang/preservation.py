@@ -9,18 +9,27 @@ from collections.abc import Iterable
 
 from .ir import ExprIR, ProgramIR, StmtIR
 from .model import Stmt
-from .types import BOOL, FLOAT, INT, NONE, TEXT, BError
+from .types import BOOL, FLOAT, INT, NONE, TEXT, BError, Type, is_dim_numeric
 
 
 _SCALARS = {BOOL, INT, FLOAT, TEXT, NONE}
 _SCALAR_OPS = {"literal", "name", "call", "guard", "cmp", "conditional", "not",
-               "and", "or", "neg", "add", "sub", "mul", "div", "mod"}
+               "and", "or", "neg", "add", "sub", "mul", "div", "mod", "let_expr", "builtin"}
+_PURE_SCALAR_BUILTINS = {
+    "scalar", "abs", "min", "max", "round_even", "round_away",
+    "to_float", "to_int", "div_euclid", "rem_euclid", "rem_trunc",
+    "str_contains", "str_starts", "str_ends", "str_lower", "str_upper", "str_trim",
+}
+
+
+def _is_scalar(typ: Type) -> bool:
+    return typ in _SCALARS or is_dim_numeric(typ)
 
 
 def function_dependencies(definition: StmtIR) -> list[str]:
     """Return references of a checked native scalar definition, rejecting opaque operations."""
     if (definition.op not in {"fn", "let"} or definition.backend or definition.effects
-            or definition.typ not in _SCALARS or any(t not in _SCALARS for _, t in definition.params)
+            or not _is_scalar(definition.typ) or any(not _is_scalar(t) for _, t in definition.params)
             or (definition.op == "fn" and not definition.declared_pure)):
         raise BError("E_KEEPING", f"Cannot establish keeping through {definition.name}: "
                      "expected a native pure scalar function or immutable scalar binding")
@@ -29,9 +38,16 @@ def function_dependencies(definition: StmtIR) -> list[str]:
     dependencies = {}
 
     def visit(node: ExprIR, locals_: set[str]):
-        if node.foreign_path or node.op not in _SCALAR_OPS or node.typ not in _SCALARS:
+        if node.foreign_path or node.op not in _SCALAR_OPS or not _is_scalar(node.typ):
             raise BError("E_KEEPING", f"Cannot establish keeping through {definition.name}: "
                          f"unsupported operation {node.op} ({node.typ})")
+        if node.op == "builtin" and node.data not in _PURE_SCALAR_BUILTINS:
+            raise BError("E_KEEPING", f"Cannot establish keeping through {definition.name}: "
+                         f"unsupported builtin {node.data}")
+        if node.op == "let_expr":
+            visit(node.operands[0], locals_)
+            visit(node.operands[1], locals_ | {node.data})
+            return
         operands = node.operands
         if node.op == "call":
             callee, *operands = operands

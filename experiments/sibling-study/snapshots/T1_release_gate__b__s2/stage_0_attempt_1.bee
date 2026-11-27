@@ -1,0 +1,71 @@
+use py:urllib.parse as urls
+foreign urls.unquote(Text) -> Text
+use net:System.Text.RegularExpressions.Regex as Rx
+use js:"node:path/posix" as path
+use js:semver as sv
+
+record Artifact {
+    raw_path: Text
+    channel: Text
+    size_kb: Int
+}
+
+record Request {
+    min_range: Text
+    artifacts: List[Artifact]
+}
+
+record ParsedArtifact {
+    pkg: Text
+    ver: Text
+    norm: Text
+    channel: Text
+    size_kb: Int
+    format_ok: Bool
+    semver_ok: Bool
+}
+
+let path_regex = "^[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$"
+
+fn valid_channel(ch: Text) -> Bool pure =
+    ch == "stable" or ch == "beta" or ch == "lts"
+
+fn is_eligible(a: ParsedArtifact) -> Bool pure =
+    a.format_ok and a.semver_ok
+
+fn parse_artifact(a: Artifact, min_range: Text) -> ParsedArtifact =
+    let decoded = urls.unquote(a.raw_path) in
+    let norm = path.normalize(decoded) in
+    let ver = path.basename(norm) in
+    let pkg = path.dirname(norm) in
+    let format_ok = Rx.IsMatch(norm, path_regex) and valid_channel(a.channel) in
+    let valid_ver = sv.valid(ver) ?? "" in
+    let semver_ok = if valid_ver == "" then false else sv.satisfies(valid_ver, min_range) in
+    ParsedArtifact(
+        pkg: pkg,
+        ver: ver,
+        norm: norm,
+        channel: a.channel,
+        size_kb: a.size_kb,
+        format_ok: format_ok,
+        semver_ok: semver_ok
+    )
+
+let req: Request = from_json(stdin_text())
+let parsed = [parse_artifact(a, req.min_range) for a in req.artifacts]
+
+let summary = summarize x in parsed {
+    total: count
+    eligible: count where is_eligible(x)
+    total_kb: sum x.size_kb
+    max_kb: max x.size_kb default 0
+}
+
+let output = record {
+    total: summary.total,
+    eligible: summary.eligible,
+    total_kb: summary.total_kb,
+    max_kb: summary.max_kb
+}
+
+print json_encode(output)

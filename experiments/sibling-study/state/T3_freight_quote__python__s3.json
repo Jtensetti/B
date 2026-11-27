@@ -1,0 +1,133 @@
+{
+  "run_id": "T3_freight_quote__python__s3",
+  "task_id": "T3_freight_quote",
+  "lang": "Python",
+  "solver_id": 3,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T3_freight_quote__python__s3",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s3/stage_0_attempt_1.py",
+          "full_tokens": 648,
+          "added_tokens": 648,
+          "diff_tokens": 648,
+          "bytes": 2208,
+          "lines": 94,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s3/stage_1_attempt_1.py",
+          "full_tokens": 757,
+          "added_tokens": 133,
+          "diff_tokens": 354,
+          "bytes": 2535,
+          "lines": 108,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s3/stage_2_attempt_1.py",
+          "full_tokens": 872,
+          "added_tokens": 115,
+          "diff_tokens": 278,
+          "bytes": 2897,
+          "lines": 121,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s3/stage_3_attempt_1.py",
+          "full_tokens": 961,
+          "added_tokens": 89,
+          "diff_tokens": 230,
+          "bytes": 3183,
+          "lines": 131,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s3/stage_4_attempt_1.py",
+          "full_tokens": 1005,
+          "added_tokens": 54,
+          "diff_tokens": 248,
+          "bytes": 3341,
+          "lines": 136,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s3/stage_5_attempt_1.py",
+          "full_tokens": 1130,
+          "added_tokens": 176,
+          "diff_tokens": 601,
+          "bytes": 3704,
+          "lines": 146,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nimport json\nimport math\nimport posixpath\nimport re\nimport sys\nfrom typing import Any\n\nDEPOT_RE = re.compile(r\"[a-z]{3}-[0-9]{2}\", re.ASCII)\nVALID_ZONES = frozenset({\"SE\", \"EU\", \"NON-EU\"})\n\n\n@dataclass(frozen=True)\nclass LegInput:\n    route: str\n    dx_km: float\n    dy_km: float\n    weight_g: float\n    zone: str\n\n\n@dataclass(frozen=True)\nclass QuoteRequest:\n    eur_to_sek: float\n    max_sek: int\n    legs: list[LegInput]\n\n\ndef parse_request(raw: dict[str, Any]) -> QuoteRequest:\n    eur_to_sek = float(raw[\"eur_to_sek\"])\n    max_sek = int(raw[\"max_sek\"])\n    raw_legs: list[dict[str, Any]] = raw[\"legs\"]\n    legs = [\n        LegInput(\n            route=str(item[\"route\"]),\n            dx_km=float(item[\"dx_km\"]),\n            dy_km=float(item[\"dy_km\"]),\n            weight_g=float(item[\"weight_g\"]),\n            zone=str(item[\"zone\"]),\n        )\n        for item in raw_legs\n    ]\n    return QuoteRequest(eur_to_sek=eur_to_sek, max_sek=max_sek, legs=legs)\n\n\ndef normalize_depot(route: str) -> str:\n    return posixpath.basename(posixpath.normpath(route))\n\n\ndef normalize_zone(zone: str) -> str:\n    return zone.strip().upper()\n\n\ndef is_valid_leg(depot: str, zone: str) -> bool:\n    return DEPOT_RE.fullmatch(depot) is not None and zone in VALID_ZONES\n\n\ndef distance_multiplier(km: float) -> float:\n    if km <= 50.0:\n        return 1.0\n    if km <= 200.0:\n        return 1.15\n    return 1.35\n\n\ndef apply_zone_adjustment(leg_eur: float, zone: str) -> float:\n    if zone == \"SE\":\n        return leg_eur * 0.9\n    if zone == \"NON-EU\":\n        return leg_eur + 15.0\n    return leg_eur\n\n\ndef compute_quote(req: QuoteRequest) -> dict[str, int | bool]:\n    valid_legs = 0\n    heavy_legs = 0\n    customs_legs = 0\n    long_haul_pairs = 0\n    vip_exempt = 0\n    max_leg_eur_cents = 0\n    prev_long_haul = False\n    total_km = 0.0\n    total_eur = 0.0\n\n    for leg in req.legs:\n        depot = normalize_depot(leg.route)\n        zone = normalize_zone(leg.zone)\n        if not is_valid_leg(depot, zone):\n            continue\n\n        valid_legs += 1\n        km = math.sqrt(leg.dx_km * leg.dx_km + leg.dy_km * leg.dy_km)\n        kg = leg.weight_g / 1000.0\n        base_eur = 5.0 + 0.5 * km + 2.0 * kg\n        leg_eur = base_eur * distance_multiplier(km)\n        if kg >= 10.0:\n            heavy_legs += 1\n            if depot == \"sto-01\" and zone == \"SE\":\n                vip_exempt += 1\n            else:\n                leg_eur += 12.0\n        leg_eur = apply_zone_adjustment(leg_eur, zone)\n        if zone == \"NON-EU\":\n            customs_legs += 1\n\n        leg_eur_cents = round(leg_eur * 100.0)\n        if leg_eur_cents > max_leg_eur_cents:\n            max_leg_eur_cents = leg_eur_cents\n\n        is_long_haul = km > 100.0\n        if prev_long_haul and is_long_haul:\n            long_haul_pairs += 1\n        prev_long_haul = is_long_haul\n\n        total_km += km\n        total_eur += leg_eur\n\n    total_eur += 25.0 * long_haul_pairs\n    total_sek = round(total_eur * req.eur_to_sek)\n\n    return {\n        \"legs\": len(req.legs),\n        \"valid_legs\": valid_legs,\n        \"total_m\": round(total_km * 1000.0),\n        \"total_eur_cents\": round(total_eur * 100.0),\n        \"total_sek\": total_sek,\n        \"heavy_legs\": heavy_legs,\n        \"customs_legs\": customs_legs,\n        \"long_haul_pairs\": long_haul_pairs,\n        \"vip_exempt\": vip_exempt,\n        \"within_cap\": total_sek <= req.max_sek,\n        \"max_leg_eur_cents\": max_leg_eur_cents,\n    }\n\n\ndef main() -> None:\n    raw: dict[str, Any] = json.load(sys.stdin)\n    req = parse_request(raw)\n    result = compute_quote(req)\n    print(json.dumps(result))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "own_language_audit": {}
+}

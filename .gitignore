@@ -8,3 +8,8 @@ build/
 **/bin/
 **/obj/
 .vscode/
+go/b-go-host/b-go-host
+rust/b-rust-host/target/
+node_modules/
+experiments/sibling-study/workspaces/
+experiments/sibling-study/tools/cargo_target/

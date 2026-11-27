@@ -1,0 +1,182 @@
+{
+  "run_id": "T2_telemetry_sla__b__s2",
+  "task_id": "T2_telemetry_sla",
+  "lang": "B",
+  "solver_id": 2,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T2_telemetry_sla__b__s2",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__b__s2/stage_0_attempt_1.bee",
+          "full_tokens": 564,
+          "added_tokens": 564,
+          "diff_tokens": 564,
+          "bytes": 1927,
+          "lines": 75,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "py",
+              "rs"
+            ],
+            "foreign_count": 5
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__b__s2/stage_1_attempt_1.bee",
+          "full_tokens": 669,
+          "added_tokens": 124,
+          "diff_tokens": 384,
+          "bytes": 2286,
+          "lines": 88,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "py",
+              "rs"
+            ],
+            "foreign_count": 5
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__b__s2/stage_2_attempt_1.bee",
+          "full_tokens": 726,
+          "added_tokens": 57,
+          "diff_tokens": 153,
+          "bytes": 2512,
+          "lines": 92,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "py",
+              "rs"
+            ],
+            "foreign_count": 5
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__b__s2/stage_3_attempt_1.bee",
+          "full_tokens": 807,
+          "added_tokens": 116,
+          "diff_tokens": 483,
+          "bytes": 2827,
+          "lines": 101,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "py",
+              "rs"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__b__s2/stage_4_attempt_1.bee",
+          "full_tokens": 912,
+          "added_tokens": 139,
+          "diff_tokens": 474,
+          "bytes": 3209,
+          "lines": 111,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "py",
+              "rs"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__b__s2/stage_5_attempt_1.bee",
+          "full_tokens": 1038,
+          "added_tokens": 126,
+          "diff_tokens": 283,
+          "bytes": 3687,
+          "lines": 121,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "go",
+              "py",
+              "rs"
+            ],
+            "foreign_count": 6
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "use py:statistics as stats\nuse go:strings as gstr\nuse go:math as gmath\nuse rs:std.str as rstr\nuse rs:std.i64 as ri\n\nunit ms\nunit s = 1000 ms\n\nrecord Sample {\n    service: Text\n    ms: Int\n    offset: Int\n}\n\nrecord Request {\n    sla_s: Float\n    samples: List[Sample]\n}\n\nrecord EnrichedSample {\n    service: Text\n    ms: Int\n    offset: Int\n    breach: Bool\n    exempted: Bool\n    overage: Int\n    bucket_zero: Bool\n    sev: Text\n    valid_label: Bool\n}\n\nfn sla_to_ms(sla_s: Float) -> Float[ms] pure = (sla_s as s) to ms\n\nfn is_breach(sample_ms: Int, sla_ms: Float[ms]) -> Bool pure =\n    (to_float(sample_ms) as ms) > sla_ms\n\nfn is_exempt(service: Text, bucket_zero: Bool) -> Bool pure =\n    service == \"healthcheck\" and bucket_zero\n\nfn severity(sample_ms: Int) -> Text pure = cases sample_ms {\n    < 200 => \"ok\"\n    <= 500 => \"warn\"\n    <= 1000 => \"slow\"\n    else => \"critical\"\n}\n\nfn round_even_int(x: Float) -> Int = to_int(gmath.RoundToEven(x))\n\nfn norm_service(name: Text) -> Text = rstr.to_lowercase(gstr.TrimSpace(name))\n\nfn is_valid_label(name: Text) -> Bool =\n    let n = rstr.len_chars(name) in\n    n >= 2 and n <= 12\n\nfn enrich(sample: Sample, sla_ms: Float[ms], sla_ms_int: Int) -> EnrichedSample =\n    let service = norm_service(sample.service) in\n    let bucket_zero = ri.rem_euclid(sample.offset, 4) == 0 in\n    let raw_breach = is_breach(sample.ms, sla_ms) in\n    let exempted = raw_breach and is_exempt(service, bucket_zero) in\n    let breach = raw_breach and (exempted == false) in\n    EnrichedSample(\n        service: service,\n        ms: sample.ms,\n        offset: sample.offset,\n        breach: breach,\n        exempted: exempted,\n        overage: if breach then sample.ms - sla_ms_int else 0,\n        bucket_zero: bucket_zero,\n        sev: severity(sample.ms),\n        valid_label: is_valid_label(service)\n    )\n\nlet req: Request = from_json(stdin_text())\nlet sla_ms: Float[ms] = sla_to_ms(req.sla_s)\nlet sla_ms_int: Int = round_even_int(scalar(sla_ms))\nlet items: List[EnrichedSample] = [enrich(x, sla_ms, sla_ms_int) for x in req.samples]\n\nlet summary = summarize x in items {\n    total: count\n    breaches: count where x.breach\n    overage_ms: sum x.overage where x.breach\n    max_ms: max x.ms default 0\n    bucket_zero: count where x.bucket_zero\n    critical: count where x.sev == \"critical\"\n    warn_or_worse: count where x.sev != \"ok\"\n    invalid_labels: count where x.valid_label == false\n    exempt: count where x.exempted\n}\n\nfn overall_status(consecutive_breaches: Int, critical: Int, breaches: Int, invalid_labels: Int) -> Text pure = (\n    if consecutive_breaches >= 2 or critical > 0 then \"red\"\n    else if breaches > 0 or invalid_labels > 0 then \"yellow\"\n    else \"green\"\n)\n\nlet ms_values: List[Float] = [to_float(x.ms) for x in items where x.valid_label]\nlet mean_ms: Int = if len(ms_values) == 0 then 0 else round_even_int(stats.mean(ms_values))\nlet consecutive_breaches: Int = count adjacent past, now in items where past.breach and now.breach\nlet spike_steps: Int = count adjacent past, now in items where now.ms > past.ms + 100\nlet regressed: Int = count earlier past, now in items where past.ms + 300 < now.ms\nlet status: Text = overall_status(consecutive_breaches, summary.critical, summary.breaches, summary.invalid_labels)\n\nlet out = record {\n    count: summary.total\n    breaches: summary.breaches\n    overage_ms: summary.overage_ms\n    max_ms: summary.max_ms\n    mean_ms\n    bucket_zero: summary.bucket_zero\n    critical: summary.critical\n    warn_or_worse: summary.warn_or_worse\n    consecutive_breaches\n    spike_steps\n    invalid_labels: summary.invalid_labels\n    exempt: summary.exempt\n    regressed\n    status\n}\n\nprint json_encode(out)\n",
+  "own_language_audit": {
+    "used_backends": [
+      "go",
+      "py",
+      "rs"
+    ],
+    "foreign_count": 6
+  }
+}

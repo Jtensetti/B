@@ -1,15 +1,16 @@
-"""BIR v2: typed, backend-neutral semantic operations.
+"""BIR v2/v3: typed, backend-neutral semantic operations.
 
 No Python AST, Python bytecode, CLR-specific object, or executable input is
-stored in BIR. Both the interpreter's lowered Python AST and tooling views are
-produced from this same checked representation.
+stored in BIR. Both the Python backend and the independent JavaScript backend
+consume this same checked representation.
 
 BIR is a *type checked* program, not a mathematical proof of behavior.
-Foreign contracts are assumptions from external metadata, explicitly recorded.
+Foreign contracts are assumptions from external metadata, explicitly recorded
+along with semantic facets for false-friend protection.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 from .types import Binding, Overloads, Signature, Type
@@ -17,12 +18,7 @@ from .types import Binding, Overloads, Signature, Type
 
 @dataclass(frozen=True)
 class ForeignSymbol:
-    """An external callable, its declared interface, and the trust boundary.
-
-    `binding` describes an assumed type-level signature; the implementation is
-    not automatically verified. Backend adapters preserve the exact original
-    import path, rather than guessing behavior or translating source languages.
-    """
+    """An external callable, its declared interface, semantic facets, and trust boundary."""
 
     path: str
     backend: str
@@ -30,10 +26,14 @@ class ForeignSymbol:
     provenance: str
     adapter: str
     verified_behavior: bool = False
+    semantics: tuple[tuple[str, str], ...] = ()
+
+    def semantics_dict(self) -> dict[str, str]:
+        return dict(self.semantics)
 
     def to_dict(self) -> dict[str, Any]:
         signatures = self.binding.options if isinstance(self.binding, Overloads) else (self.binding,)
-        return {
+        data: dict[str, Any] = {
             "path": self.path,
             "backend": self.backend,
             "adapter": self.adapter,
@@ -43,6 +43,21 @@ class ForeignSymbol:
                 {"parameters": [str(t) for t in sig.params], "result": str(sig.result),
                  "required": sig.required} for sig in signatures
             ],
+        }
+        if self.semantics:
+            data["semantics"] = dict(self.semantics)
+        return data
+
+
+@dataclass(frozen=True)
+class RecordDef:
+    name: str
+    fields: tuple[tuple[str, Type], ...]
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "name": self.name,
+            "fields": [{"name": n, "type": str(t)} for n, t in self.fields],
         }
 
 
@@ -117,9 +132,13 @@ class ProgramIR:
     version: int = 2
     permitted_effects: tuple[str, ...] | None = None
     detected_effects: tuple[str, ...] = ()
+    records: tuple[RecordDef, ...] = ()
+    units: tuple[tuple[str, str, float], ...] = ()  # (name, base_dim, scale_to_base)
+    currencies: tuple[str, ...] = ()
+    probes: tuple[ExprIR, ...] = ()
 
     def to_dict(self) -> dict[str, Any]:
-        return {
+        out: dict[str, Any] = {
             "schema": "bir", "version": self.version,
             "statements": [s.to_dict() for s in self.statements],
             "foreign_symbols": [s.to_dict() for s in self.foreign_symbols],
@@ -128,3 +147,12 @@ class ProgramIR:
             "permitted_effects": list(self.permitted_effects) if self.permitted_effects is not None else None,
             "detected_effects": list(self.detected_effects),
         }
+        if self.records:
+            out["records"] = [r.to_dict() for r in self.records]
+        if self.units:
+            out["units"] = [{"name": n, "base": b, "scale": s} for n, b, s in self.units]
+        if self.currencies:
+            out["currencies"] = list(self.currencies)
+        if self.probes:
+            out["probes"] = [p.to_dict() for p in self.probes]
+        return out

@@ -1,0 +1,133 @@
+{
+  "run_id": "T3_freight_quote__rust__s1",
+  "task_id": "T3_freight_quote",
+  "lang": "Rust",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T3_freight_quote__rust__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__rust__s1/stage_0_attempt_1.rs",
+          "full_tokens": 1045,
+          "added_tokens": 1045,
+          "diff_tokens": 1045,
+          "bytes": 3771,
+          "lines": 154,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__rust__s1/stage_1_attempt_1.rs",
+          "full_tokens": 1172,
+          "added_tokens": 152,
+          "diff_tokens": 420,
+          "bytes": 4153,
+          "lines": 172,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__rust__s1/stage_2_attempt_1.rs",
+          "full_tokens": 1253,
+          "added_tokens": 108,
+          "diff_tokens": 388,
+          "bytes": 4473,
+          "lines": 185,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__rust__s1/stage_3_attempt_1.rs",
+          "full_tokens": 1357,
+          "added_tokens": 104,
+          "diff_tokens": 298,
+          "bytes": 4820,
+          "lines": 197,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__rust__s1/stage_4_attempt_1.rs",
+          "full_tokens": 1411,
+          "added_tokens": 64,
+          "diff_tokens": 295,
+          "bytes": 5025,
+          "lines": 204,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__rust__s1/stage_5_attempt_1.rs",
+          "full_tokens": 1557,
+          "added_tokens": 166,
+          "diff_tokens": 473,
+          "bytes": 5508,
+          "lines": 217,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "use serde::{Deserialize, Serialize};\nuse std::io::{self, Read};\n\n#[derive(Debug, Deserialize)]\nstruct QuoteInput {\n    eur_to_sek: f64,\n    max_sek: i64,\n    legs: Vec<LegInput>,\n}\n\n#[derive(Debug, Deserialize)]\nstruct LegInput {\n    route: String,\n    dx_km: f64,\n    dy_km: f64,\n    weight_g: f64,\n    zone: String,\n}\n\n#[derive(Debug, Serialize)]\nstruct QuoteOutput {\n    legs: usize,\n    valid_legs: usize,\n    total_m: i64,\n    total_eur_cents: i64,\n    total_sek: i64,\n    heavy_legs: usize,\n    customs_legs: usize,\n    long_haul_pairs: usize,\n    vip_exempt: usize,\n    within_cap: bool,\n    max_leg_eur_cents: i64,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nenum Zone {\n    Se,\n    Eu,\n    NonEu,\n}\n\nimpl Zone {\n    fn parse(raw: &str) -> Option<Self> {\n        match raw.trim().to_uppercase().as_str() {\n            \"SE\" => Some(Self::Se),\n            \"EU\" => Some(Self::Eu),\n            \"NON-EU\" => Some(Self::NonEu),\n            _ => None,\n        }\n    }\n}\n\nfn normalize_posix_path(path: &str) -> String {\n    if path.is_empty() {\n        return \".\".to_string();\n    }\n    let is_abs = path.starts_with('/');\n    let mut parts: Vec<&str> = Vec::new();\n    for part in path.split('/') {\n        match part {\n            \"\" | \".\" => {}\n            \"..\" => {\n                if let Some(&last) = parts.last() {\n                    if last != \"..\" {\n                        parts.pop();\n                    } else if !is_abs {\n                        parts.push(\"..\");\n                    }\n                } else if !is_abs {\n                    parts.push(\"..\");\n                }\n            }\n            _ => parts.push(part),\n        }\n    }\n    if is_abs {\n        if parts.is_empty() {\n            \"/\".to_string()\n        } else {\n            format!(\"/{}\", parts.join(\"/\"))\n        }\n    } else if parts.is_empty() {\n        \".\".to_string()\n    } else {\n        parts.join(\"/\")\n    }\n}\n\nfn posix_basename(norm_path: &str) -> &str {\n    match norm_path.rsplit_once('/') {\n        Some((_, base)) => base,\n        None => norm_path,\n    }\n}\n\nfn is_valid_depot(depot: &str) -> bool {\n    let bytes = depot.as_bytes();\n    bytes.len() == 6\n        && bytes[0].is_ascii_lowercase()\n        && bytes[1].is_ascii_lowercase()\n        && bytes[2].is_ascii_lowercase()\n        && bytes[3] == b'-'\n        && bytes[4].is_ascii_digit()\n        && bytes[5].is_ascii_digit()\n}\n\nfn round_half_to_even(value: f64) -> i64 {\n    let floor = value.floor();\n    let frac = value - floor;\n    let rounded = if frac > 0.5 {\n        floor + 1.0\n    } else if frac < 0.5 {\n        floor\n    } else if (floor as i64) % 2 == 0 {\n        floor\n    } else {\n        floor + 1.0\n    };\n    rounded as i64\n}\n\nfn distance_multiplier(km: f64) -> f64 {\n    if km <= 50.0 {\n        1.0\n    } else if km <= 200.0 {\n        1.15\n    } else {\n        1.35\n    }\n}\n\nfn evaluate_quote(input: &QuoteInput) -> QuoteOutput {\n    let mut valid_legs: usize = 0;\n    let mut heavy_legs: usize = 0;\n    let mut customs_legs: usize = 0;\n    let mut long_haul_pairs: usize = 0;\n    let mut vip_exempt: usize = 0;\n    let mut prev_long_haul = false;\n    let mut total_km: f64 = 0.0;\n    let mut total_eur: f64 = 0.0;\n    let mut max_leg_eur_cents: Option<i64> = None;\n\n    for leg in &input.legs {\n        let norm_route = normalize_posix_path(&leg.route);\n        let depot = posix_basename(&norm_route);\n        let Some(zone) = Zone::parse(&leg.zone) else {\n            continue;\n        };\n\n        if !is_valid_depot(depot) {\n            continue;\n        }\n\n        let km = (leg.dx_km * leg.dx_km + leg.dy_km * leg.dy_km).sqrt();\n        let kg = leg.weight_g / 1000.0;\n        let base_eur = 5.0 + 0.5 * km + 2.0 * kg;\n        let mut leg_eur = base_eur * distance_multiplier(km);\n        if kg >= 10.0 {\n            heavy_legs += 1;\n            if depot == \"sto-01\" && zone == Zone::Se {\n                vip_exempt += 1;\n            } else {\n                leg_eur += 12.0;\n            }\n        }\n        match zone {\n            Zone::Se => leg_eur *= 0.9,\n            Zone::Eu => {}\n            Zone::NonEu => {\n                leg_eur += 15.0;\n                customs_legs += 1;\n            }\n        }\n\n        let leg_eur_cents = round_half_to_even(leg_eur * 100.0);\n        max_leg_eur_cents = Some(match max_leg_eur_cents {\n            Some(current_max) => current_max.max(leg_eur_cents),\n            None => leg_eur_cents,\n        });\n\n        let is_long_haul = km > 100.0;\n        if prev_long_haul && is_long_haul {\n            long_haul_pairs += 1;\n        }\n        prev_long_haul = is_long_haul;\n\n        valid_legs += 1;\n        total_km += km;\n        total_eur += leg_eur;\n    }\n\n    total_eur += 25.0 * (long_haul_pairs as f64);\n    let total_sek = round_half_to_even(total_eur * input.eur_to_sek);\n\n    QuoteOutput {\n        legs: input.legs.len(),\n        valid_legs,\n        total_m: round_half_to_even(total_km * 1000.0),\n        total_eur_cents: round_half_to_even(total_eur * 100.0),\n        total_sek,\n        heavy_legs,\n        customs_legs,\n        long_haul_pairs,\n        vip_exempt,\n        within_cap: total_sek <= input.max_sek,\n        max_leg_eur_cents: max_leg_eur_cents.unwrap_or(0),\n    }\n}\n\nfn main() -> Result<(), Box<dyn std::error::Error>> {\n    let mut buf = String::new();\n    io::stdin().read_to_string(&mut buf)?;\n    let input: QuoteInput = serde_json::from_str(&buf)?;\n    let output = evaluate_quote(&input);\n    println!(\"{}\", serde_json::to_string(&output)?);\n    Ok(())\n}\n",
+  "own_language_audit": {}
+}

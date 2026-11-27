@@ -1,0 +1,272 @@
+{
+  "study": "sibling-multi-ecosystem-lifecycle",
+  "b_guide_o200k_tokens": 1490,
+  "b_guide_cap_tokens": 1500,
+  "max_attempts_per_stage": 3,
+  "summary": {
+    "B": {
+      "completed_runs": 9,
+      "hidden_passed": 540,
+      "hidden_total": 540,
+      "remaining_errors": 0,
+      "total_attempts": 62,
+      "mean_attempts_per_run": 6.89,
+      "total_lifecycle_added_tokens": 12121,
+      "mean_lifecycle_added_tokens": 1346.8,
+      "total_lifecycle_diff_tokens": 25916,
+      "mean_lifecycle_diff_tokens": 2879.6,
+      "total_lifecycle_full_tokens": 52425,
+      "mean_lifecycle_full_tokens": 5825.0,
+      "mean_final_stage5_tokens": 1122.1,
+      "per_task": {
+        "T1_release_gate": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 23,
+          "added_tokens": 3438,
+          "full_tokens": 17135,
+          "final_tokens": 2938
+        },
+        "T2_telemetry_sla": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 3534,
+          "full_tokens": 14142,
+          "final_tokens": 3132
+        },
+        "T3_freight_quote": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 21,
+          "added_tokens": 5149,
+          "full_tokens": 21148,
+          "final_tokens": 4029
+        }
+      }
+    },
+    "Python": {
+      "completed_runs": 9,
+      "hidden_passed": 540,
+      "hidden_total": 540,
+      "remaining_errors": 0,
+      "total_attempts": 54,
+      "mean_attempts_per_run": 6.0,
+      "total_lifecycle_added_tokens": 16723,
+      "mean_lifecycle_added_tokens": 1858.1,
+      "total_lifecycle_diff_tokens": 30815,
+      "mean_lifecycle_diff_tokens": 3423.9,
+      "total_lifecycle_full_tokens": 72646,
+      "mean_lifecycle_full_tokens": 8071.8,
+      "mean_final_stage5_tokens": 1712.8,
+      "per_task": {
+        "T1_release_gate": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 7293,
+          "full_tokens": 32925,
+          "final_tokens": 6599
+        },
+        "T2_telemetry_sla": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 4958,
+          "full_tokens": 20375,
+          "final_tokens": 4716
+        },
+        "T3_freight_quote": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 4472,
+          "full_tokens": 19346,
+          "final_tokens": 4100
+        }
+      }
+    },
+    "C#": {
+      "completed_runs": 9,
+      "hidden_passed": 540,
+      "hidden_total": 540,
+      "remaining_errors": 0,
+      "total_attempts": 54,
+      "mean_attempts_per_run": 6.0,
+      "total_lifecycle_added_tokens": 20575,
+      "mean_lifecycle_added_tokens": 2286.1,
+      "total_lifecycle_diff_tokens": 34482,
+      "mean_lifecycle_diff_tokens": 3831.3,
+      "total_lifecycle_full_tokens": 92439,
+      "mean_lifecycle_full_tokens": 10271.0,
+      "mean_final_stage5_tokens": 2074.8,
+      "per_task": {
+        "T1_release_gate": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 9357,
+          "full_tokens": 46573,
+          "final_tokens": 8646
+        },
+        "T2_telemetry_sla": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 6032,
+          "full_tokens": 22504,
+          "final_tokens": 5230
+        },
+        "T3_freight_quote": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 5186,
+          "full_tokens": 23362,
+          "final_tokens": 4797
+        }
+      }
+    },
+    "TypeScript": {
+      "completed_runs": 9,
+      "hidden_passed": 540,
+      "hidden_total": 540,
+      "remaining_errors": 0,
+      "total_attempts": 54,
+      "mean_attempts_per_run": 6.0,
+      "total_lifecycle_added_tokens": 13095,
+      "mean_lifecycle_added_tokens": 1455.0,
+      "total_lifecycle_diff_tokens": 25884,
+      "mean_lifecycle_diff_tokens": 2876.0,
+      "total_lifecycle_full_tokens": 56542,
+      "mean_lifecycle_full_tokens": 6282.4,
+      "mean_final_stage5_tokens": 1354.4,
+      "per_task": {
+        "T1_release_gate": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 4110,
+          "full_tokens": 18311,
+          "final_tokens": 3748
+        },
+        "T2_telemetry_sla": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 4945,
+          "full_tokens": 20185,
+          "final_tokens": 4617
+        },
+        "T3_freight_quote": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 4040,
+          "full_tokens": 18046,
+          "final_tokens": 3825
+        }
+      }
+    },
+    "Go": {
+      "completed_runs": 9,
+      "hidden_passed": 540,
+      "hidden_total": 540,
+      "remaining_errors": 0,
+      "total_attempts": 54,
+      "mean_attempts_per_run": 6.0,
+      "total_lifecycle_added_tokens": 17460,
+      "mean_lifecycle_added_tokens": 1940.0,
+      "total_lifecycle_diff_tokens": 30092,
+      "mean_lifecycle_diff_tokens": 3343.6,
+      "total_lifecycle_full_tokens": 70745,
+      "mean_lifecycle_full_tokens": 7860.6,
+      "mean_final_stage5_tokens": 1598.1,
+      "per_task": {
+        "T1_release_gate": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 7893,
+          "full_tokens": 36324,
+          "final_tokens": 6854
+        },
+        "T2_telemetry_sla": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 5020,
+          "full_tokens": 17285,
+          "final_tokens": 3846
+        },
+        "T3_freight_quote": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 4547,
+          "full_tokens": 17136,
+          "final_tokens": 3683
+        }
+      }
+    },
+    "Rust": {
+      "completed_runs": 9,
+      "hidden_passed": 540,
+      "hidden_total": 540,
+      "remaining_errors": 0,
+      "total_attempts": 54,
+      "mean_attempts_per_run": 6.0,
+      "total_lifecycle_added_tokens": 19838,
+      "mean_lifecycle_added_tokens": 2204.2,
+      "total_lifecycle_diff_tokens": 33217,
+      "mean_lifecycle_diff_tokens": 3690.8,
+      "total_lifecycle_full_tokens": 90461,
+      "mean_lifecycle_full_tokens": 10051.2,
+      "mean_final_stage5_tokens": 2030.8,
+      "per_task": {
+        "T1_release_gate": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 9384,
+          "full_tokens": 46369,
+          "final_tokens": 8678
+        },
+        "T2_telemetry_sla": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 5360,
+          "full_tokens": 20355,
+          "final_tokens": 4834
+        },
+        "T3_freight_quote": {
+          "runs": 3,
+          "errors": 0,
+          "cases": 180,
+          "attempts": 18,
+          "added_tokens": 5094,
+          "full_tokens": 23737,
+          "final_tokens": 4765
+        }
+      }
+    }
+  }
+}

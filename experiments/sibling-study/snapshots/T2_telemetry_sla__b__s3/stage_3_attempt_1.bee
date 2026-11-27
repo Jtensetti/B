@@ -1,0 +1,100 @@
+use py:statistics as stats
+use go:strings as gstr
+use go:math as gmath
+use rs:std.str as rstr
+use rs:std.i64 as ri
+
+unit ms
+unit s = 1000 ms
+
+record Sample {
+    service: Text
+    ms: Int
+    offset: Int
+}
+
+record Request {
+    sla_s: Float
+    samples: List[Sample]
+}
+
+fn sla_to_ms(sla_s: Float) -> Float[ms] pure =
+    (sla_s as s) to ms
+
+fn norm_service(name: Text) -> Text =
+    gstr.ToLower(gstr.TrimSpace(name))
+
+fn is_breach(sample_ms: Int, sla_ms: Float) -> Bool pure =
+    to_float(sample_ms) > sla_ms
+
+fn round_even_int(x: Float) -> Int =
+    to_int(gmath.RoundToEven(x))
+
+fn severity(sample_ms: Int) -> Text pure = cases sample_ms {
+    < 200 => "ok"
+    <= 500 => "warn"
+    <= 1000 => "slow"
+    else => "critical"
+}
+
+fn is_valid_label(service: Text) -> Bool =
+    let chars = rstr.len_chars(service) in
+    chars >= 2 and chars <= 12
+
+fn eval_sample(item: Sample, sla_ms: Float, sla_ms_int: Int) =
+    let service = norm_service(item.service) in
+    let valid_label = is_valid_label(service) in
+    let breach = is_breach(item.ms, sla_ms) in
+    let overage = if breach then item.ms - sla_ms_int else 0 in
+    let bucket_zero = ri.rem_euclid(item.offset, 4) == 0 in
+    let sev = severity(item.ms) in
+    record {
+        service,
+        valid_label,
+        ms: item.ms,
+        offset: item.offset,
+        breach,
+        overage,
+        bucket_zero,
+        sev
+    }
+
+let req: Request = from_json(stdin_text())
+let sla_ms_dim: Float[ms] = sla_to_ms(req.sla_s)
+let sla_ms: Float = scalar(sla_ms_dim)
+let sla_ms_int: Int = round_even_int(sla_ms)
+
+let evaluated = [eval_sample(item, sla_ms, sla_ms_int) for item in req.samples]
+
+let summary = summarize x in evaluated {
+    total: count
+    breaches: count where x.breach
+    overage_ms: sum x.overage where x.breach
+    max_ms: max x.ms default 0
+    bucket_zero: count where x.bucket_zero
+    critical: count where x.sev == "critical"
+    warn_or_worse: count where x.sev != "ok"
+    invalid_labels: count where x.valid_label == false
+}
+
+let ms_values = [to_float(x.ms) for x in evaluated where x.valid_label]
+let mean_ms = if len(ms_values) == 0 then 0 else round_even_int(stats.mean(ms_values))
+
+let consecutive_breaches = count adjacent past, now in evaluated where past.breach and now.breach
+let spike_steps = count adjacent past, now in evaluated where now.ms > past.ms + 100
+
+let out = record {
+    count: summary.total,
+    breaches: summary.breaches,
+    overage_ms: summary.overage_ms,
+    max_ms: summary.max_ms,
+    mean_ms,
+    bucket_zero: summary.bucket_zero,
+    critical: summary.critical,
+    warn_or_worse: summary.warn_or_worse,
+    consecutive_breaches,
+    spike_steps,
+    invalid_labels: summary.invalid_labels
+}
+
+print json_encode(out)

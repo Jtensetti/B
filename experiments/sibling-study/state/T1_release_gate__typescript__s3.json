@@ -1,0 +1,133 @@
+{
+  "run_id": "T1_release_gate__typescript__s3",
+  "task_id": "T1_release_gate",
+  "lang": "TypeScript",
+  "solver_id": 3,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__typescript__s3",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s3/stage_0_attempt_1.ts",
+          "full_tokens": 665,
+          "added_tokens": 665,
+          "diff_tokens": 665,
+          "bytes": 2442,
+          "lines": 117,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s3/stage_1_attempt_1.ts",
+          "full_tokens": 833,
+          "added_tokens": 176,
+          "diff_tokens": 514,
+          "bytes": 2990,
+          "lines": 143,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s3/stage_2_attempt_1.ts",
+          "full_tokens": 920,
+          "added_tokens": 99,
+          "diff_tokens": 285,
+          "bytes": 3335,
+          "lines": 153,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s3/stage_3_attempt_1.ts",
+          "full_tokens": 1072,
+          "added_tokens": 234,
+          "diff_tokens": 625,
+          "bytes": 3923,
+          "lines": 178,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s3/stage_4_attempt_1.ts",
+          "full_tokens": 1149,
+          "added_tokens": 77,
+          "diff_tokens": 336,
+          "bytes": 4198,
+          "lines": 188,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s3/stage_5_attempt_1.ts",
+          "full_tokens": 1197,
+          "added_tokens": 48,
+          "diff_tokens": 230,
+          "bytes": 4400,
+          "lines": 193,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "import * as fs from \"fs\";\nimport * as path from \"path\";\nimport semver from \"semver\";\n\ninterface ArtifactInput {\n  raw_path: string;\n  channel: string;\n  size_kb: number;\n}\n\ninterface GateInput {\n  min_range: string;\n  budget_mb: number;\n  artifacts: ArtifactInput[];\n}\n\ntype SizeTier = \"tiny\" | \"standard\" | \"large\" | \"oversize\";\n\ninterface ParsedArtifact {\n  raw: ArtifactInput;\n  norm: string;\n  pkg: string;\n  ver: string;\n  validFormat: boolean;\n  sizeTier: SizeTier;\n}\n\ninterface EligibilityResult {\n  eligible: boolean;\n  exempt: boolean;\n}\n\ninterface GateOutput {\n  total: number;\n  eligible: number;\n  oversize: number;\n  total_kb: number;\n  max_kb: number;\n  consecutive_rejects: number;\n  freeze: boolean;\n  exempt: number;\n  eligible_kb: number;\n  within_budget: boolean;\n  recommended: string | null;\n}\n\nconst VALID_CHANNELS = new Set<string>([\"stable\", \"beta\", \"lts\"]);\nconst NORM_PATH_REGEX = /^[a-z0-9-]+\\/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$/;\nconst KB_PER_MB = 1024;\n\nfunction decodePath(rawPath: string): string | null {\n  try {\n    return decodeURIComponent(rawPath);\n  } catch {\n    return null;\n  }\n}\n\nfunction classifySizeTier(sizeKb: number): SizeTier {\n  if (sizeKb < 100) {\n    return \"tiny\";\n  }\n  if (sizeKb <= 1000) {\n    return \"standard\";\n  }\n  if (sizeKb <= 5000) {\n    return \"large\";\n  }\n  return \"oversize\";\n}\n\nfunction parseArtifact(artifact: ArtifactInput): ParsedArtifact {\n  const sizeTier = classifySizeTier(artifact.size_kb);\n  const decoded = decodePath(artifact.raw_path);\n  if (decoded === null) {\n    return {\n      raw: artifact,\n      norm: \"\",\n      pkg: \"\",\n      ver: \"\",\n      validFormat: false,\n      sizeTier,\n    };\n  }\n\n  const norm = path.posix.normalize(decoded);\n  const pkg = path.posix.dirname(norm);\n  const ver = path.posix.basename(norm);\n  const validFormat =\n    NORM_PATH_REGEX.test(norm) && VALID_CHANNELS.has(artifact.channel);\n\n  return {\n    raw: artifact,\n    norm,\n    pkg,\n    ver,\n    validFormat,\n    sizeTier,\n  };\n}\n\nfunction evaluateEligibility(\n  parsed: ParsedArtifact,\n  minRange: string\n): EligibilityResult {\n  if (!parsed.validFormat || parsed.sizeTier === \"oversize\") {\n    return { eligible: false, exempt: false };\n  }\n  if (semver.valid(parsed.ver) === null) {\n    return { eligible: false, exempt: false };\n  }\n  if (semver.prerelease(parsed.ver) !== null || parsed.ver.includes(\"-\")) {\n    return { eligible: false, exempt: false };\n  }\n\n  if (semver.satisfies(parsed.ver, minRange)) {\n    return { eligible: true, exempt: false };\n  }\n\n  const isLtsSecurityExempt =\n    parsed.raw.channel === \"lts\" && parsed.pkg.includes(\"security\");\n  if (isLtsSecurityExempt) {\n    return { eligible: true, exempt: true };\n  }\n\n  return { eligible: false, exempt: false };\n}\n\nfunction evaluateGate(input: GateInput): GateOutput {\n  const total = input.artifacts.length;\n  let eligible = 0;\n  let oversize = 0;\n  let totalKb = 0;\n  let maxKb = 0;\n  let consecutiveRejects = 0;\n  let exempt = 0;\n  let eligibleKb = 0;\n  let prevEligible = true;\n  const eligibleVersions: string[] = [];\n\n  for (let i = 0; i < input.artifacts.length; i++) {\n    const artifact = input.artifacts[i];\n    const parsed = parseArtifact(artifact);\n\n    if (parsed.sizeTier === \"oversize\") {\n      oversize += 1;\n    }\n\n    const result = evaluateEligibility(parsed, input.min_range);\n    if (result.eligible) {\n      eligible += 1;\n      eligibleKb += artifact.size_kb;\n      eligibleVersions.push(parsed.ver);\n      if (result.exempt) {\n        exempt += 1;\n      }\n    } else if (i > 0 && !prevEligible) {\n      consecutiveRejects += 1;\n    }\n    prevEligible = result.eligible;\n\n    totalKb += artifact.size_kb;\n    if (i === 0 || artifact.size_kb > maxKb) {\n      maxKb = artifact.size_kb;\n    }\n  }\n\n  const budgetKb = input.budget_mb * KB_PER_MB;\n  const recommended = semver.maxSatisfying(eligibleVersions, \">=0.0.0\");\n\n  return {\n    total,\n    eligible,\n    oversize,\n    total_kb: totalKb,\n    max_kb: maxKb,\n    consecutive_rejects: consecutiveRejects,\n    freeze: consecutiveRejects >= 2,\n    exempt,\n    eligible_kb: eligibleKb,\n    within_budget: eligibleKb <= budgetKb,\n    recommended,\n  };\n}\n\nfunction main(): void {\n  const rawInput = fs.readFileSync(0, \"utf8\");\n  const input: GateInput = JSON.parse(rawInput) as GateInput;\n  const output = evaluateGate(input);\n  process.stdout.write(`${JSON.stringify(output)}\\n`);\n}\n\nmain();\n",
+  "own_language_audit": {}
+}

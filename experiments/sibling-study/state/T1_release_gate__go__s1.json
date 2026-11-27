@@ -1,0 +1,133 @@
+{
+  "run_id": "T1_release_gate__go__s1",
+  "task_id": "T1_release_gate",
+  "lang": "Go",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__go__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__go__s1/stage_0_attempt_1.go",
+          "full_tokens": 2040,
+          "added_tokens": 2040,
+          "diff_tokens": 2040,
+          "bytes": 6343,
+          "lines": 315,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__go__s1/stage_1_attempt_1.go",
+          "full_tokens": 2213,
+          "added_tokens": 214,
+          "diff_tokens": 421,
+          "bytes": 6944,
+          "lines": 342,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__go__s1/stage_2_attempt_1.go",
+          "full_tokens": 2299,
+          "added_tokens": 160,
+          "diff_tokens": 350,
+          "bytes": 7302,
+          "lines": 352,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__go__s1/stage_3_attempt_1.go",
+          "full_tokens": 2400,
+          "added_tokens": 196,
+          "diff_tokens": 476,
+          "bytes": 7669,
+          "lines": 364,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__go__s1/stage_4_attempt_1.go",
+          "full_tokens": 2481,
+          "added_tokens": 81,
+          "diff_tokens": 281,
+          "bytes": 7937,
+          "lines": 371,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__go__s1/stage_5_attempt_1.go",
+          "full_tokens": 2642,
+          "added_tokens": 354,
+          "diff_tokens": 885,
+          "bytes": 8497,
+          "lines": 391,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "package main\n\nimport (\n\t\"encoding/json\"\n\t\"errors\"\n\t\"fmt\"\n\t\"net/url\"\n\t\"os\"\n\t\"path\"\n\t\"regexp\"\n\t\"strconv\"\n\t\"strings\"\n)\n\nvar artifactPathRegex = regexp.MustCompile(`^[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$`)\n\nconst kbPerMB = 1024.0\n\ntype Input struct {\n\tMinRange  string     `json:\"min_range\"`\n\tBudgetMB  float64    `json:\"budget_mb\"`\n\tArtifacts []Artifact `json:\"artifacts\"`\n}\n\ntype Artifact struct {\n\tRawPath string `json:\"raw_path\"`\n\tChannel string `json:\"channel\"`\n\tSizeKB  int64  `json:\"size_kb\"`\n}\n\ntype Output struct {\n\tTotal              int     `json:\"total\"`\n\tEligible           int     `json:\"eligible\"`\n\tOversize           int     `json:\"oversize\"`\n\tTotalKB            int64   `json:\"total_kb\"`\n\tMaxKB              int64   `json:\"max_kb\"`\n\tConsecutiveRejects int     `json:\"consecutive_rejects\"`\n\tFreeze             bool    `json:\"freeze\"`\n\tExempt             int     `json:\"exempt\"`\n\tEligibleKB         int64   `json:\"eligible_kb\"`\n\tWithinBudget       bool    `json:\"within_budget\"`\n\tRecommended        *string `json:\"recommended\"`\n}\n\ntype SizeTier string\n\nconst (\n\tSizeTierTiny     SizeTier = \"tiny\"\n\tSizeTierStandard SizeTier = \"standard\"\n\tSizeTierLarge    SizeTier = \"large\"\n\tSizeTierOversize SizeTier = \"oversize\"\n)\n\nfunc classifySizeTier(sizeKB int64) SizeTier {\n\tswitch {\n\tcase sizeKB < 100:\n\t\treturn SizeTierTiny\n\tcase sizeKB <= 1000:\n\t\treturn SizeTierStandard\n\tcase sizeKB <= 5000:\n\t\treturn SizeTierLarge\n\tdefault:\n\t\treturn SizeTierOversize\n\t}\n}\n\ntype SemVer struct {\n\tMajor      int\n\tMinor      int\n\tPatch      int\n\tPrerelease []string\n}\n\nfunc (v SemVer) HasPrerelease() bool {\n\treturn len(v.Prerelease) > 0\n}\n\nfunc (v SemVer) CompareCore(other SemVer) int {\n\tif v.Major != other.Major {\n\t\tif v.Major < other.Major {\n\t\t\treturn -1\n\t\t}\n\t\treturn 1\n\t}\n\tif v.Minor != other.Minor {\n\t\tif v.Minor < other.Minor {\n\t\t\treturn -1\n\t\t}\n\t\treturn 1\n\t}\n\tif v.Patch != other.Patch {\n\t\tif v.Patch < other.Patch {\n\t\t\treturn -1\n\t\t}\n\t\treturn 1\n\t}\n\treturn 0\n}\n\nfunc (v SemVer) Compare(other SemVer) int {\n\tif cmp := v.CompareCore(other); cmp != 0 {\n\t\treturn cmp\n\t}\n\tif !v.HasPrerelease() && !other.HasPrerelease() {\n\t\treturn 0\n\t}\n\tif !v.HasPrerelease() {\n\t\treturn 1\n\t}\n\tif !other.HasPrerelease() {\n\t\treturn -1\n\t}\n\tlimit := len(v.Prerelease)\n\tif len(other.Prerelease) < limit {\n\t\tlimit = len(other.Prerelease)\n\t}\n\tfor i := 0; i < limit; i++ {\n\t\tif cmp := comparePrereleaseID(v.Prerelease[i], other.Prerelease[i]); cmp != 0 {\n\t\t\treturn cmp\n\t\t}\n\t}\n\tif len(v.Prerelease) < len(other.Prerelease) {\n\t\treturn -1\n\t}\n\tif len(v.Prerelease) > len(other.Prerelease) {\n\t\treturn 1\n\t}\n\treturn 0\n}\n\nfunc comparePrereleaseID(a, b string) int {\n\taNum, aIsNum := parseUintStrict(a)\n\tbNum, bIsNum := parseUintStrict(b)\n\tswitch {\n\tcase aIsNum && bIsNum:\n\t\tif aNum < bNum {\n\t\t\treturn -1\n\t\t}\n\t\tif aNum > bNum {\n\t\t\treturn 1\n\t\t}\n\t\treturn 0\n\tcase aIsNum && !bIsNum:\n\t\treturn -1\n\tcase !aIsNum && bIsNum:\n\t\treturn 1\n\tdefault:\n\t\treturn strings.Compare(a, b)\n\t}\n}\n\nfunc isAllDigits(s string) bool {\n\tif s == \"\" {\n\t\treturn false\n\t}\n\tfor i := 0; i < len(s); i++ {\n\t\tif s[i] < '0' || s[i] > '9' {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn true\n}\n\nfunc parseUintStrict(s string) (int, bool) {\n\tif !isAllDigits(s) {\n\t\treturn 0, false\n\t}\n\tif len(s) > 1 && s[0] == '0' {\n\t\treturn 0, false\n\t}\n\tn, err := strconv.Atoi(s)\n\tif err != nil {\n\t\treturn 0, false\n\t}\n\treturn n, true\n}\n\nfunc parseSemVer(s string) (SemVer, error) {\n\tvar zero SemVer\n\tcore := s\n\tvar prePart string\n\thasPre := false\n\tif idx := strings.IndexByte(s, '-'); idx >= 0 {\n\t\tcore = s[:idx]\n\t\tprePart = s[idx+1:]\n\t\thasPre = true\n\t}\n\n\tparts := strings.Split(core, \".\")\n\tif len(parts) != 3 {\n\t\treturn zero, errors.New(\"invalid semver core\")\n\t}\n\n\tmajor, ok := parseUintStrict(parts[0])\n\tif !ok {\n\t\treturn zero, errors.New(\"invalid major version\")\n\t}\n\tminor, ok := parseUintStrict(parts[1])\n\tif !ok {\n\t\treturn zero, errors.New(\"invalid minor version\")\n\t}\n\tpatch, ok := parseUintStrict(parts[2])\n\tif !ok {\n\t\treturn zero, errors.New(\"invalid patch version\")\n\t}\n\n\tvar preIDs []string\n\tif hasPre {\n\t\tif prePart == \"\" {\n\t\t\treturn zero, errors.New(\"empty prerelease\")\n\t\t}\n\t\tpreIDs = strings.Split(prePart, \".\")\n\t\tfor _, id := range preIDs {\n\t\t\tif id == \"\" {\n\t\t\t\treturn zero, errors.New(\"empty prerelease identifier\")\n\t\t\t}\n\t\t\tfor i := 0; i < len(id); i++ {\n\t\t\t\tc := id[i]\n\t\t\t\tif !((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '-') {\n\t\t\t\t\treturn zero, errors.New(\"invalid prerelease character\")\n\t\t\t\t}\n\t\t\t}\n\t\t\tif isAllDigits(id) && len(id) > 1 && id[0] == '0' {\n\t\t\t\treturn zero, errors.New(\"leading zero in numeric prerelease identifier\")\n\t\t\t}\n\t\t}\n\t}\n\n\treturn SemVer{\n\t\tMajor:      major,\n\t\tMinor:      minor,\n\t\tPatch:      patch,\n\t\tPrerelease: preIDs,\n\t}, nil\n}\n\ntype CaretRange struct {\n\tMin SemVer\n\tMax SemVer\n}\n\nfunc parseCaretRange(s string) (CaretRange, error) {\n\ttrimmed := strings.TrimSpace(s)\n\tif !strings.HasPrefix(trimmed, \"^\") {\n\t\treturn CaretRange{}, errors.New(\"expected caret range\")\n\t}\n\tminVer, err := parseSemVer(strings.TrimSpace(trimmed[1:]))\n\tif err != nil {\n\t\treturn CaretRange{}, err\n\t}\n\n\tvar maxVer SemVer\n\tswitch {\n\tcase minVer.Major > 0:\n\t\tmaxVer = SemVer{Major: minVer.Major + 1, Minor: 0, Patch: 0}\n\tcase minVer.Minor > 0:\n\t\tmaxVer = SemVer{Major: 0, Minor: minVer.Minor + 1, Patch: 0}\n\tdefault:\n\t\tmaxVer = SemVer{Major: 0, Minor: 0, Patch: minVer.Patch + 1}\n\t}\n\n\treturn CaretRange{Min: minVer, Max: maxVer}, nil\n}\n\nfunc (r CaretRange) Satisfies(v SemVer) bool {\n\tif v.HasPrerelease() {\n\t\tif !r.Min.HasPrerelease() || v.CompareCore(r.Min) != 0 {\n\t\t\treturn false\n\t\t}\n\t}\n\treturn v.Compare(r.Min) >= 0 && v.Compare(r.Max) < 0\n}\n\nfunc isValidChannel(channel string) bool {\n\tswitch channel {\n\tcase \"stable\", \"beta\", \"lts\":\n\t\treturn true\n\tdefault:\n\t\treturn false\n\t}\n}\n\nfunc parseArtifactPath(rawPath string) (norm, pkg, ver string, ok bool) {\n\tdecoded, err := url.PathUnescape(rawPath)\n\tif err != nil {\n\t\treturn \"\", \"\", \"\", false\n\t}\n\tnorm = path.Clean(decoded)\n\tif !artifactPathRegex.MatchString(norm) {\n\t\treturn norm, \"\", \"\", false\n\t}\n\tver = path.Base(norm)\n\tpkg = path.Dir(norm)\n\treturn norm, pkg, ver, true\n}\n\nfunc (v SemVer) String() string {\n\tbase := fmt.Sprintf(\"%d.%d.%d\", v.Major, v.Minor, v.Patch)\n\tif v.HasPrerelease() {\n\t\treturn base + \"-\" + strings.Join(v.Prerelease, \".\")\n\t}\n\treturn base\n}\n\nfunc evaluateArtifact(artifact Artifact, tier SizeTier, minRange CaretRange, hasValidRange bool) (eligible bool, exempt bool, ver SemVer) {\n\tif tier == SizeTierOversize {\n\t\treturn false, false, SemVer{}\n\t}\n\t_, pkg, verStr, ok := parseArtifactPath(artifact.RawPath)\n\tif !ok || !isValidChannel(artifact.Channel) {\n\t\treturn false, false, SemVer{}\n\t}\n\tver, err := parseSemVer(verStr)\n\tif err != nil {\n\t\treturn false, false, SemVer{}\n\t}\n\n\tinRange := hasValidRange && minRange.Satisfies(ver)\n\tltsSecurityExempt := artifact.Channel == \"lts\" &&\n\t\tstrings.Contains(pkg, \"security\") &&\n\t\t!ver.HasPrerelease()\n\n\teligible = inRange || ltsSecurityExempt\n\texempt = !inRange && ltsSecurityExempt\n\treturn eligible, exempt, ver\n}\n\nfunc evaluate(input Input) Output {\n\tminRange, err := parseCaretRange(input.MinRange)\n\thasValidRange := err == nil\n\n\tout := Output{\n\t\tTotal: len(input.Artifacts),\n\t}\n\n\tprevRejected := false\n\thasRecommended := false\n\tvar bestVer SemVer\n\n\tfor i, artifact := range input.Artifacts {\n\t\tout.TotalKB += artifact.SizeKB\n\t\tif i == 0 || artifact.SizeKB > out.MaxKB {\n\t\t\tout.MaxKB = artifact.SizeKB\n\t\t}\n\t\ttier := classifySizeTier(artifact.SizeKB)\n\t\tif tier == SizeTierOversize {\n\t\t\tout.Oversize++\n\t\t}\n\t\teligible, exempt, ver := evaluateArtifact(artifact, tier, minRange, hasValidRange)\n\t\tif eligible {\n\t\t\tout.Eligible++\n\t\t\tout.EligibleKB += artifact.SizeKB\n\t\t\tif !ver.HasPrerelease() && (!hasRecommended || ver.Compare(bestVer) > 0) {\n\t\t\t\tbestVer = ver\n\t\t\t\thasRecommended = true\n\t\t\t}\n\t\t}\n\t\tif exempt {\n\t\t\tout.Exempt++\n\t\t}\n\t\trejected := !eligible\n\t\tif i > 0 && prevRejected && rejected {\n\t\t\tout.ConsecutiveRejects++\n\t\t}\n\t\tprevRejected = rejected\n\t}\n\tout.Freeze = out.ConsecutiveRejects >= 2\n\tout.WithinBudget = float64(out.EligibleKB) <= input.BudgetMB*kbPerMB\n\tif hasRecommended {\n\t\trec := bestVer.String()\n\t\tout.Recommended = &rec\n\t}\n\n\treturn out\n}\n\nfunc main() {\n\tvar input Input\n\tif err := json.NewDecoder(os.Stdin).Decode(&input); err != nil {\n\t\tfmt.Fprintf(os.Stderr, \"failed to decode input JSON: %v\\n\", err)\n\t\tos.Exit(1)\n\t}\n\n\toutput := evaluate(input)\n\n\tenc := json.NewEncoder(os.Stdout)\n\tif err := enc.Encode(output); err != nil {\n\t\tfmt.Fprintf(os.Stderr, \"failed to encode output JSON: %v\\n\", err)\n\t\tos.Exit(1)\n\t}\n}\n",
+  "own_language_audit": {}
+}

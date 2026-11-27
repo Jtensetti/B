@@ -1,0 +1,293 @@
+{
+    "schema": 1,
+    "runtime": "b-go-host/go1.24",
+    "packages": {
+        "crypto.sha256": [
+            {
+                "name": "SumHex",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            }
+        ],
+        "math": [
+            {
+                "name": "Abs",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Ceil",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Floor",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Hypot",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Mod",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float",
+                "semantics": {
+                    "remainder": "trunc"
+                }
+            },
+            {
+                "name": "Remainder",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float",
+                "semantics": {
+                    "remainder": "ieee"
+                }
+            },
+            {
+                "name": "Round",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float",
+                "semantics": {
+                    "rounding": "half_away_zero"
+                }
+            },
+            {
+                "name": "RoundToEven",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float",
+                "semantics": {
+                    "rounding": "half_even"
+                }
+            },
+            {
+                "name": "Sqrt",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            }
+        ],
+        "net.url": [
+            {
+                "name": "PathEscape",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "PathUnescape",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "QueryEscape",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "QueryUnescape",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            }
+        ],
+        "path": [
+            {
+                "name": "Base",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "Clean",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "Dir",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "Ext",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "Join",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "Match",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            }
+        ],
+        "regexp": [
+            {
+                "name": "MatchString",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool",
+                "semantics": {
+                    "regex_mode": "search"
+                }
+            }
+        ],
+        "strings": [
+            {
+                "name": "Contains",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "Count",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Int"
+            },
+            {
+                "name": "HasPrefix",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "HasSuffix",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "Join",
+                "params": [
+                    "List[Text]",
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "ReplaceAll",
+                "params": [
+                    "Text",
+                    "Text",
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "Split",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "List[Text]"
+            },
+            {
+                "name": "ToLower",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "ToUpper",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "TrimSpace",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            }
+        ],
+        "unicode.utf8": [
+            {
+                "name": "ByteLen",
+                "params": [
+                    "Text"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "string_unit": "utf8_bytes"
+                }
+            },
+            {
+                "name": "RuneCountInString",
+                "params": [
+                    "Text"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "string_unit": "codepoints"
+                }
+            },
+            {
+                "name": "ValidString",
+                "params": [
+                    "Text"
+                ],
+                "result": "Bool"
+            }
+        ]
+    }
+}

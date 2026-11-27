@@ -1,0 +1,133 @@
+{
+  "run_id": "T2_telemetry_sla__csharp__s1",
+  "task_id": "T2_telemetry_sla",
+  "lang": "C#",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T2_telemetry_sla__csharp__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s1/stage_0_attempt_1.cs",
+          "full_tokens": 744,
+          "added_tokens": 744,
+          "diff_tokens": 744,
+          "bytes": 3274,
+          "lines": 115,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s1/stage_1_attempt_1.cs",
+          "full_tokens": 917,
+          "added_tokens": 202,
+          "diff_tokens": 496,
+          "bytes": 4019,
+          "lines": 142,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s1/stage_2_attempt_1.cs",
+          "full_tokens": 1131,
+          "added_tokens": 274,
+          "diff_tokens": 620,
+          "bytes": 4930,
+          "lines": 169,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s1/stage_3_attempt_1.cs",
+          "full_tokens": 1310,
+          "added_tokens": 242,
+          "diff_tokens": 632,
+          "bytes": 5789,
+          "lines": 200,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s1/stage_4_attempt_1.cs",
+          "full_tokens": 1421,
+          "added_tokens": 218,
+          "diff_tokens": 710,
+          "bytes": 6350,
+          "lines": 218,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s1/stage_5_attempt_1.cs",
+          "full_tokens": 1645,
+          "added_tokens": 252,
+          "diff_tokens": 638,
+          "bytes": 7380,
+          "lines": 256,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "using System.Text;\nusing System.Text.Json;\nusing System.Text.Json.Serialization;\n\nnamespace TelemetrySlaAuditor;\n\npublic sealed record RawSample(\n    [property: JsonPropertyName(\"service\")] string Service,\n    [property: JsonPropertyName(\"ms\")] long Ms,\n    [property: JsonPropertyName(\"offset\")] long Offset\n);\n\npublic sealed record AuditInput(\n    [property: JsonPropertyName(\"sla_s\")] double SlaS,\n    [property: JsonPropertyName(\"samples\")] List<RawSample> Samples\n);\n\npublic sealed record NormalizedSample(\n    string Service,\n    long Ms,\n    long Offset\n);\n\npublic sealed record AuditOutput(\n    [property: JsonPropertyName(\"count\")] long Count,\n    [property: JsonPropertyName(\"breaches\")] long Breaches,\n    [property: JsonPropertyName(\"overage_ms\")] long OverageMs,\n    [property: JsonPropertyName(\"max_ms\")] long MaxMs,\n    [property: JsonPropertyName(\"mean_ms\")] long MeanMs,\n    [property: JsonPropertyName(\"bucket_zero\")] long BucketZero,\n    [property: JsonPropertyName(\"critical\")] long Critical,\n    [property: JsonPropertyName(\"warn_or_worse\")] long WarnOrWorse,\n    [property: JsonPropertyName(\"consecutive_breaches\")] long ConsecutiveBreaches,\n    [property: JsonPropertyName(\"spike_steps\")] long SpikeSteps,\n    [property: JsonPropertyName(\"invalid_labels\")] long InvalidLabels,\n    [property: JsonPropertyName(\"exempt\")] long Exempt,\n    [property: JsonPropertyName(\"regressed\")] long Regressed,\n    [property: JsonPropertyName(\"status\")] string Status\n);\n\npublic static class Program\n{\n    public static void Main()\n    {\n        string rawJson = Console.In.ReadToEnd();\n        AuditInput input = JsonSerializer.Deserialize<AuditInput>(rawJson)\n            ?? throw new InvalidOperationException(\"Failed to deserialize input JSON.\");\n\n        AuditOutput result = Audit(input);\n        Console.WriteLine(JsonSerializer.Serialize(result));\n    }\n\n    private static string NormalizeService(string service) =>\n        service.Trim().ToLowerInvariant();\n\n    private static int CountCodePoints(string text)\n    {\n        int count = 0;\n        foreach (Rune _ in text.EnumerateRunes())\n        {\n            count++;\n        }\n        return count;\n    }\n\n    private static bool IsValidServiceLabel(string normalizedService)\n    {\n        int codePoints = CountCodePoints(normalizedService);\n        return codePoints >= 2 && codePoints <= 12;\n    }\n\n    private static long RemEuclid(long value, long modulus)\n    {\n        long remainder = value % modulus;\n        return remainder < 0 ? remainder + Math.Abs(modulus) : remainder;\n    }\n\n    private static long RoundHalfToEven(double value) =>\n        (long)Math.Round(value, MidpointRounding.ToEven);\n\n    private static bool IsRawBreach(long ms, double slaMs) =>\n        (double)ms > slaMs;\n\n    private static bool IsMaintenanceExempt(NormalizedSample sample) =>\n        sample.Service == \"healthcheck\" && RemEuclid(sample.Offset, 4) == 0;\n\n    private static string ClassifySeverity(long ms) => ms switch\n    {\n        < 200 => \"ok\",\n        <= 500 => \"warn\",\n        <= 1000 => \"slow\",\n        _ => \"critical\"\n    };\n\n    private static string ComputeStatus(\n        long consecutiveBreaches,\n        long critical,\n        long breaches,\n        long invalidLabels)\n    {\n        if (consecutiveBreaches >= 2 || critical > 0)\n        {\n            return \"red\";\n        }\n\n        if (breaches > 0 || invalidLabels > 0)\n        {\n            return \"yellow\";\n        }\n\n        return \"green\";\n    }\n\n    private static AuditOutput Audit(AuditInput input)\n    {\n        double slaMs = input.SlaS * 1000.0;\n        long slaMsInt = RoundHalfToEven(slaMs);\n\n        List<NormalizedSample> samples = input.Samples\n            .Select(s => new NormalizedSample(NormalizeService(s.Service), s.Ms, s.Offset))\n            .ToList();\n\n        long count = samples.Count;\n        if (count == 0)\n        {\n            return new AuditOutput(\n                Count: 0,\n                Breaches: 0,\n                OverageMs: 0,\n                MaxMs: 0,\n                MeanMs: 0,\n                BucketZero: 0,\n                Critical: 0,\n                WarnOrWorse: 0,\n                ConsecutiveBreaches: 0,\n                SpikeSteps: 0,\n                InvalidLabels: 0,\n                Exempt: 0,\n                Regressed: 0,\n                Status: \"green\"\n            );\n        }\n\n        long breaches = 0;\n        long overageMs = 0;\n        long maxMs = samples[0].Ms;\n        long minSoFar = samples[0].Ms;\n        long validTotalMs = 0;\n        long validCount = 0;\n        long invalidLabels = 0;\n        long bucketZero = 0;\n        long critical = 0;\n        long warnOrWorse = 0;\n        long consecutiveBreaches = 0;\n        long spikeSteps = 0;\n        long exempt = 0;\n        long regressed = 0;\n        bool prevBreach = false;\n\n        for (int i = 0; i < samples.Count; i++)\n        {\n            NormalizedSample sample = samples[i];\n            if (IsValidServiceLabel(sample.Service))\n            {\n                validTotalMs += sample.Ms;\n                validCount++;\n            }\n            else\n            {\n                invalidLabels++;\n            }\n\n            if (sample.Ms > maxMs)\n            {\n                maxMs = sample.Ms;\n            }\n\n            if (RemEuclid(sample.Offset, 4) == 0)\n            {\n                bucketZero++;\n            }\n\n            bool isBreach = false;\n            if (IsRawBreach(sample.Ms, slaMs))\n            {\n                if (IsMaintenanceExempt(sample))\n                {\n                    exempt++;\n                }\n                else\n                {\n                    isBreach = true;\n                    breaches++;\n                    overageMs += sample.Ms - slaMsInt;\n                }\n            }\n\n            string severity = ClassifySeverity(sample.Ms);\n            if (severity == \"critical\")\n            {\n                critical++;\n            }\n\n            if (severity != \"ok\")\n            {\n                warnOrWorse++;\n            }\n\n            if (i > 0)\n            {\n                NormalizedSample past = samples[i - 1];\n                if (prevBreach && isBreach)\n                {\n                    consecutiveBreaches++;\n                }\n\n                if (sample.Ms > past.Ms + 100)\n                {\n                    spikeSteps++;\n                }\n\n                if (minSoFar + 300 < sample.Ms)\n                {\n                    regressed++;\n                }\n\n                if (sample.Ms < minSoFar)\n                {\n                    minSoFar = sample.Ms;\n                }\n            }\n\n            prevBreach = isBreach;\n        }\n\n        long meanMs = validCount > 0 ? RoundHalfToEven((double)validTotalMs / validCount) : 0;\n        string status = ComputeStatus(consecutiveBreaches, critical, breaches, invalidLabels);\n\n        return new AuditOutput(\n            Count: count,\n            Breaches: breaches,\n            OverageMs: overageMs,\n            MaxMs: maxMs,\n            MeanMs: meanMs,\n            BucketZero: bucketZero,\n            Critical: critical,\n            WarnOrWorse: warnOrWorse,\n            ConsecutiveBreaches: consecutiveBreaches,\n            SpikeSteps: spikeSteps,\n            InvalidLabels: invalidLabels,\n            Exempt: exempt,\n            Regressed: regressed,\n            Status: status\n        );\n    }\n}\n",
+  "own_language_audit": {}
+}

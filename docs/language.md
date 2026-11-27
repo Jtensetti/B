@@ -1,8 +1,18 @@
-# B language reference — implemented experimental v0.18
+# B language reference — implemented experimental v0.20
 
 This document specifies **the implemented subset**, not the eventual B 1.0 ambition. The authoritative executable grammar is [`b_lang/syntax.lark`](../b_lang/syntax.lark), and the static type system is implemented in [`b_lang/types.py`](../b_lang/types.py) and [`b_lang/compiler.py`](../b_lang/compiler.py). Where this document and the compiler differ, that is a bug to fix and test.
 
 For source adoption and contract analysis across functions, see [source adoption](source-adoption.md), [contract analysis](composition.md) and [conditional guarantees](conditional-guarantees.md).
+
+## Additions in v0.19–0.20
+
+- **Five sibling ecosystems:** `use py:`, `use net:`, `use js:`, `use go:`, and `use rs:` with verified host manifests (`b inspect ... --verify`).
+- **Units & currencies:** `unit m`, `unit km = 1000 m`, `currency EUR, SEK`, `expr as u`, `expr to v`, `scalar(expr)` with static `E_UNIT` / `E_CURRENCY` enforcement (also supported inside `also ... keeping`).
+- **Nominal & structural records:** `record Name { field: Type }`, positional or named/shorthand construction `Name(field: val, field2)`, structural record literals `record { field: val, field2 }`, immutable updates `rec with { ... }`, `from_json`, and `json_encode`.
+- **Heterogeneous typed `summarize`:** mix `Int`, `Float`, and `Float[dim]` reductions in one pass, optional `where` filters on `min`/`max`, and direct statically typed `.field` access (`s.total`, `s.total_km`) alongside legacy `s["key"]` lookups.
+- **Ergonomics:** local `let x = e1 in e2`, pipelines `|>`, list comprehensions `[e for x in xs where cond]`, optional inferred return types on non-recursive `fn`, and implicit multiline continuation inside `(...)` and `[...]`.
+- **False-friend protection & behavioral locking:** `expect alias.member facet = val` (`E_FALSE_FRIEND`), static JS 53-bit safe integer checks, `probe expr`, `b lock FILE`, and `b check FILE --strict --lock FILE.lock.json` (`E_LOCK_SIGNATURE`, `E_BEHAVIOR_DRIFT`).
+- **Second BIR backend:** `b build FILE --target js` and `b run FILE --backend js`.
 
 ## Executable rule extensions
 

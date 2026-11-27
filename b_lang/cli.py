@@ -97,7 +97,21 @@ def main(argv: list[str] | None = None) -> int:
             p.add_argument("--explain", action="store_true",
                            help="Explain open divisor and integer argument checks")
             p.add_argument("--require-proofs", action="store_true", help="Reject any reported contract or divisor obligation without a static proof")
+            p.add_argument("--lock", type=Path, metavar="LOCK.json",
+                           help="Verify signatures, semantic facets and behavioral probes against a dependency lockfile before execution")
             p.add_argument("--json", action="store_true", help="Machine-readable diagnostics and foreign assumptions")
+        elif cmd == "build":
+            p.add_argument("--target", choices=("py", "js"), default="py",
+                           help="Target lowering backend (py or js)")
+        elif cmd == "run":
+            p.add_argument("--backend", choices=("py", "js"), default="py",
+                           help="Execution backend (py or js)")
+    lock_cmd = sub.add_parser("lock", help="Create or verify a behavioral dependency lockfile")
+    lock_cmd.add_argument("file", type=Path, help="B source file")
+    lock_cmd.add_argument("--out", type=Path, metavar="LOCK.json", help="Lockfile path (default: FILE.lock.json)")
+    lock_cmd.add_argument("--verify", action="store_true", help="Verify against an existing lockfile instead of writing one")
+    lock_cmd.add_argument("--strict", action="store_true", help="Reject unresolved static warnings")
+    lock_cmd.add_argument("--json", action="store_true", help="Machine-readable report")
     ir_command = sub.add_parser("ir", help="Emit the checked, backend-neutral BIR as JSON")
     ir_command.add_argument("file", type=Path)
     ir_command.add_argument("--strict", action="store_true")
@@ -105,11 +119,11 @@ def main(argv: list[str] | None = None) -> int:
     audit_command = sub.add_parser("audit", help="Measure direct Python signatures visible to B; does not import target")
     audit_command.add_argument("target", help="py:module.name")
     audit_command.add_argument("--json", action="store_true")
-    inspect = sub.add_parser('inspect', help='Inspect Python, Node.js or .NET function signatures')
-    inspect.add_argument('target', help='py:module.name, js:package or net:Full.Type.Name')
+    inspect = sub.add_parser('inspect', help='Inspect Python, Node.js, .NET, Go or Rust function signatures')
+    inspect.add_argument('target', help='py:module.name, js:package, net:Full.Type.Name, go:pkg or rs:mod')
     inspect.add_argument('--json', action='store_true', help='Machine-readable result')
-    inspect.add_argument('--live', action='store_true', help='Read live .NET metadata instead of the checked-in snapshot')
-    inspect.add_argument('--verify', action='store_true', help='Fail if the live .NET metadata differs from the snapshot')
+    inspect.add_argument('--live', action='store_true', help='Read live host metadata instead of the checked-in snapshot')
+    inspect.add_argument('--verify', action='store_true', help='Fail if the live host metadata differs from the snapshot')
     adopt_audit = sub.add_parser("adopt-audit", help="List Python leaf functions B can compile as checked native functions")
     adopt_audit.add_argument("target", help="py:module.name")
     adopt_audit.add_argument("--json", action="store_true")
@@ -133,6 +147,35 @@ def main(argv: list[str] | None = None) -> int:
     revision.add_argument("--delta", type=Path, help="Pin the authorized change from a separate .bee file")
     revision.add_argument("--json", action="store_true")
     args = parser.parse_args(argv)
+    if args.command == "lock":
+        from .lock import create_lock, verify_lock
+        lock_path = args.out or args.file.with_suffix(args.file.suffix + ".lock.json")
+        try:
+            source = read_source(args.file)
+            if args.verify:
+                lock_data = json.loads(lock_path.read_text(encoding="utf-8"))
+                report = verify_lock(source, lock_data, source_file=args.file, strict=args.strict)
+            else:
+                lock_data = create_lock(source, source_file=args.file)
+                lock_path.write_text(json.dumps(lock_data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+                report = {
+                    "status": "locked",
+                    "lockfile": str(lock_path),
+                    "symbols": len(lock_data["symbols"]),
+                    "probes": len(lock_data["probes"]),
+                    "fingerprints": sum(len(v) for v in lock_data["fingerprints"].values()),
+                }
+            if args.json:
+                print(json.dumps(report, ensure_ascii=False))
+            else:
+                print(f"B lock: {report['status']} ({lock_path})")
+            return 0
+        except (BError, OSError, ValueError, RuntimeError) as exc:
+            if args.json:
+                print(json.dumps({"status": "rejected", "error": {"code": getattr(exc, "code", "E_LOCK"), "message": str(exc)}}, ensure_ascii=False))
+            else:
+                print(f"B lock: {exc}", file=sys.stderr)
+            return 1
     if args.command == "revision":
         return show_revision(args)
     if args.command == "next":
@@ -253,8 +296,36 @@ def main(argv: list[str] | None = None) -> int:
                                               result=m['result'], min_arity=len(m['params']))
                                          for m in current['types'][name]],
                           'behavior_proven': False}
+            elif args.target.startswith('go:'):
+                from . import gometa
+                current = gometa.describe_live() if (args.live or args.verify) else gometa.manifest()
+                if args.verify and current != gometa.manifest():
+                    raise BError('E_METADATA', 'Live Go signatures differ from checked-in manifest')
+                name = args.target[3:]
+                if name not in current['packages']:
+                    raise BError('E_IMPORT', f'No Go host signatures for {name}')
+                result = {'target': args.target, 'origin': current['runtime'],
+                          'provenance': 'live-go-host' if args.live or args.verify else 'verified-go-snapshot',
+                          'signatures': [dict(name=m['name'], parameters=m['params'],
+                                              result=m['result'], min_arity=len(m['params']))
+                                         for m in current['packages'][name]],
+                          'behavior_proven': False}
+            elif args.target.startswith('rs:'):
+                from . import rsmeta
+                current = rsmeta.describe_live() if (args.live or args.verify) else rsmeta.manifest()
+                if args.verify and current != rsmeta.manifest():
+                    raise BError('E_METADATA', 'Live Rust signatures differ from checked-in manifest')
+                name = args.target[3:]
+                if name not in current['modules']:
+                    raise BError('E_IMPORT', f'No Rust host signatures for {name}')
+                result = {'target': args.target, 'origin': current['runtime'],
+                          'provenance': 'live-rs-host' if args.live or args.verify else 'verified-rs-snapshot',
+                          'signatures': [dict(name=m['name'], parameters=m['params'],
+                                              result=m['result'], min_arity=len(m['params']))
+                                         for m in current['modules'][name]],
+                          'behavior_proven': False}
             else:
-                raise BError('E_IMPORT', 'Expected py:, js: or net: prefix')
+                raise BError('E_IMPORT', 'Expected py:, js:, net:, go: or rs: prefix')
             if args.json:
                 print(json.dumps(result, ensure_ascii=False))
             else:
@@ -288,6 +359,11 @@ def main(argv: list[str] | None = None) -> int:
             rejection = BError("E_PROOF_REQUIRED", f"{len(unresolved)} obligation(s) lack a static proof")
         elif args.command == "check" and args.require_proofs and pending_unresolved:
             rejection = BError("E_PROOF_REQUIRED", f"{len(pending_unresolved)} obligation(s) in the pending revision lack a static proof")
+        lock_report = None
+        if args.command == "check" and getattr(args, "lock", None) is not None and rejection is None:
+            from .lock import verify_lock
+            lock_data = json.loads(args.lock.read_text(encoding="utf-8"))
+            lock_report = verify_lock(read_source(args.file), lock_data, source_file=args.file, strict=args.strict)
         joint_checks = []
         if args.command == "check" and args.joint:
             from .joint_cli import describe, run_checks
@@ -312,7 +388,11 @@ def main(argv: list[str] | None = None) -> int:
         if args.command == "ir":
             print(json.dumps((result.optimized_ir if args.optimized else result.ir).to_dict(), ensure_ascii=False, indent=2, sort_keys=True))
         elif args.command == "build":
-            print(result.source, end="")
+            if args.target == "js":
+                from .lowering_js import JavaScriptLowerer
+                print(JavaScriptLowerer().lower(result.optimized_ir), end="")
+            else:
+                print(result.source, end="")
         elif args.command == "check":
             if machine:
                 print(json.dumps({
@@ -322,6 +402,7 @@ def main(argv: list[str] | None = None) -> int:
                     **({"pending_analysis": result.pending_analysis.to_dict()} if result.pending_analysis is not None else {}),
                     "conditional_guarantees": use_rules,
                     **({"joint_checks": joint_checks} if joint_checks else {}),
+                    **({"lock_verification": lock_report} if lock_report is not None else {}),
                     **({"guidance": hints} if args.explain else {}),
                     "strict": args.strict,
                     "diagnostics": [vars(d) for d in result.diagnostics],
@@ -348,7 +429,18 @@ def main(argv: list[str] | None = None) -> int:
                     print(f"Pending handoff: {len(pending_unresolved)} unproved obligation(s)")
             return 1 if rejection else 0
         elif args.command == "run":
-            # Imports can execute real library code in their respective runtimes.
+            if args.backend == "js":
+                import shutil, subprocess, tempfile
+                from .lowering_js import JavaScriptLowerer
+                node = shutil.which("node")
+                if not node:
+                    raise BError("E_BACKEND", "Node.js is required for --backend js")
+                js_code = JavaScriptLowerer().lower(result.optimized_ir)
+                with tempfile.NamedTemporaryFile("w", suffix=".cjs", dir=str(args.file.resolve().parent), delete=True, encoding="utf-8") as tmp:
+                    tmp.write(js_code)
+                    tmp.flush()
+                    proc = subprocess.run([node, tmp.name], check=False)
+                    return proc.returncode
             namespace = {"__name__": "__b_program__"}
             if any(s.op == "import" and s.backend == "js" for s in result.ir.statements):
                 namespace["__file__"] = str(args.file.resolve())

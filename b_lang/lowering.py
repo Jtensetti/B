@@ -1,8 +1,7 @@
 """Lower checked BIR to Python AST, preserving B language operations.
 
-This is the first executable backend. BIR is independent of the choice of
-backend; a native/LLVM/WASM backend can be implemented against the same nodes
-once its semantics and supported operations are specified.
+This is the Python executable backend. An independent JavaScript/Node backend
+(`lowering_js.py`) lowers the same checked BIR to verify backend independence.
 """
 from __future__ import annotations
 import ast
@@ -11,7 +10,7 @@ from contextlib import contextmanager
 
 from .history import order_comparison
 from .ir import ExprIR, ProgramIR, StmtIR
-from .types import BOOL, FLOAT, INT, NONE, TEXT, BError
+from .types import BOOL, FLOAT, INT, NONE, TEXT, BError, is_dim_float
 
 
 _BINARY = {
@@ -24,6 +23,33 @@ _COMPARISONS = {
 _SCALAR_OPS = {"literal", "name", "cmp", "and", "or", "not", "neg", "conditional", *_BINARY}
 _INDEX_MIN_ROWS = 32
 
+_BUILTIN_MAP = {
+    "len": "_b_b_len",
+    "abs": "_b_b_abs",
+    "min": "_b_b_min",
+    "max": "_b_b_max",
+    "round_even": "_b_b_round_even",
+    "round_away": "_b_b_round_away",
+    "div_euclid": "_b_b_div_euclid",
+    "rem_euclid": "_b_b_rem_euclid",
+    "rem_trunc": "_b_b_rem_trunc",
+    "scalar": "_b_b_scalar",
+    "to_text": "_b_b_to_text",
+    "to_float": "_b_b_to_float",
+    "to_int": "_b_b_to_int",
+    "stdin_text": "_b_b_stdin_text",
+    "json_encode": "_b_b_json_encode",
+    "str_contains": "_b_b_str_contains",
+    "str_starts": "_b_b_str_starts",
+    "str_ends": "_b_b_str_ends",
+    "str_lower": "_b_b_str_lower",
+    "str_upper": "_b_b_str_upper",
+    "str_trim": "_b_b_str_trim",
+    "str_split": "_b_b_str_split",
+    "str_join": "_b_b_str_join",
+    "str_replace": "_b_b_str_replace",
+}
+
 
 def _leaves(node: ExprIR, connective: str):
     if node.op == connective:
@@ -34,7 +60,6 @@ def _leaves(node: ExprIR, connective: str):
 
 
 def _indexed_facts(test, params):
-    """Recognize a union of exact tuples of the function's boundary-checked scalar parameters."""
     if not params or test.op != "or" or any(t not in (BOOL, FLOAT, INT, TEXT) for _, t in params):
         return None
     rows = list(_leaves(test, "or"))
@@ -57,19 +82,15 @@ def _indexed_facts(test, params):
         keys.append(ast.Constant(values[0] if len(values) == 1 else tuple(values)))
     names = [_load(_python_name(name)) for name, _ in params]
     key = names[0] if len(names) == 1 else ast.Tuple(elts=names, ctx=ast.Load())
-    # The supported Python compilers fold membership in this literal set to
-    # a constant frozenset. The generated .py source has the same property.
     return ast.Compare(left=key, ops=[ast.In()], comparators=[ast.Set(elts=keys)])
 
 
 def _inert_scalar(e: ExprIR) -> bool:
-    """Exact scalar operations cannot call out and change the list during its traversal."""
     return (e.typ in (BOOL, FLOAT, INT, NONE, TEXT) and e.op in _SCALAR_OPS
             and all(_inert_scalar(child) for child in e.operands))
 
 
 def _python_name(name: str) -> str:
-    # The B grammar permits Python keywords. B reserves _b_ for the backend.
     if keyword.iskeyword(name) or name in ("__debug__", "__builtins__"):
         return "_b_name_" + name
     return name
@@ -84,8 +105,6 @@ def _assign(name: str, value: ast.expr) -> ast.Assign:
 
 
 class _FillNames(ast.NodeTransformer):
-    """Substitute expression nodes into compiler-owned ASTs."""
-
     def __init__(self, replacements: dict[str, ast.expr]):
         self.replacements = replacements
 
@@ -100,6 +119,10 @@ class PythonLowerer:
         self._tmp = 0
         self._helpers: list[ast.FunctionDef] = []
         self._locals: set[str] = set()
+        self._used_builtins: set[str] = set()
+        self._has_records = False
+        self._used_record_with = False
+        self._used_from_json = False
 
     @contextmanager
     def _bind(self, names):
@@ -110,15 +133,17 @@ class PythonLowerer:
         finally:
             self._locals = surrounding
 
+    def _guard_call(self, value_expr: ast.expr, typ_str: str) -> ast.Call:
+        args = [value_expr, ast.Constant(typ_str)]
+        if self._has_records:
+            args.append(_load("_b_records"))
+        return ast.Call(func=_load("_b_guard"), args=args, keywords=[])
+
     def _summarize(self, e: ExprIR) -> ast.Call:
-        # Keep the traversal in its own helper so the call remains an expression
-        # even inside a lazy branch. It receives the source and any captured locals.
         source = self.expr(e.operands[0])
         binder = _python_name(e.data["binder"])
         body: list[ast.stmt] = []
         if not all(_inert_scalar(child) for child in e.operands[1:]):
-            # An opaque call can reach the same list via another name. Freeze its
-            # membership before the first field, while retaining the items' identities.
             body.append(_assign("_b_source", ast.Subscript(value=_load("_b_source"), slice=ast.Slice(),
                                                           ctx=ast.Load())))
         loop_body: list[ast.stmt] = []
@@ -134,7 +159,8 @@ class PythonLowerer:
                     values.append(_load("_b_size"))
                     continue
                 if op in ("count", "sum"):
-                    body.append(_assign(acc, ast.Constant(0)))
+                    init_zero = 0.0 if (op == "sum" and (e.operands[value_idx].typ == FLOAT or is_dim_float(e.operands[value_idx].typ))) else 0
+                    body.append(_assign(acc, ast.Constant(init_zero)))
                     term = ast.Constant(1) if op == "count" else self.expr(e.operands[value_idx])
                     update = [ast.AugAssign(target=ast.Name(id=acc, ctx=ast.Store()), op=ast.Add(), value=term)]
                     values.append(_load(acc))
@@ -168,8 +194,6 @@ class PythonLowerer:
         return self._collection_call("summary", source, body, {binder})
 
     def _collection_call(self, kind: str, source: ast.expr, body: list[ast.stmt], binders: set[str]) -> ast.Call:
-        # A nested helper call already exposes its captures as ordinary loads.
-        # Global names stay global, preserving B's usual point of lookup.
         reads = {n.id for stmt in body for n in ast.walk(stmt)
                  if isinstance(n, ast.Name) and isinstance(n.ctx, ast.Load)}
         captures = sorted(self._locals.intersection(reads) - binders)
@@ -186,8 +210,7 @@ class PythonLowerer:
         past = _python_name(e.data["past"])
         current = _python_name(e.data["current"])
         plan = e.data["plan"]
-        # The predicate fragment has no nested binders or side effects. A past
-        # projection computed on this item is valid when it becomes history.
+
         def on_item(term: ExprIR, past_name: str) -> ast.expr:
             return _FillNames({past: _load(past_name), current: _load("_b_item")}).visit(self.expr(term))
 
@@ -200,7 +223,6 @@ class PythonLowerer:
             previous_test = on_item(paired.operands[side], "_b_item")
             current_test = on_item(paired.operands[1 - side], "_b_item")
             if plan == "previous-test":
-                # Identical projected tests (e.g. two late ticks) need one evaluation.
                 same_test = ast.dump(previous_test) == ast.dump(current_test)
                 slots = {"CURRENT": current_test, "PAST": _load("_b_now") if same_test else previous_test}
                 template = """
@@ -249,8 +271,6 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
 """
         else:
             raise BError("E_INTERNAL", f"Unknown history plan: {plan}")
-        # Only fixed compiler templates are parsed. All B expressions arrive
-        # as typed AST nodes, never as interpolated program text.
         loop = _FillNames(slots).visit(ast.parse(template)).body
         body = [_assign("_b_hits", ast.Constant(0)), *loop, ast.Return(value=_load("_b_hits"))]
         return self._collection_call("history", source_expr, body, {past, current})
@@ -261,6 +281,50 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return ast.Constant(data)
         if op == "name":
             return ast.Name(id=_python_name(data), ctx=ast.Load())
+        if op == "let_expr":
+            binder = _python_name(data)
+            val_expr = self.expr(children[0])
+            with self._bind([binder]):
+                body_expr = self.expr(children[1])
+            lam = ast.Lambda(
+                args=ast.arguments(posonlyargs=[], args=[ast.arg(arg=binder)],
+                                   vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[]),
+                body=body_expr,
+            )
+            return ast.Call(func=lam, args=[val_expr], keywords=[])
+        if op == "list_comp":
+            binder = _python_name(data)
+            source_expr = self.expr(children[0])
+            with self._bind([binder]):
+                elt_expr = self.expr(children[1])
+                ifs = [self.expr(children[2])] if len(children) == 3 else []
+            return ast.ListComp(
+                elt=elt_expr,
+                generators=[ast.comprehension(target=ast.Name(id=binder, ctx=ast.Store()),
+                                              iter=source_expr, ifs=ifs, is_async=0)],
+            )
+        if op == "record_make":
+            keys = [ast.Constant(fname) for fname in data["fields"]]
+            vals = [self.expr(child) for child in children]
+            return ast.Dict(keys=keys, values=vals)
+        if op == "record_field":
+            return ast.Subscript(value=self.expr(children[0]), slice=ast.Constant(data), ctx=ast.Load())
+        if op == "record_with":
+            self._used_record_with = True
+            base = self.expr(children[0])
+            updates = ast.Dict(keys=[ast.Constant(k) for k in data],
+                               values=[self.expr(c) for c in children[1:]])
+            return ast.Call(func=_load("_b_record_with"), args=[base, updates], keywords=[])
+        if op == "builtin":
+            self._used_builtins.add(data)
+            return ast.Call(func=_load(_BUILTIN_MAP[data]),
+                            args=[self.expr(c) for c in children], keywords=[])
+        if op == "builtin_from_json":
+            self._used_from_json = True
+            args = [self.expr(children[0]), ast.Constant(data)]
+            if self._has_records:
+                args.append(_load("_b_records"))
+            return ast.Call(func=_load("_b_from_json"), args=args, keywords=[])
         if op == "list":
             return ast.List(elts=[self.expr(x) for x in children], ctx=ast.Load())
         if op == "dict":
@@ -283,8 +347,7 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
         if op == "call":
             return ast.Call(func=self.expr(children[0]), args=[self.expr(x) for x in children[1:]], keywords=[])
         if op == "guard":
-            return ast.Call(func=ast.Name(id="_b_guard", ctx=ast.Load()),
-                            args=[self.expr(children[0], rule_params=rule_params), ast.Constant(str(e.typ))], keywords=[])
+            return self._guard_call(self.expr(children[0], rule_params=rule_params), str(e.typ))
         if op == "conditional":
             test = None
             if rule_params and children[1].op == "literal" and children[1].data is True:
@@ -292,7 +355,6 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             return ast.IfExp(test=test or self.expr(children[0]), body=self.expr(children[1]),
                              orelse=self.expr(children[2]))
         if op == "coalesce":
-            # NamedExpr ensures that potentially impure foreign calls are evaluated ONCE.
             self._tmp += 1
             temp = f"_b_coalesce_{self._tmp}"
             test = ast.Compare(left=ast.NamedExpr(
@@ -312,13 +374,16 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
 
     def statement(self, s: StmtIR) -> ast.stmt:
         if s.op == "import":
-            if s.backend not in ("py", "net", "js") or not s.target or not s.name:
+            if s.backend not in ("py", "net", "js", "go", "rs") or not s.target or not s.name:
                 raise BError("E_INTERNAL", "Invalid import BIR")
-            adapter = {"py": "_b_py", "net": "_b_net", "js": "_b_js_module"}[s.backend]
+            adapter = {
+                "py": "_b_py", "net": "_b_net", "js": "_b_js_module",
+                "go": "_b_go", "rs": "_b_rs",
+            }[s.backend]
             return ast.Assign(targets=[ast.Name(id=_python_name(s.name), ctx=ast.Store())], value=ast.Call(
                 func=ast.Name(id=adapter, ctx=ast.Load()),
                 args=[ast.Constant(s.target)], keywords=[]))
-        if s.op in ("foreign", "permit"):
+        if s.op in ("foreign", "permit", "unit", "currency", "record", "probe", "expect"):
             return ast.Pass()
         if s.op == "let":
             return ast.Assign(targets=[ast.Name(id=_python_name(s.name), ctx=ast.Store())], value=self.expr(s.expr))
@@ -327,13 +392,10 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             args = ast.arguments(posonlyargs=[], args=[ast.arg(arg=n) for n in names],
                                  vararg=None, kwonlyargs=[], kw_defaults=[], kwarg=None, defaults=[])
             body: list[ast.stmt] = []
-            # B arguments are B values even if invoked from Python or via Any.
             for name, typ in s.params:
                 name = _python_name(name)
                 body.append(ast.Assign(targets=[ast.Name(id=name, ctx=ast.Store())],
-                                       value=ast.Call(func=ast.Name(id="_b_guard", ctx=ast.Load()),
-                                                      args=[ast.Name(id=name, ctx=ast.Load()), ast.Constant(str(typ))],
-                                                      keywords=[])))
+                                       value=self._guard_call(ast.Name(id=name, ctx=ast.Load()), str(typ))))
             if s.requires is not None:
                 with self._bind(names):
                     precondition = self.expr(s.requires)
@@ -345,14 +407,15 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                 params = s.params if s.declared_pure and s.typ == BOOL else ()
                 body.append(_assign("_b_result", self.expr(s.expr, rule_params=params)))
             if s.ensures is not None:
-                # `result` is an expression-scope pseudo-variable, not a mutable B binding.
                 with self._bind([*names, "result"]):
                     condition = self.expr(s.ensures)
+
                 class ReplaceResult(ast.NodeTransformer):
                     def visit_Name(self, node):
                         if node.id == "result":
                             return ast.copy_location(ast.Name(id="_b_result", ctx=ast.Load()), node)
                         return node
+
                 condition = ReplaceResult().visit(condition)
                 body.append(ast.If(test=ast.UnaryOp(op=ast.Not(), operand=condition),
                     body=[ast.Raise(exc=ast.Call(func=ast.Name(id="_b_contract_error", ctx=ast.Load()),
@@ -372,6 +435,13 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
 
     def lower(self, program: ProgramIR) -> ast.Module:
         self._helpers.clear()
+        self._used_builtins.clear()
+        self._has_records = bool(program.records)
+        self._used_record_with = False
+        self._used_from_json = False
+
+        statements = [self.statement(s) for s in program.statements]
+
         builtins = ast.ImportFrom(module="builtins", names=[
             ast.alias(name="print", asname="_b_print"),
             ast.alias(name="getattr", asname="_b_getattr"),
@@ -379,13 +449,30 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
             ast.alias(name="enumerate", asname="_b_enumerate"),
             ast.alias(name="range", asname="_b_range"),
         ], level=0)
-        body = [builtins, ast.ImportFrom(module="b_lang.runtime", names=[
+        rt_names = [
             ast.alias(name="py_module", asname="_b_py"),
             ast.alias(name="net_module", asname="_b_net"),
             ast.alias(name="guard", asname="_b_guard"),
             ast.alias(name="BAssertionError", asname="_b_assertion_error"),
             ast.alias(name="BContractError", asname="_b_contract_error"),
-        ], level=0)]
+        ]
+        if any(s.op == "import" and s.backend == "go" for s in program.statements):
+            rt_names.append(ast.alias(name="go_module", asname="_b_go"))
+        if any(s.op == "import" and s.backend == "rs" for s in program.statements):
+            rt_names.append(ast.alias(name="rs_module", asname="_b_rs"))
+        for bname in sorted(self._used_builtins):
+            rt_names.append(ast.alias(name=f"b_{bname}", asname=_BUILTIN_MAP[bname]))
+        if self._used_record_with:
+            rt_names.append(ast.alias(name="b_record_with", asname="_b_record_with"))
+        if self._used_from_json:
+            rt_names.append(ast.alias(name="b_from_json", asname="_b_from_json"))
+
+        body: list[ast.stmt] = [builtins, ast.ImportFrom(module="b_lang.runtime", names=rt_names, level=0)]
+        if self._has_records:
+            rec_keys = [ast.Constant(r.name) for r in program.records]
+            rec_vals = [ast.Constant(tuple((n, str(t)) for n, t in r.fields)) for r in program.records]
+            body.append(ast.Assign(targets=[ast.Name(id="_b_records", ctx=ast.Store())],
+                                   value=ast.Dict(keys=rec_keys, values=rec_vals)))
         if any(s.op == "import" and s.backend == "js" for s in program.statements):
             signatures = []
             for symbol in program.foreign_symbols:
@@ -401,7 +488,6 @@ for _b_pos, _b_item in _b_enumerate(_b_source):
                 "_b_js_module = _b_js_session.module"
             ).body
             body.extend(setup)
-        statements = [self.statement(s) for s in program.statements]
         body.extend(self._helpers)
         body.extend(statements)
         return ast.fix_missing_locations(ast.Module(body=body, type_ignores=[]))

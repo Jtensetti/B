@@ -1,0 +1,133 @@
+{
+  "run_id": "T2_telemetry_sla__csharp__s3",
+  "task_id": "T2_telemetry_sla",
+  "lang": "C#",
+  "solver_id": 3,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T2_telemetry_sla__csharp__s3",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s3/stage_0_attempt_1.cs",
+          "full_tokens": 819,
+          "added_tokens": 819,
+          "diff_tokens": 819,
+          "bytes": 3700,
+          "lines": 119,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s3/stage_1_attempt_1.cs",
+          "full_tokens": 1031,
+          "added_tokens": 241,
+          "diff_tokens": 557,
+          "bytes": 4617,
+          "lines": 154,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s3/stage_2_attempt_1.cs",
+          "full_tokens": 1244,
+          "added_tokens": 264,
+          "diff_tokens": 607,
+          "bytes": 5642,
+          "lines": 185,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s3/stage_3_attempt_1.cs",
+          "full_tokens": 1450,
+          "added_tokens": 269,
+          "diff_tokens": 701,
+          "bytes": 6633,
+          "lines": 218,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s3/stage_4_attempt_1.cs",
+          "full_tokens": 1596,
+          "added_tokens": 231,
+          "diff_tokens": 619,
+          "bytes": 7312,
+          "lines": 235,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__csharp__s3/stage_5_attempt_1.cs",
+          "full_tokens": 1833,
+          "added_tokens": 265,
+          "diff_tokens": 708,
+          "bytes": 8413,
+          "lines": 274,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "using System.Text;\nusing System.Text.Json;\nusing System.Text.Json.Serialization;\n\nnamespace TelemetrySlaAuditor;\n\npublic sealed record TelemetryInput(\n    [property: JsonPropertyName(\"sla_s\")] double SlaSeconds,\n    [property: JsonPropertyName(\"samples\")] IReadOnlyList<TelemetrySample> Samples);\n\npublic sealed record TelemetrySample(\n    [property: JsonPropertyName(\"service\")] string Service,\n    [property: JsonPropertyName(\"ms\")] long Ms,\n    [property: JsonPropertyName(\"offset\")] long Offset);\n\npublic sealed record NormalizedSample(\n    string Service,\n    long Ms,\n    long Offset);\n\npublic enum LatencySeverity\n{\n    Ok,\n    Warn,\n    Slow,\n    Critical\n}\n\npublic sealed record TelemetrySummary(\n    [property: JsonPropertyName(\"count\")] int Count,\n    [property: JsonPropertyName(\"breaches\")] int Breaches,\n    [property: JsonPropertyName(\"overage_ms\")] long OverageMs,\n    [property: JsonPropertyName(\"max_ms\")] long MaxMs,\n    [property: JsonPropertyName(\"mean_ms\")] long MeanMs,\n    [property: JsonPropertyName(\"bucket_zero\")] int BucketZero,\n    [property: JsonPropertyName(\"critical\")] int Critical,\n    [property: JsonPropertyName(\"warn_or_worse\")] int WarnOrWorse,\n    [property: JsonPropertyName(\"consecutive_breaches\")] int ConsecutiveBreaches,\n    [property: JsonPropertyName(\"spike_steps\")] int SpikeSteps,\n    [property: JsonPropertyName(\"invalid_labels\")] int InvalidLabels,\n    [property: JsonPropertyName(\"exempt\")] int Exempt,\n    [property: JsonPropertyName(\"regressed\")] int Regressed,\n    [property: JsonPropertyName(\"status\")] string Status);\n\npublic static class Program\n{\n    private const double MillisecondsPerSecond = 1000.0;\n    private const long BucketModulus = 4;\n    private const long SpikeThresholdMs = 100;\n    private const long RegressionThresholdMs = 300;\n    private const int MinServiceCodePoints = 2;\n    private const int MaxServiceCodePoints = 12;\n    private const string MaintenanceServiceName = \"healthcheck\";\n\n    public static void Main()\n    {\n        string rawInput = Console.In.ReadToEnd();\n        TelemetryInput input = JsonSerializer.Deserialize<TelemetryInput>(rawInput)\n            ?? throw new InvalidDataException(\"Input JSON could not be deserialized.\");\n\n        TelemetrySummary summary = Evaluate(input);\n        Console.WriteLine(JsonSerializer.Serialize(summary));\n    }\n\n    private static TelemetrySummary Evaluate(TelemetryInput input)\n    {\n        double slaMs = input.SlaSeconds * MillisecondsPerSecond;\n        long slaMsInt = RoundHalfToEven(slaMs);\n\n        List<NormalizedSample> normalized = NormalizeSamples(input.Samples);\n        int count = normalized.Count;\n        if (count == 0)\n        {\n            return new TelemetrySummary(\n                Count: 0,\n                Breaches: 0,\n                OverageMs: 0,\n                MaxMs: 0,\n                MeanMs: 0,\n                BucketZero: 0,\n                Critical: 0,\n                WarnOrWorse: 0,\n                ConsecutiveBreaches: 0,\n                SpikeSteps: 0,\n                InvalidLabels: 0,\n                Exempt: 0,\n                Regressed: 0,\n                Status: \"green\");\n        }\n\n        int breaches = 0;\n        long overageMs = 0;\n        long maxMs = normalized[0].Ms;\n        long earlierMinMs = normalized[0].Ms;\n        long validSumMs = 0;\n        int validCount = 0;\n        int invalidLabels = 0;\n        int bucketZero = 0;\n        int critical = 0;\n        int warnOrWorse = 0;\n        int consecutiveBreaches = 0;\n        int spikeSteps = 0;\n        int exempt = 0;\n        int regressed = 0;\n\n        NormalizedSample? previous = null;\n        bool previousBreached = false;\n\n        foreach (NormalizedSample sample in normalized)\n        {\n            bool isBucketZero = RemEuclid(sample.Offset, BucketModulus) == 0;\n            bool rawBreach = IsRawBreach(sample.Ms, slaMs);\n            bool isExempt = IsMaintenanceExempt(sample.Service, isBucketZero);\n            bool breached = rawBreach && !isExempt;\n\n            if (rawBreach && isExempt)\n            {\n                exempt++;\n            }\n\n            if (breached)\n            {\n                breaches++;\n                overageMs += sample.Ms - slaMsInt;\n            }\n\n            if (previous is not null)\n            {\n                if (previousBreached && breached)\n                {\n                    consecutiveBreaches++;\n                }\n\n                if (sample.Ms > previous.Ms + SpikeThresholdMs)\n                {\n                    spikeSteps++;\n                }\n\n                if (earlierMinMs + RegressionThresholdMs < sample.Ms)\n                {\n                    regressed++;\n                }\n            }\n\n            if (sample.Ms < earlierMinMs)\n            {\n                earlierMinMs = sample.Ms;\n            }\n\n            if (sample.Ms > maxMs)\n            {\n                maxMs = sample.Ms;\n            }\n\n            if (IsValidServiceLabel(sample.Service))\n            {\n                validSumMs += sample.Ms;\n                validCount++;\n            }\n            else\n            {\n                invalidLabels++;\n            }\n\n            if (isBucketZero)\n            {\n                bucketZero++;\n            }\n\n            LatencySeverity severity = ClassifySeverity(sample.Ms);\n            if (severity == LatencySeverity.Critical)\n            {\n                critical++;\n            }\n\n            if (severity != LatencySeverity.Ok)\n            {\n                warnOrWorse++;\n            }\n\n            previous = sample;\n            previousBreached = breached;\n        }\n\n        long meanMs = validCount == 0 ? 0 : RoundHalfToEven((double)validSumMs / validCount);\n        string status = DetermineStatus(consecutiveBreaches, critical, breaches, invalidLabels);\n\n        return new TelemetrySummary(\n            Count: count,\n            Breaches: breaches,\n            OverageMs: overageMs,\n            MaxMs: maxMs,\n            MeanMs: meanMs,\n            BucketZero: bucketZero,\n            Critical: critical,\n            WarnOrWorse: warnOrWorse,\n            ConsecutiveBreaches: consecutiveBreaches,\n            SpikeSteps: spikeSteps,\n            InvalidLabels: invalidLabels,\n            Exempt: exempt,\n            Regressed: regressed,\n            Status: status);\n    }\n\n    private static string DetermineStatus(\n        int consecutiveBreaches,\n        int critical,\n        int breaches,\n        int invalidLabels)\n    {\n        if (consecutiveBreaches >= 2 || critical > 0)\n        {\n            return \"red\";\n        }\n\n        if (breaches > 0 || invalidLabels > 0)\n        {\n            return \"yellow\";\n        }\n\n        return \"green\";\n    }\n\n    private static bool IsRawBreach(long ms, double slaMs) => (double)ms > slaMs;\n\n    private static bool IsMaintenanceExempt(string normalizedService, bool isBucketZero) =>\n        isBucketZero && string.Equals(normalizedService, MaintenanceServiceName, StringComparison.Ordinal);\n\n    private static bool IsValidServiceLabel(string normalizedService)\n    {\n        int codePoints = CountCodePoints(normalizedService);\n        return codePoints >= MinServiceCodePoints && codePoints <= MaxServiceCodePoints;\n    }\n\n    private static int CountCodePoints(string text)\n    {\n        int count = 0;\n        foreach (Rune _ in text.EnumerateRunes())\n        {\n            count++;\n        }\n\n        return count;\n    }\n\n    private static LatencySeverity ClassifySeverity(long ms) => ms switch\n    {\n        < 200 => LatencySeverity.Ok,\n        <= 500 => LatencySeverity.Warn,\n        <= 1000 => LatencySeverity.Slow,\n        _ => LatencySeverity.Critical\n    };\n\n    private static List<NormalizedSample> NormalizeSamples(IReadOnlyList<TelemetrySample> samples)\n    {\n        var result = new List<NormalizedSample>(samples.Count);\n        foreach (TelemetrySample sample in samples)\n        {\n            string normalizedService = sample.Service.Trim().ToLowerInvariant();\n            result.Add(new NormalizedSample(normalizedService, sample.Ms, sample.Offset));\n        }\n\n        return result;\n    }\n\n    private static long RoundHalfToEven(double value) =>\n        (long)Math.Round(value, MidpointRounding.ToEven);\n\n    private static long RemEuclid(long value, long divisor)\n    {\n        long remainder = value % divisor;\n        return remainder < 0 ? remainder + Math.Abs(divisor) : remainder;\n    }\n}\n",
+  "own_language_audit": {}
+}

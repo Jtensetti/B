@@ -1,0 +1,133 @@
+{
+  "run_id": "T2_telemetry_sla__go__s1",
+  "task_id": "T2_telemetry_sla",
+  "lang": "Go",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T2_telemetry_sla__go__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__go__s1/stage_0_attempt_1.go",
+          "full_tokens": 640,
+          "added_tokens": 640,
+          "diff_tokens": 640,
+          "bytes": 2006,
+          "lines": 109,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__go__s1/stage_1_attempt_1.go",
+          "full_tokens": 797,
+          "added_tokens": 278,
+          "diff_tokens": 591,
+          "bytes": 2511,
+          "lines": 136,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__go__s1/stage_2_attempt_1.go",
+          "full_tokens": 940,
+          "added_tokens": 331,
+          "diff_tokens": 706,
+          "bytes": 3089,
+          "lines": 154,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__go__s1/stage_3_attempt_1.go",
+          "full_tokens": 1062,
+          "added_tokens": 163,
+          "diff_tokens": 511,
+          "bytes": 3524,
+          "lines": 172,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__go__s1/stage_4_attempt_1.go",
+          "full_tokens": 1143,
+          "added_tokens": 119,
+          "diff_tokens": 374,
+          "bytes": 3789,
+          "lines": 182,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__go__s1/stage_5_attempt_1.go",
+          "full_tokens": 1331,
+          "added_tokens": 216,
+          "diff_tokens": 561,
+          "bytes": 4487,
+          "lines": 209,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "package main\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"math\"\n\t\"os\"\n\t\"strings\"\n\t\"unicode/utf8\"\n)\n\ntype Sample struct {\n\tService string `json:\"service\"`\n\tMS      int64  `json:\"ms\"`\n\tOffset  int64  `json:\"offset\"`\n}\n\ntype Input struct {\n\tSLASeconds float64  `json:\"sla_s\"`\n\tSamples    []Sample `json:\"samples\"`\n}\n\ntype Output struct {\n\tCount               int64 `json:\"count\"`\n\tBreaches            int64 `json:\"breaches\"`\n\tOverageMS           int64 `json:\"overage_ms\"`\n\tMaxMS               int64 `json:\"max_ms\"`\n\tMeanMS              int64 `json:\"mean_ms\"`\n\tBucketZero          int64 `json:\"bucket_zero\"`\n\tCritical            int64 `json:\"critical\"`\n\tWarnOrWorse         int64 `json:\"warn_or_worse\"`\n\tConsecutiveBreaches int64 `json:\"consecutive_breaches\"`\n\tSpikeSteps          int64 `json:\"spike_steps\"`\n\tInvalidLabels       int64  `json:\"invalid_labels\"`\n\tExempt              int64  `json:\"exempt\"`\n\tRegressed           int64  `json:\"regressed\"`\n\tStatus              string `json:\"status\"`\n}\n\nfunc normalizeService(service string) string {\n\treturn strings.ToLower(strings.TrimSpace(service))\n}\n\nfunc isValidServiceLabel(normalized string) bool {\n\tn := utf8.RuneCountInString(normalized)\n\treturn n >= 2 && n <= 12\n}\n\nfunc classifyLatency(ms int64) string {\n\tswitch {\n\tcase ms < 200:\n\t\treturn \"ok\"\n\tcase ms <= 500:\n\t\treturn \"warn\"\n\tcase ms <= 1000:\n\t\treturn \"slow\"\n\tdefault:\n\t\treturn \"critical\"\n\t}\n}\n\nfunc overallStatus(consecutiveBreaches, critical, breaches, invalidLabels int64) string {\n\tswitch {\n\tcase consecutiveBreaches >= 2 || critical > 0:\n\t\treturn \"red\"\n\tcase breaches > 0 || invalidLabels > 0:\n\t\treturn \"yellow\"\n\tdefault:\n\t\treturn \"green\"\n\t}\n}\n\nfunc remEuclid(a, b int64) int64 {\n\tr := a % b\n\tif r < 0 {\n\t\tif b < 0 {\n\t\t\tr -= b\n\t\t} else {\n\t\t\tr += b\n\t\t}\n\t}\n\treturn r\n}\n\nfunc roundHalfToEven(v float64) int64 {\n\treturn int64(math.RoundToEven(v))\n}\n\nfunc audit(in Input) Output {\n\tslaMS := in.SLASeconds * 1000.0\n\tslaMSInt := roundHalfToEven(slaMS)\n\n\tcount := int64(len(in.Samples))\n\tif count == 0 {\n\t\treturn Output{\n\t\t\tStatus: \"green\",\n\t\t}\n\t}\n\n\tvar breaches int64\n\tvar overageMS int64\n\tvar validSumMS int64\n\tvar validCount int64\n\tvar invalidLabels int64\n\tvar bucketZero int64\n\tvar critical int64\n\tvar warnOrWorse int64\n\tvar consecutiveBreaches int64\n\tvar spikeSteps int64\n\tvar exempt int64\n\tvar regressed int64\n\tmaxMS := in.Samples[0].MS\n\tminEarlierMS := in.Samples[0].MS\n\n\tprevBreach := false\n\tfor i, sample := range in.Samples {\n\t\tnormalized := normalizeService(sample.Service)\n\t\tif isValidServiceLabel(normalized) {\n\t\t\tvalidCount++\n\t\t\tvalidSumMS += sample.MS\n\t\t} else {\n\t\t\tinvalidLabels++\n\t\t}\n\n\t\tinBucketZero := remEuclid(sample.Offset, 4) == 0\n\t\tif inBucketZero {\n\t\t\tbucketZero++\n\t\t}\n\n\t\trawBreach := float64(sample.MS) > slaMS\n\t\tisExempt := rawBreach && normalized == \"healthcheck\" && inBucketZero\n\t\tif isExempt {\n\t\t\texempt++\n\t\t}\n\t\tisBreach := rawBreach && !isExempt\n\t\tif isBreach {\n\t\t\tbreaches++\n\t\t\toverageMS += sample.MS - slaMSInt\n\t\t}\n\t\tif sample.MS > maxMS {\n\t\t\tmaxMS = sample.MS\n\t\t}\n\n\t\tseverity := classifyLatency(sample.MS)\n\t\tif severity == \"critical\" {\n\t\t\tcritical++\n\t\t}\n\t\tif severity != \"ok\" {\n\t\t\twarnOrWorse++\n\t\t}\n\n\t\tif i > 0 {\n\t\t\tif prevBreach && isBreach {\n\t\t\t\tconsecutiveBreaches++\n\t\t\t}\n\t\t\tif sample.MS > in.Samples[i-1].MS+100 {\n\t\t\t\tspikeSteps++\n\t\t\t}\n\t\t\tif minEarlierMS+300 < sample.MS {\n\t\t\t\tregressed++\n\t\t\t}\n\t\t\tif sample.MS < minEarlierMS {\n\t\t\t\tminEarlierMS = sample.MS\n\t\t\t}\n\t\t}\n\t\tprevBreach = isBreach\n\t}\n\n\tvar meanMS int64\n\tif validCount > 0 {\n\t\tmeanMS = roundHalfToEven(float64(validSumMS) / float64(validCount))\n\t}\n\n\tstatus := overallStatus(consecutiveBreaches, critical, breaches, invalidLabels)\n\n\treturn Output{\n\t\tCount:               count,\n\t\tBreaches:            breaches,\n\t\tOverageMS:           overageMS,\n\t\tMaxMS:               maxMS,\n\t\tMeanMS:              meanMS,\n\t\tBucketZero:          bucketZero,\n\t\tCritical:            critical,\n\t\tWarnOrWorse:         warnOrWorse,\n\t\tConsecutiveBreaches: consecutiveBreaches,\n\t\tSpikeSteps:          spikeSteps,\n\t\tInvalidLabels:       invalidLabels,\n\t\tExempt:              exempt,\n\t\tRegressed:           regressed,\n\t\tStatus:              status,\n\t}\n}\n\nfunc main() {\n\tvar in Input\n\tif err := json.NewDecoder(os.Stdin).Decode(&in); err != nil {\n\t\tfmt.Fprintf(os.Stderr, \"failed to decode input: %v\\n\", err)\n\t\tos.Exit(1)\n\t}\n\n\tout := audit(in)\n\n\tenc := json.NewEncoder(os.Stdout)\n\tenc.SetEscapeHTML(false)\n\tif err := enc.Encode(out); err != nil {\n\t\tfmt.Fprintf(os.Stderr, \"failed to encode output: %v\\n\", err)\n\t\tos.Exit(1)\n\t}\n}\n",
+  "own_language_audit": {}
+}

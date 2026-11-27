@@ -1,0 +1,133 @@
+{
+  "run_id": "T1_release_gate__rust__s2",
+  "task_id": "T1_release_gate",
+  "lang": "Rust",
+  "solver_id": 2,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__rust__s2",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__rust__s2/stage_0_attempt_1.rs",
+          "full_tokens": 2049,
+          "added_tokens": 2049,
+          "diff_tokens": 2049,
+          "bytes": 7903,
+          "lines": 309,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__rust__s2/stage_1_attempt_1.rs",
+          "full_tokens": 2262,
+          "added_tokens": 249,
+          "diff_tokens": 561,
+          "bytes": 8679,
+          "lines": 350,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__rust__s2/stage_2_attempt_1.rs",
+          "full_tokens": 2349,
+          "added_tokens": 104,
+          "diff_tokens": 298,
+          "bytes": 9026,
+          "lines": 360,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__rust__s2/stage_3_attempt_1.rs",
+          "full_tokens": 2494,
+          "added_tokens": 279,
+          "diff_tokens": 743,
+          "bytes": 9824,
+          "lines": 391,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__rust__s2/stage_4_attempt_1.rs",
+          "full_tokens": 2593,
+          "added_tokens": 100,
+          "diff_tokens": 347,
+          "bytes": 10175,
+          "lines": 403,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__rust__s2/stage_5_attempt_1.rs",
+          "full_tokens": 2725,
+          "added_tokens": 167,
+          "diff_tokens": 535,
+          "bytes": 10742,
+          "lines": 413,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "use serde::{Deserialize, Serialize};\nuse std::io::{self, Read};\n\nconst KB_PER_MB: f64 = 1024.0;\n\n#[derive(Debug, Deserialize)]\nstruct GateInput {\n    min_range: String,\n    budget_mb: f64,\n    artifacts: Vec<ArtifactInput>,\n}\n\n#[derive(Debug, Deserialize)]\nstruct ArtifactInput {\n    raw_path: String,\n    channel: String,\n    size_kb: i64,\n}\n\n#[derive(Debug, Serialize)]\nstruct GateOutput {\n    total: usize,\n    eligible: usize,\n    oversize: usize,\n    total_kb: i64,\n    max_kb: i64,\n    consecutive_rejects: usize,\n    freeze: bool,\n    exempt: usize,\n    eligible_kb: i64,\n    within_budget: bool,\n    recommended: Option<String>,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nenum SizeTier {\n    Tiny,\n    Standard,\n    Large,\n    Oversize,\n}\n\nimpl SizeTier {\n    fn classify(size_kb: i64) -> Self {\n        if size_kb < 100 {\n            Self::Tiny\n        } else if size_kb <= 1000 {\n            Self::Standard\n        } else if size_kb <= 5000 {\n            Self::Large\n        } else {\n            Self::Oversize\n        }\n    }\n\n    fn is_oversize(self) -> bool {\n        matches!(self, Self::Oversize)\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nenum Channel {\n    Stable,\n    Beta,\n    Lts,\n}\n\nimpl Channel {\n    fn parse(s: &str) -> Option<Self> {\n        match s {\n            \"stable\" => Some(Self::Stable),\n            \"beta\" => Some(Self::Beta),\n            \"lts\" => Some(Self::Lts),\n            _ => None,\n        }\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct SemVer {\n    major: u64,\n    minor: u64,\n    patch: u64,\n    has_prerelease: bool,\n}\n\nimpl SemVer {\n    fn parse(s: &str) -> Option<Self> {\n        let (core, prerelease) = match s.split_once('-') {\n            Some((c, p)) => (c, Some(p)),\n            None => (s, None),\n        };\n\n        let mut core_parts = core.split('.');\n        let major = parse_semver_number(core_parts.next()?)?;\n        let minor = parse_semver_number(core_parts.next()?)?;\n        let patch = parse_semver_number(core_parts.next()?)?;\n        if core_parts.next().is_some() {\n            return None;\n        }\n\n        if let Some(pre) = prerelease {\n            if pre.is_empty() {\n                return None;\n            }\n            for ident in pre.split('.') {\n                if ident.is_empty()\n                    || !ident\n                        .bytes()\n                        .all(|b| b.is_ascii_alphanumeric() || b == b'-')\n                {\n                    return None;\n                }\n                if ident.bytes().all(|b| b.is_ascii_digit())\n                    && ident.len() > 1\n                    && ident.starts_with('0')\n                {\n                    return None;\n                }\n            }\n        }\n\n        Some(Self {\n            major,\n            minor,\n            patch,\n            has_prerelease: prerelease.is_some(),\n        })\n    }\n\n    fn core_tuple(self) -> (u64, u64, u64) {\n        (self.major, self.minor, self.patch)\n    }\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nstruct CaretRange {\n    lower_inclusive: (u64, u64, u64),\n    upper_exclusive: (u64, u64, u64),\n}\n\nimpl CaretRange {\n    fn parse(spec: &str) -> Option<Self> {\n        let rest = spec.trim().strip_prefix('^')?.trim_start();\n        let mut parts = rest.split('.');\n        let major = parse_semver_number(parts.next()?)?;\n        let minor = parse_semver_number(parts.next()?)?;\n        let patch = parse_semver_number(parts.next()?)?;\n        if parts.next().is_some() {\n            return None;\n        }\n\n        let upper_exclusive = if major > 0 {\n            (major.checked_add(1)?, 0, 0)\n        } else if minor > 0 {\n            (0, minor.checked_add(1)?, 0)\n        } else {\n            (0, 0, patch.checked_add(1)?)\n        };\n\n        Some(Self {\n            lower_inclusive: (major, minor, patch),\n            upper_exclusive,\n        })\n    }\n\n    fn satisfies(&self, ver: SemVer) -> bool {\n        if ver.has_prerelease {\n            return false;\n        }\n        let v = ver.core_tuple();\n        v >= self.lower_inclusive && v < self.upper_exclusive\n    }\n}\n\nfn parse_semver_number(s: &str) -> Option<u64> {\n    if s.is_empty() || !s.bytes().all(|b| b.is_ascii_digit()) {\n        return None;\n    }\n    if s.len() > 1 && s.starts_with('0') {\n        return None;\n    }\n    s.parse::<u64>().ok()\n}\n\nfn hex_val(b: u8) -> Option<u8> {\n    match b {\n        b'0'..=b'9' => Some(b - b'0'),\n        b'a'..=b'f' => Some(b - b'a' + 10),\n        b'A'..=b'F' => Some(b - b'A' + 10),\n        _ => None,\n    }\n}\n\nfn url_decode(input: &str) -> String {\n    let bytes = input.as_bytes();\n    let mut out = Vec::with_capacity(bytes.len());\n    let mut i = 0;\n    while i < bytes.len() {\n        if bytes[i] == b'%' && i + 2 < bytes.len() {\n            if let (Some(hi), Some(lo)) = (hex_val(bytes[i + 1]), hex_val(bytes[i + 2])) {\n                out.push((hi << 4) | lo);\n                i += 3;\n                continue;\n            }\n        }\n        out.push(bytes[i]);\n        i += 1;\n    }\n    String::from_utf8_lossy(&out).into_owned()\n}\n\nfn normalize_posix_path(path: &str) -> String {\n    let is_abs = path.starts_with('/');\n    let mut segments: Vec<&str> = Vec::new();\n\n    for seg in path.split('/') {\n        if seg.is_empty() || seg == \".\" {\n            continue;\n        }\n        if seg == \"..\" {\n            if let Some(&last) = segments.last() {\n                if last != \"..\" {\n                    segments.pop();\n                    continue;\n                }\n            }\n            if !is_abs {\n                segments.push(\"..\");\n            }\n        } else {\n            segments.push(seg);\n        }\n    }\n\n    if is_abs {\n        format!(\"/{}\", segments.join(\"/\"))\n    } else if segments.is_empty() {\n        \".\".to_string()\n    } else {\n        segments.join(\"/\")\n    }\n}\n\nfn split_posix_path(norm: &str) -> (&str, &str) {\n    match norm.rsplit_once('/') {\n        Some((\"\", base)) => (\"/\", base),\n        Some((dir, base)) => (dir, base),\n        None => (\".\", norm),\n    }\n}\n\nfn is_valid_pkg(pkg: &str) -> bool {\n    !pkg.is_empty()\n        && pkg\n            .bytes()\n            .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')\n}\n\nfn is_valid_ver_pattern(ver: &str) -> bool {\n    let (core, prerelease) = match ver.split_once('-') {\n        Some((c, p)) => (c, Some(p)),\n        None => (ver, None),\n    };\n\n    let mut parts = core.split('.');\n    let valid_core = match (parts.next(), parts.next(), parts.next(), parts.next()) {\n        (Some(a), Some(b), Some(c), None) => {\n            !a.is_empty()\n                && a.bytes().all(|ch| ch.is_ascii_digit())\n                && !b.is_empty()\n                && b.bytes().all(|ch| ch.is_ascii_digit())\n                && !c.is_empty()\n                && c.bytes().all(|ch| ch.is_ascii_digit())\n        }\n        _ => false,\n    };\n    if !valid_core {\n        return false;\n    }\n\n    if let Some(pre) = prerelease {\n        if pre.is_empty()\n            || !pre\n                .bytes()\n                .all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'.')\n        {\n            return false;\n        }\n    }\n\n    true\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nenum Eligibility {\n    Standard(SemVer),\n    Exempt(SemVer),\n    Rejected,\n}\n\nfn evaluate_artifact(\n    artifact: &ArtifactInput,\n    tier: SizeTier,\n    range: Option<CaretRange>,\n) -> Eligibility {\n    if tier.is_oversize() {\n        return Eligibility::Rejected;\n    }\n\n    let decoded = url_decode(&artifact.raw_path);\n    let norm = normalize_posix_path(&decoded);\n    let (pkg, ver_str) = split_posix_path(&norm);\n\n    if !is_valid_pkg(pkg) || !is_valid_ver_pattern(ver_str) {\n        return Eligibility::Rejected;\n    }\n    let Some(channel) = Channel::parse(&artifact.channel) else {\n        return Eligibility::Rejected;\n    };\n    let Some(ver) = SemVer::parse(ver_str) else {\n        return Eligibility::Rejected;\n    };\n\n    if let Some(r) = range {\n        if r.satisfies(ver) {\n            return Eligibility::Standard(ver);\n        }\n    }\n\n    if channel == Channel::Lts && pkg.contains(\"security\") && !ver.has_prerelease {\n        return Eligibility::Exempt(ver);\n    }\n\n    Eligibility::Rejected\n}\n\nfn process(input: &GateInput) -> GateOutput {\n    let range = CaretRange::parse(&input.min_range);\n    let total = input.artifacts.len();\n    let mut eligible = 0usize;\n    let mut oversize = 0usize;\n    let mut total_kb = 0i64;\n    let mut max_kb = 0i64;\n    let mut consecutive_rejects = 0usize;\n    let mut prev_rejected = false;\n    let mut exempt = 0usize;\n    let mut eligible_kb = 0i64;\n    let mut max_eligible_ver: Option<SemVer> = None;\n\n    for (idx, artifact) in input.artifacts.iter().enumerate() {\n        let tier = SizeTier::classify(artifact.size_kb);\n        if tier.is_oversize() {\n            oversize += 1;\n        }\n        total_kb += artifact.size_kb;\n        if idx == 0 || artifact.size_kb > max_kb {\n            max_kb = artifact.size_kb;\n        }\n        let status = evaluate_artifact(artifact, tier, range);\n        match status {\n            Eligibility::Standard(ver) => {\n                eligible += 1;\n                eligible_kb += artifact.size_kb;\n                prev_rejected = false;\n                if max_eligible_ver.map_or(true, |best| ver.core_tuple() > best.core_tuple()) {\n                    max_eligible_ver = Some(ver);\n                }\n            }\n            Eligibility::Exempt(ver) => {\n                eligible += 1;\n                exempt += 1;\n                eligible_kb += artifact.size_kb;\n                prev_rejected = false;\n                if max_eligible_ver.map_or(true, |best| ver.core_tuple() > best.core_tuple()) {\n                    max_eligible_ver = Some(ver);\n                }\n            }\n            Eligibility::Rejected => {\n                if prev_rejected {\n                    consecutive_rejects += 1;\n                }\n                prev_rejected = true;\n            }\n        }\n    }\n\n    let within_budget = (eligible_kb as f64) <= input.budget_mb * KB_PER_MB;\n    let recommended = max_eligible_ver.map(|v| format!(\"{}.{}.{}\", v.major, v.minor, v.patch));\n\n    GateOutput {\n        total,\n        eligible,\n        oversize,\n        total_kb,\n        max_kb,\n        consecutive_rejects,\n        freeze: consecutive_rejects >= 2,\n        exempt,\n        eligible_kb,\n        within_budget,\n        recommended,\n    }\n}\n\nfn main() -> Result<(), Box<dyn std::error::Error>> {\n    let mut raw = String::new();\n    io::stdin().read_to_string(&mut raw)?;\n    let input: GateInput = serde_json::from_str(&raw)?;\n    let output = process(&input);\n    println!(\"{}\", serde_json::to_string(&output)?);\n    Ok(())\n}\n",
+  "own_language_audit": {}
+}

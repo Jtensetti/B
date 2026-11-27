@@ -28,9 +28,11 @@ def check_target(name: str):
 def check_declaration(module, member, signature):
     if module == POSIX or len(member) != 1 or member[0].startswith("_"):
         raise BError("E_FOREIGN", "Declare a public, directly named export of an npm package")
+
     def supported(typ):
         return (typ.name in ("Bool", "Text", "Int", "Float")
                 or typ.name in ("Option", "List", "Dict") and all(supported(t) for t in typ.args))
+
     if not all(supported(t) for t in (*signature.params, signature.result)):
         raise BError("E_FOREIGN", "Node declarations require concrete JSON value types")
 

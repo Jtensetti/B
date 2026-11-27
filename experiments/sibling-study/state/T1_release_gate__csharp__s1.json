@@ -1,0 +1,133 @@
+{
+  "run_id": "T1_release_gate__csharp__s1",
+  "task_id": "T1_release_gate",
+  "lang": "C#",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__csharp__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__csharp__s1/stage_0_attempt_1.cs",
+          "full_tokens": 2431,
+          "added_tokens": 2431,
+          "diff_tokens": 2431,
+          "bytes": 10847,
+          "lines": 402,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__csharp__s1/stage_1_attempt_1.cs",
+          "full_tokens": 2555,
+          "added_tokens": 135,
+          "diff_tokens": 378,
+          "bytes": 11347,
+          "lines": 419,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__csharp__s1/stage_2_attempt_1.cs",
+          "full_tokens": 2668,
+          "added_tokens": 161,
+          "diff_tokens": 412,
+          "bytes": 11925,
+          "lines": 435,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__csharp__s1/stage_3_attempt_1.cs",
+          "full_tokens": 2854,
+          "added_tokens": 319,
+          "diff_tokens": 794,
+          "bytes": 12741,
+          "lines": 456,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__csharp__s1/stage_4_attempt_1.cs",
+          "full_tokens": 2949,
+          "added_tokens": 116,
+          "diff_tokens": 404,
+          "bytes": 13151,
+          "lines": 464,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__csharp__s1/stage_5_attempt_1.cs",
+          "full_tokens": 3080,
+          "added_tokens": 233,
+          "diff_tokens": 799,
+          "bytes": 13759,
+          "lines": 476,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "using System.Text.Json;\nusing System.Text.Json.Serialization;\nusing System.Text.RegularExpressions;\n\nnamespace ReleaseGate;\n\npublic sealed record ReleaseInput(\n    [property: JsonPropertyName(\"min_range\")] string MinRange,\n    [property: JsonPropertyName(\"budget_mb\")] double BudgetMb,\n    [property: JsonPropertyName(\"artifacts\")] List<ArtifactInput> Artifacts\n);\n\npublic sealed record ArtifactInput(\n    [property: JsonPropertyName(\"raw_path\")] string RawPath,\n    [property: JsonPropertyName(\"channel\")] string Channel,\n    [property: JsonPropertyName(\"size_kb\")] long SizeKb\n);\n\npublic sealed record ReleaseSummary(\n    [property: JsonPropertyName(\"total\")] int Total,\n    [property: JsonPropertyName(\"eligible\")] int Eligible,\n    [property: JsonPropertyName(\"oversize\")] int Oversize,\n    [property: JsonPropertyName(\"total_kb\")] long TotalKb,\n    [property: JsonPropertyName(\"max_kb\")] long MaxKb,\n    [property: JsonPropertyName(\"consecutive_rejects\")] int ConsecutiveRejects,\n    [property: JsonPropertyName(\"freeze\")] bool Freeze,\n    [property: JsonPropertyName(\"exempt\")] int Exempt,\n    [property: JsonPropertyName(\"eligible_kb\")] long EligibleKb,\n    [property: JsonPropertyName(\"within_budget\")] bool WithinBudget,\n    [property: JsonPropertyName(\"recommended\")] string? Recommended\n);\n\npublic readonly record struct SemVer(long Major, long Minor, long Patch, string? Prerelease)\n    : IComparable<SemVer>\n{\n    public bool IsPrerelease => !string.IsNullOrEmpty(Prerelease);\n\n    public override string ToString() =>\n        IsPrerelease ? $\"{Major}.{Minor}.{Patch}-{Prerelease}\" : $\"{Major}.{Minor}.{Patch}\";\n\n    public static bool TryParse(string input, out SemVer version)\n    {\n        version = default;\n        if (string.IsNullOrEmpty(input))\n        {\n            return false;\n        }\n\n        string corePart = input;\n        string? prereleasePart = null;\n\n        int dashIndex = input.IndexOf('-');\n        if (dashIndex >= 0)\n        {\n            corePart = input[..dashIndex];\n            prereleasePart = input[(dashIndex + 1)..];\n            if (!IsValidPrerelease(prereleasePart))\n            {\n                return false;\n            }\n        }\n\n        string[] coreSegments = corePart.Split('.');\n        if (coreSegments.Length != 3)\n        {\n            return false;\n        }\n\n        if (!TryParseNumericIdentifier(coreSegments[0], out long major) ||\n            !TryParseNumericIdentifier(coreSegments[1], out long minor) ||\n            !TryParseNumericIdentifier(coreSegments[2], out long patch))\n        {\n            return false;\n        }\n\n        version = new SemVer(major, minor, patch, prereleasePart);\n        return true;\n    }\n\n    public int CompareTo(SemVer other)\n    {\n        int cmp = Major.CompareTo(other.Major);\n        if (cmp != 0) return cmp;\n\n        cmp = Minor.CompareTo(other.Minor);\n        if (cmp != 0) return cmp;\n\n        cmp = Patch.CompareTo(other.Patch);\n        if (cmp != 0) return cmp;\n\n        if (!IsPrerelease && !other.IsPrerelease) return 0;\n        if (!IsPrerelease) return 1;\n        if (!other.IsPrerelease) return -1;\n\n        string[] leftIds = Prerelease!.Split('.');\n        string[] rightIds = other.Prerelease!.Split('.');\n        int minLen = Math.Min(leftIds.Length, rightIds.Length);\n\n        for (int i = 0; i < minLen; i++)\n        {\n            bool leftIsNum = TryParseNumericIdentifier(leftIds[i], out long leftNum);\n            bool rightIsNum = TryParseNumericIdentifier(rightIds[i], out long rightNum);\n\n            if (leftIsNum && rightIsNum)\n            {\n                cmp = leftNum.CompareTo(rightNum);\n            }\n            else if (leftIsNum)\n            {\n                cmp = -1;\n            }\n            else if (rightIsNum)\n            {\n                cmp = 1;\n            }\n            else\n            {\n                cmp = string.CompareOrdinal(leftIds[i], rightIds[i]);\n            }\n\n            if (cmp != 0) return cmp;\n        }\n\n        return leftIds.Length.CompareTo(rightIds.Length);\n    }\n\n    private static bool IsValidPrerelease(string prerelease)\n    {\n        if (string.IsNullOrEmpty(prerelease))\n        {\n            return false;\n        }\n\n        string[] identifiers = prerelease.Split('.');\n        foreach (string id in identifiers)\n        {\n            if (string.IsNullOrEmpty(id))\n            {\n                return false;\n            }\n\n            bool allDigits = true;\n            foreach (char c in id)\n            {\n                bool validChar = (c >= '0' && c <= '9')\n                    || (c >= 'a' && c <= 'z')\n                    || (c >= 'A' && c <= 'Z')\n                    || c == '-';\n                if (!validChar)\n                {\n                    return false;\n                }\n                if (c < '0' || c > '9')\n                {\n                    allDigits = false;\n                }\n            }\n\n            if (allDigits && id.Length > 1 && id[0] == '0')\n            {\n                return false;\n            }\n        }\n\n        return true;\n    }\n\n    private static bool TryParseNumericIdentifier(string segment, out long value)\n    {\n        value = 0;\n        if (string.IsNullOrEmpty(segment))\n        {\n            return false;\n        }\n        if (segment.Length > 1 && segment[0] == '0')\n        {\n            return false;\n        }\n        foreach (char c in segment)\n        {\n            if (c < '0' || c > '9')\n            {\n                return false;\n            }\n        }\n        return long.TryParse(segment, out value);\n    }\n}\n\npublic sealed class CaretSemVerRange\n{\n    private readonly SemVer _lowerInclusive;\n    private readonly SemVer _upperExclusive;\n\n    private CaretSemVerRange(SemVer lowerInclusive, SemVer upperExclusive)\n    {\n        _lowerInclusive = lowerInclusive;\n        _upperExclusive = upperExclusive;\n    }\n\n    public static bool TryParse(string rangeText, out CaretSemVerRange? range)\n    {\n        range = null;\n        if (string.IsNullOrWhiteSpace(rangeText))\n        {\n            return false;\n        }\n\n        string trimmed = rangeText.Trim();\n        if (!trimmed.StartsWith('^'))\n        {\n            return false;\n        }\n\n        string versionPart = trimmed[1..].Trim();\n        if (!SemVer.TryParse(versionPart, out SemVer baseVersion) || baseVersion.IsPrerelease)\n        {\n            return false;\n        }\n\n        SemVer upper = baseVersion.Major > 0\n            ? new SemVer(baseVersion.Major + 1, 0, 0, null)\n            : baseVersion.Minor > 0\n                ? new SemVer(0, baseVersion.Minor + 1, 0, null)\n                : new SemVer(0, 0, baseVersion.Patch + 1, null);\n\n        range = new CaretSemVerRange(baseVersion, upper);\n        return true;\n    }\n\n    public bool IsSatisfiedBy(SemVer version)\n    {\n        if (version.IsPrerelease)\n        {\n            return false;\n        }\n\n        return version.CompareTo(_lowerInclusive) >= 0\n            && version.CompareTo(_upperExclusive) < 0;\n    }\n}\n\npublic static class PosixPath\n{\n    public static string Normalize(string path)\n    {\n        if (string.IsNullOrEmpty(path))\n        {\n            return \".\";\n        }\n\n        int initialSlashes = 0;\n        while (initialSlashes < path.Length && path[initialSlashes] == '/')\n        {\n            initialSlashes++;\n        }\n\n        // POSIX preserves exactly two leading slashes; 3 or more collapse to 1.\n        if (initialSlashes > 2)\n        {\n            initialSlashes = 1;\n        }\n\n        string[] rawSegments = path.Split('/');\n        List<string> resolved = new(rawSegments.Length);\n\n        foreach (string segment in rawSegments)\n        {\n            if (string.IsNullOrEmpty(segment) || segment == \".\")\n            {\n                continue;\n            }\n\n            if (segment == \"..\")\n            {\n                if (resolved.Count > 0 && resolved[^1] != \"..\")\n                {\n                    resolved.RemoveAt(resolved.Count - 1);\n                }\n                else if (initialSlashes == 0)\n                {\n                    resolved.Add(\"..\");\n                }\n            }\n            else\n            {\n                resolved.Add(segment);\n            }\n        }\n\n        string joined = string.Join('/', resolved);\n        if (initialSlashes > 0)\n        {\n            return new string('/', initialSlashes) + joined;\n        }\n\n        return joined.Length > 0 ? joined : \".\";\n    }\n\n    public static string Basename(string posixPath)\n    {\n        if (string.IsNullOrEmpty(posixPath))\n        {\n            return string.Empty;\n        }\n\n        int lastSlash = posixPath.LastIndexOf('/');\n        return lastSlash < 0 ? posixPath : posixPath[(lastSlash + 1)..];\n    }\n\n    public static string Dirname(string posixPath)\n    {\n        if (string.IsNullOrEmpty(posixPath))\n        {\n            return string.Empty;\n        }\n\n        int lastSlash = posixPath.LastIndexOf('/');\n        if (lastSlash < 0)\n        {\n            return string.Empty;\n        }\n\n        string head = posixPath[..lastSlash].TrimEnd('/');\n        return string.IsNullOrEmpty(head) && posixPath.StartsWith('/') ? \"/\" : head;\n    }\n}\n\npublic static partial class Program\n{\n    private static readonly HashSet<string> AllowedChannels = new(StringComparer.Ordinal)\n    {\n        \"stable\",\n        \"beta\",\n        \"lts\"\n    };\n\n    [GeneratedRegex(@\"\\A[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?\\z\", RegexOptions.CultureInvariant)]\n    private static partial Regex ValidPathRegex();\n\n    public static int Main()\n    {\n        string inputText = Console.In.ReadToEnd();\n        ReleaseInput? input = JsonSerializer.Deserialize<ReleaseInput>(inputText);\n        if (input is null)\n        {\n            throw new InvalidOperationException(\"Failed to deserialize input JSON.\");\n        }\n\n        CaretSemVerRange.TryParse(input.MinRange, out CaretSemVerRange? minRange);\n\n        List<ArtifactInput> artifacts = input.Artifacts ?? [];\n        int total = artifacts.Count;\n        int eligible = 0;\n        int oversize = 0;\n        int exempt = 0;\n        int consecutiveRejects = 0;\n        long totalKb = 0;\n        long eligibleKb = 0;\n        long maxKb = 0;\n        bool hasArtifacts = total > 0;\n        bool prevRejected = false;\n        SemVer? highestEligible = null;\n\n        for (int i = 0; i < total; i++)\n        {\n            ArtifactInput artifact = artifacts[i];\n            totalKb += artifact.SizeKb;\n            if (i == 0 || artifact.SizeKb > maxKb)\n            {\n                maxKb = artifact.SizeKb;\n            }\n\n            string sizeTier = ClassifySizeTier(artifact.SizeKb);\n            bool isOversize = sizeTier == \"oversize\";\n            if (isOversize)\n            {\n                oversize++;\n            }\n\n            (bool isEligible, bool usedExemption, SemVer? parsedVer) = EvaluateArtifact(artifact, isOversize, minRange);\n            if (usedExemption)\n            {\n                exempt++;\n            }\n\n            if (isEligible)\n            {\n                eligible++;\n                eligibleKb += artifact.SizeKb;\n                prevRejected = false;\n\n                if (parsedVer is SemVer ver && !ver.IsPrerelease &&\n                    (highestEligible is null || ver.CompareTo(highestEligible.Value) > 0))\n                {\n                    highestEligible = ver;\n                }\n            }\n            else\n            {\n                if (prevRejected)\n                {\n                    consecutiveRejects++;\n                }\n                prevRejected = true;\n            }\n        }\n\n        double budgetKb = input.BudgetMb * 1024.0;\n        ReleaseSummary summary = new(\n            Total: total,\n            Eligible: eligible,\n            Oversize: oversize,\n            TotalKb: totalKb,\n            MaxKb: hasArtifacts ? maxKb : 0,\n            ConsecutiveRejects: consecutiveRejects,\n            Freeze: consecutiveRejects >= 2,\n            Exempt: exempt,\n            EligibleKb: eligibleKb,\n            WithinBudget: eligibleKb <= budgetKb,\n            Recommended: highestEligible?.ToString()\n        );\n\n        Console.WriteLine(JsonSerializer.Serialize(summary));\n        return 0;\n    }\n\n    private static string ClassifySizeTier(long sizeKb) => sizeKb switch\n    {\n        < 100 => \"tiny\",\n        <= 1000 => \"standard\",\n        <= 5000 => \"large\",\n        _ => \"oversize\"\n    };\n\n    private static (bool IsEligible, bool UsedExemption, SemVer? Version) EvaluateArtifact(\n        ArtifactInput artifact,\n        bool isOversize,\n        CaretSemVerRange? minRange)\n    {\n        if (isOversize)\n        {\n            return (false, false, null);\n        }\n\n        string decoded = Uri.UnescapeDataString(artifact.RawPath ?? string.Empty);\n        string norm = PosixPath.Normalize(decoded);\n\n        if (!ValidPathRegex().IsMatch(norm))\n        {\n            return (false, false, null);\n        }\n\n        string channel = artifact.Channel ?? string.Empty;\n        if (!AllowedChannels.Contains(channel))\n        {\n            return (false, false, null);\n        }\n\n        string pkg = PosixPath.Dirname(norm);\n        string ver = PosixPath.Basename(norm);\n        if (!SemVer.TryParse(ver, out SemVer parsedVer))\n        {\n            return (false, false, null);\n        }\n\n        bool satisfiesRange = minRange is not null && minRange.IsSatisfiedBy(parsedVer);\n        bool isLtsSecurityExempt = channel == \"lts\"\n            && pkg.Contains(\"security\", StringComparison.Ordinal)\n            && !parsedVer.IsPrerelease;\n\n        bool isEligible = satisfiesRange || isLtsSecurityExempt;\n        bool usedExemption = isLtsSecurityExempt && !satisfiesRange;\n        return (isEligible, usedExemption, parsedVer);\n    }\n}\n",
+  "own_language_audit": {}
+}

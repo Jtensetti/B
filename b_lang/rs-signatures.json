@@ -1,0 +1,272 @@
+{
+    "schema": 1,
+    "runtime": "b-rust-host/rustc1.100",
+    "modules": {
+        "std.str": [
+            {
+                "name": "contains",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "ends_with",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "is_ascii",
+                "params": [
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "len_bytes",
+                "params": [
+                    "Text"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "string_unit": "utf8_bytes"
+                }
+            },
+            {
+                "name": "len_chars",
+                "params": [
+                    "Text"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "string_unit": "codepoints"
+                }
+            },
+            {
+                "name": "replace",
+                "params": [
+                    "Text",
+                    "Text",
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "split",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "List[Text]"
+            },
+            {
+                "name": "starts_with",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "to_lowercase",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "to_uppercase",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "trim",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            }
+        ],
+        "std.f64": [
+            {
+                "name": "abs",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "ceil",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "clamp",
+                "params": [
+                    "Float",
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "floor",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "hypot",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "rem_euclid",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float",
+                "semantics": {
+                    "remainder": "euclid"
+                }
+            },
+            {
+                "name": "round",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float",
+                "semantics": {
+                    "rounding": "half_away_zero"
+                }
+            },
+            {
+                "name": "round_ties_even",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float",
+                "semantics": {
+                    "rounding": "half_even"
+                }
+            },
+            {
+                "name": "sqrt",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            }
+        ],
+        "std.i64": [
+            {
+                "name": "clamp",
+                "params": [
+                    "Int",
+                    "Int",
+                    "Int"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "int_width": "i64"
+                }
+            },
+            {
+                "name": "div_euclid",
+                "params": [
+                    "Int",
+                    "Int"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "remainder": "euclid",
+                    "int_width": "i64"
+                }
+            },
+            {
+                "name": "rem_euclid",
+                "params": [
+                    "Int",
+                    "Int"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "remainder": "euclid",
+                    "int_width": "i64"
+                }
+            },
+            {
+                "name": "rem_trunc",
+                "params": [
+                    "Int",
+                    "Int"
+                ],
+                "result": "Int",
+                "semantics": {
+                    "remainder": "trunc",
+                    "int_width": "i64"
+                }
+            }
+        ],
+        "std.path": [
+            {
+                "name": "extension",
+                "params": [
+                    "Text"
+                ],
+                "result": "Option[Text]"
+            },
+            {
+                "name": "file_name",
+                "params": [
+                    "Text"
+                ],
+                "result": "Option[Text]"
+            },
+            {
+                "name": "join",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "parent",
+                "params": [
+                    "Text"
+                ],
+                "result": "Option[Text]"
+            }
+        ],
+        "std.hash": [
+            {
+                "name": "crc32",
+                "params": [
+                    "Text"
+                ],
+                "result": "Int"
+            },
+            {
+                "name": "fnv1a_hex",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            }
+        ]
+    }
+}

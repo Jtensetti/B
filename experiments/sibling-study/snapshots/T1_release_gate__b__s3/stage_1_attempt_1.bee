@@ -1,0 +1,73 @@
+use py:urllib.parse as urls
+foreign urls.unquote(Text) -> Text
+use net:System.Text.RegularExpressions.Regex as Rx
+use js:"node:path/posix" as path
+use js:semver as sv
+
+record ArtifactIn {
+    raw_path: Text
+    channel: Text
+    size_kb: Int
+}
+
+record Request {
+    min_range: Text
+    artifacts: List[ArtifactIn]
+}
+
+record Artifact {
+    norm: Text
+    pkg: Text
+    ver: Text
+    channel: Text
+    size_kb: Int
+    path_ok: Bool
+    semver_ok: Bool
+}
+
+fn valid_channel(ch: Text) -> Bool pure =
+    ch == "stable" or ch == "beta" or ch == "lts"
+
+fn size_tier(kb: Int) -> Text pure = cases kb {
+    < 100 => "tiny"
+    <= 1000 => "standard"
+    <= 5000 => "large"
+    else => "oversize"
+}
+
+fn is_eligible(a: Artifact) -> Bool pure =
+    a.path_ok and valid_channel(a.channel) and a.semver_ok and size_tier(a.size_kb) != "oversize"
+
+fn eval_artifact(a: ArtifactIn, min_range: Text) -> Artifact =
+    let norm = a.raw_path |> urls.unquote |> path.normalize in
+    let ver = path.basename(norm) in
+    let pkg = path.dirname(norm) in
+    let path_ok = Rx.IsMatch(norm, "^[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$") in
+    let semver_ok =
+        if (sv.valid(ver) ?? "") != "" then
+            sv.satisfies(ver, min_range)
+        else
+            false
+    in
+    Artifact(
+        norm: norm,
+        pkg: pkg,
+        ver: ver,
+        channel: a.channel,
+        size_kb: a.size_kb,
+        path_ok: path_ok,
+        semver_ok: semver_ok
+    )
+
+let req: Request = from_json(stdin_text())
+let items = [eval_artifact(a, req.min_range) for a in req.artifacts]
+
+let summary = summarize a in items {
+    total: count
+    eligible: count where is_eligible(a)
+    oversize: count where size_tier(a.size_kb) == "oversize"
+    total_kb: sum a.size_kb
+    max_kb: max a.size_kb default 0
+}
+
+print json_encode(summary)

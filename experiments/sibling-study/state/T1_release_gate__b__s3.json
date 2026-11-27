@@ -1,0 +1,182 @@
+{
+  "run_id": "T1_release_gate__b__s3",
+  "task_id": "T1_release_gate",
+  "lang": "B",
+  "solver_id": 3,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__b__s3",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s3/stage_0_attempt_1.bee",
+          "full_tokens": 466,
+          "added_tokens": 466,
+          "diff_tokens": 466,
+          "bytes": 1575,
+          "lines": 65,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s3/stage_1_attempt_1.bee",
+          "full_tokens": 548,
+          "added_tokens": 98,
+          "diff_tokens": 249,
+          "bytes": 1818,
+          "lines": 73,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s3/stage_2_attempt_1.bee",
+          "full_tokens": 657,
+          "added_tokens": 114,
+          "diff_tokens": 150,
+          "bytes": 2213,
+          "lines": 87,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s3/stage_3_attempt_1.bee",
+          "full_tokens": 805,
+          "added_tokens": 190,
+          "diff_tokens": 570,
+          "bytes": 2717,
+          "lines": 104,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s3/stage_4_attempt_1.bee",
+          "full_tokens": 904,
+          "added_tokens": 116,
+          "diff_tokens": 492,
+          "bytes": 3060,
+          "lines": 115,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s3/stage_5_attempt_1.bee",
+          "full_tokens": 944,
+          "added_tokens": 40,
+          "diff_tokens": 130,
+          "bytes": 3209,
+          "lines": 118,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 8
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "use py:urllib.parse as urls\nforeign urls.unquote(Text) -> Text\nuse net:System.Text.RegularExpressions.Regex as Rx\nuse js:\"node:path/posix\" as path\nuse js:semver as sv\n\nunit kb\nunit mb = 1024 kb\n\nrecord ArtifactIn {\n    raw_path: Text\n    channel: Text\n    size_kb: Int\n}\n\nrecord Request {\n    min_range: Text\n    budget_mb: Float\n    artifacts: List[ArtifactIn]\n}\n\nrecord Artifact {\n    norm: Text\n    pkg: Text\n    ver: Text\n    channel: Text\n    size_kb: Int\n    path_ok: Bool\n    ver_valid: Bool\n    semver_ok: Bool\n}\n\nfn valid_channel(ch: Text) -> Bool pure =\n    ch == \"stable\" or ch == \"beta\" or ch == \"lts\"\n\nfn size_tier(size: Int) -> Text pure = cases size {\n    < 100 => \"tiny\"\n    <= 1000 => \"standard\"\n    <= 5000 => \"large\"\n    else => \"oversize\"\n}\n\nfn fits_budget(used: Float[kb], budget: Float[mb]) -> Bool pure =\n    used <= (budget to kb)\n\nfn base_eligible(a: Artifact) -> Bool pure =\n    a.path_ok and valid_channel(a.channel) and a.semver_ok and size_tier(a.size_kb) != \"oversize\"\n\nfn is_lts_exempt(a: Artifact) -> Bool pure = (\n    a.path_ok\n    and a.channel == \"lts\"\n    and str_contains(a.pkg, \"security\")\n    and a.ver_valid\n    and str_contains(a.ver, \"-\") == false\n    and size_tier(a.size_kb) != \"oversize\"\n)\n\nfn is_eligible(a: Artifact) -> Bool pure =\n    base_eligible(a) or is_lts_exempt(a)\n\nfn eval_artifact(a: ArtifactIn, min_range: Text) -> Artifact =\n    let norm = a.raw_path |> urls.unquote |> path.normalize in\n    let ver = path.basename(norm) in\n    let pkg = path.dirname(norm) in\n    let path_ok = Rx.IsMatch(norm, \"^[a-z0-9-]+/[0-9]+\\\\.[0-9]+\\\\.[0-9]+(-[a-z0-9.]+)?$\") in\n    let ver_valid = (sv.valid(ver) ?? \"\") != \"\" in\n    let semver_ok =\n        if ver_valid then\n            sv.satisfies(ver, min_range)\n        else\n            false\n    in\n    Artifact(\n        norm: norm,\n        pkg: pkg,\n        ver: ver,\n        channel: a.channel,\n        size_kb: a.size_kb,\n        path_ok: path_ok,\n        ver_valid: ver_valid,\n        semver_ok: semver_ok\n    )\n\nlet req: Request = from_json(stdin_text())\nlet items = [eval_artifact(a, req.min_range) for a in req.artifacts]\n\nlet summary = summarize a in items {\n    total: count\n    eligible: count where is_eligible(a)\n    oversize: count where size_tier(a.size_kb) == \"oversize\"\n    exempt: count where is_lts_exempt(a) and base_eligible(a) == false\n    total_kb: sum a.size_kb\n    eligible_kb: sum a.size_kb where is_eligible(a)\n    max_kb: max a.size_kb default 0\n}\n\nlet judged = [record { bad: is_eligible(a) == false } for a in items]\nlet consecutive_rejects = count adjacent past, now in judged where past.bad and now.bad\nlet freeze = consecutive_rejects >= 2\nlet within_budget = fits_budget(to_float(summary.eligible_kb) as kb, req.budget_mb as mb)\nlet eligible_versions = [a.ver for a in items where is_eligible(a)]\nlet recommended = sv.maxSatisfying(eligible_versions, \">=0.0.0\")\n\nlet out = record {\n    total: summary.total\n    eligible: summary.eligible\n    oversize: summary.oversize\n    exempt: summary.exempt\n    total_kb: summary.total_kb\n    eligible_kb: summary.eligible_kb\n    max_kb: summary.max_kb\n    consecutive_rejects\n    freeze\n    within_budget\n    recommended\n}\n\nprint json_encode(out)\n",
+  "own_language_audit": {
+    "used_backends": [
+      "js",
+      "net",
+      "py"
+    ],
+    "foreign_count": 8
+  }
+}

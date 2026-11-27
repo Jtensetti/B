@@ -1,16 +1,102 @@
 {
-  "schema": 1,
-  "runtime": "B.NetHost/.NET10",
-  "types": {
-    "System.Math": [
-      {"name": "Abs", "params": ["Float"], "result": "Float"},
-      {"name": "Max", "params": ["Float", "Float"], "result": "Float"},
-      {"name": "Min", "params": ["Float", "Float"], "result": "Float"},
-      {"name": "Pow", "params": ["Float", "Float"], "result": "Float"},
-      {"name": "Sqrt", "params": ["Float"], "result": "Float"}
-    ],
-    "System.Text.RegularExpressions.Regex": [
-      {"name": "IsMatch", "params": ["Text", "Text"], "result": "Bool"}
-    ]
-  }
+    "schema": 1,
+    "runtime": "B.NetHost/.NET10",
+    "types": {
+        "System.Math": [
+            {
+                "name": "Abs",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Ceiling",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Floor",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Max",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Min",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Pow",
+                "params": [
+                    "Float",
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Round",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            },
+            {
+                "name": "Sqrt",
+                "params": [
+                    "Float"
+                ],
+                "result": "Float"
+            }
+        ],
+        "System.Text.RegularExpressions.Regex": [
+            {
+                "name": "IsMatch",
+                "params": [
+                    "Text",
+                    "Text"
+                ],
+                "result": "Bool"
+            },
+            {
+                "name": "Replace",
+                "params": [
+                    "Text",
+                    "Text",
+                    "Text"
+                ],
+                "result": "Text"
+            }
+        ],
+        "System.Uri": [
+            {
+                "name": "EscapeDataString",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            },
+            {
+                "name": "UnescapeDataString",
+                "params": [
+                    "Text"
+                ],
+                "result": "Text"
+            }
+        ]
+    }
 }

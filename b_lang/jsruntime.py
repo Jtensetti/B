@@ -26,12 +26,14 @@ def _checked_args(value):
 
 
 def _wire_type(typ: Type):
+    if typ.name in ("Int", "Float"):
+        return [typ.name]
     return [typ.name, *(_wire_type(t) for t in typ.args)]
 
 
 def _read_result(value, typ):
     # The worker sends Float in round-trippable decimal text, including -0.
-    if typ == FLOAT:
+    if typ.name == "Float":
         return float(value)
     if typ.name == "Option":
         return None if value is None else _read_result(value, typ.args[0])
@@ -59,7 +61,7 @@ class NodeSession:
         self._modules = weakref.WeakValueDictionary()
         self._signatures = {}
         for target, member, params, result in signatures:
-            self._signatures.setdefault(target, {})[member] = (params, parse_descriptor(result))
+            self._signatures.setdefault(target, {})[member] = (params, parse_descriptor(result, allow_custom=True))
 
         executable = shutil.which("node")
         if not executable:

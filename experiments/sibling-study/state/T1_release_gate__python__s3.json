@@ -1,0 +1,133 @@
+{
+  "run_id": "T1_release_gate__python__s3",
+  "task_id": "T1_release_gate",
+  "lang": "Python",
+  "solver_id": 3,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__python__s3",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s3/stage_0_attempt_1.py",
+          "full_tokens": 1442,
+          "added_tokens": 1442,
+          "diff_tokens": 1442,
+          "bytes": 5239,
+          "lines": 186,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s3/stage_1_attempt_1.py",
+          "full_tokens": 1607,
+          "added_tokens": 165,
+          "diff_tokens": 482,
+          "bytes": 5823,
+          "lines": 207,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s3/stage_2_attempt_1.py",
+          "full_tokens": 1725,
+          "added_tokens": 153,
+          "diff_tokens": 437,
+          "bytes": 6283,
+          "lines": 220,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s3/stage_3_attempt_1.py",
+          "full_tokens": 1983,
+          "added_tokens": 470,
+          "diff_tokens": 1026,
+          "bytes": 7385,
+          "lines": 260,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s3/stage_4_attempt_1.py",
+          "full_tokens": 2158,
+          "added_tokens": 231,
+          "diff_tokens": 800,
+          "bytes": 8049,
+          "lines": 277,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__python__s3/stage_5_attempt_1.py",
+          "full_tokens": 2263,
+          "added_tokens": 105,
+          "diff_tokens": 287,
+          "bytes": 8523,
+          "lines": 288,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nimport json\nimport posixpath\nimport re\nimport sys\nfrom typing import Literal\nfrom urllib.parse import unquote\n\nSizeTier = Literal[\"tiny\", \"standard\", \"large\", \"oversize\"]\n\nVALID_CHANNELS: frozenset[str] = frozenset({\"stable\", \"beta\", \"lts\"})\nKB_PER_MB: float = 1024.0\n\nNORM_PATH_RE: re.Pattern[str] = re.compile(\n    r\"[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?\"\n)\n\nSEMVER_RE: re.Pattern[str] = re.compile(\n    r\"(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\"\n    r\"(?:-([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?\"\n    r\"(?:\\+([0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*))?\"\n)\n\nCARET_RANGE_RE: re.Pattern[str] = re.compile(\n    r\"\\^(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\\.(0|[1-9][0-9]*)\"\n)\n\n\n@dataclass(frozen=True)\nclass SemVer:\n    major: int\n    minor: int\n    patch: int\n    prerelease: str | None = None\n    build: str | None = None\n\n    @property\n    def core(self) -> tuple[int, int, int]:\n        return (self.major, self.minor, self.patch)\n\n    def format_core(self) -> str:\n        return f\"{self.major}.{self.minor}.{self.patch}\"\n\n\n@dataclass(frozen=True)\nclass CaretRange:\n    lower: tuple[int, int, int]\n    upper: tuple[int, int, int]\n\n    def satisfies(self, version: SemVer) -> bool:\n        if version.prerelease is not None:\n            return False\n        return self.lower <= version.core < self.upper\n\n\n@dataclass(frozen=True)\nclass ArtifactInput:\n    raw_path: str\n    channel: str\n    size_kb: int\n\n\n@dataclass(frozen=True)\nclass GateInput:\n    min_range: str\n    budget_mb: float\n    artifacts: list[ArtifactInput]\n\n\n@dataclass(frozen=True)\nclass ArtifactEvaluation:\n    norm_path: str\n    pkg: str\n    ver_str: str\n    version: SemVer | None\n    size_kb: int\n    size_tier: SizeTier\n    eligible: bool\n    exempt: bool\n\n\n@dataclass(frozen=True)\nclass GateOutput:\n    total: int\n    eligible: int\n    oversize: int\n    total_kb: int\n    max_kb: int\n    consecutive_rejects: int\n    freeze: bool\n    exempt: int\n    eligible_kb: int\n    within_budget: bool\n    recommended: str | None\n\n    def to_dict(self) -> dict[str, object]:\n        return {\n            \"total\": self.total,\n            \"eligible\": self.eligible,\n            \"oversize\": self.oversize,\n            \"total_kb\": self.total_kb,\n            \"max_kb\": self.max_kb,\n            \"consecutive_rejects\": self.consecutive_rejects,\n            \"freeze\": self.freeze,\n            \"exempt\": self.exempt,\n            \"eligible_kb\": self.eligible_kb,\n            \"within_budget\": self.within_budget,\n            \"recommended\": self.recommended,\n        }\n\n\ndef parse_semver(version_str: str) -> SemVer | None:\n    match = SEMVER_RE.fullmatch(version_str)\n    if match is None:\n        return None\n    major_s, minor_s, patch_s, prerelease, build = match.groups()\n    if prerelease is not None:\n        for ident in prerelease.split(\".\"):\n            if ident.isdigit() and len(ident) > 1 and ident.startswith(\"0\"):\n                return None\n    return SemVer(\n        major=int(major_s),\n        minor=int(minor_s),\n        patch=int(patch_s),\n        prerelease=prerelease,\n        build=build,\n    )\n\n\ndef parse_caret_range(range_str: str) -> CaretRange | None:\n    match = CARET_RANGE_RE.fullmatch(range_str)\n    if match is None:\n        return None\n    major, minor, patch = int(match.group(1)), int(match.group(2)), int(match.group(3))\n    lower = (major, minor, patch)\n    if major > 0:\n        upper = (major + 1, 0, 0)\n    elif minor > 0:\n        upper = (0, minor + 1, 0)\n    else:\n        upper = (0, 0, patch + 1)\n    return CaretRange(lower=lower, upper=upper)\n\n\ndef normalize_artifact_path(raw_path: str) -> str:\n    decoded = unquote(raw_path)\n    return posixpath.normpath(decoded)\n\n\ndef classify_size_tier(size_kb: int) -> SizeTier:\n    if size_kb < 100:\n        return \"tiny\"\n    if size_kb <= 1000:\n        return \"standard\"\n    if size_kb <= 5000:\n        return \"large\"\n    return \"oversize\"\n\n\ndef evaluate_artifact(\n    artifact: ArtifactInput, min_range: CaretRange | None\n) -> ArtifactEvaluation:\n    norm = normalize_artifact_path(artifact.raw_path)\n    pkg = posixpath.dirname(norm)\n    ver_str = posixpath.basename(norm)\n    size_tier = classify_size_tier(artifact.size_kb)\n\n    valid_format = (\n        NORM_PATH_RE.fullmatch(norm) is not None and artifact.channel in VALID_CHANNELS\n    )\n    version = parse_semver(ver_str) if valid_format else None\n\n    if not valid_format or version is None or size_tier == \"oversize\":\n        return ArtifactEvaluation(\n            norm_path=norm,\n            pkg=pkg,\n            ver_str=ver_str,\n            version=version,\n            size_kb=artifact.size_kb,\n            size_tier=size_tier,\n            eligible=False,\n            exempt=False,\n        )\n\n    satisfies_range = min_range is not None and min_range.satisfies(version)\n    is_lts_security_exempt = (\n        artifact.channel == \"lts\"\n        and \"security\" in pkg\n        and version.prerelease is None\n        and \"-\" not in ver_str\n    )\n\n    exempt_only = is_lts_security_exempt and not satisfies_range\n    eligible = satisfies_range or is_lts_security_exempt\n    return ArtifactEvaluation(\n        norm_path=norm,\n        pkg=pkg,\n        ver_str=ver_str,\n        version=version,\n        size_kb=artifact.size_kb,\n        size_tier=size_tier,\n        eligible=eligible,\n        exempt=exempt_only,\n    )\n\n\ndef evaluate_gate(gate_input: GateInput) -> GateOutput:\n    parsed_range = parse_caret_range(gate_input.min_range)\n    evaluations = [evaluate_artifact(art, parsed_range) for art in gate_input.artifacts]\n    total = len(gate_input.artifacts)\n    eligible = sum(1 for ev in evaluations if ev.eligible)\n    oversize = sum(1 for ev in evaluations if ev.size_tier == \"oversize\")\n    exempt = sum(1 for ev in evaluations if ev.exempt)\n    total_kb = sum(ev.size_kb for ev in evaluations)\n    max_kb = max((ev.size_kb for ev in evaluations), default=0)\n    eligible_kb = sum(ev.size_kb for ev in evaluations if ev.eligible)\n    within_budget = eligible_kb <= gate_input.budget_mb * KB_PER_MB\n    consecutive_rejects = sum(\n        1\n        for prev_ev, curr_ev in zip(evaluations, evaluations[1:])\n        if not prev_ev.eligible and not curr_ev.eligible\n    )\n    freeze = consecutive_rejects >= 2\n    eligible_versions = [\n        ev.version for ev in evaluations if ev.eligible and ev.version is not None\n    ]\n    best_version = max(eligible_versions, key=lambda v: v.core, default=None)\n    recommended = best_version.format_core() if best_version is not None else None\n    return GateOutput(\n        total=total,\n        eligible=eligible,\n        oversize=oversize,\n        total_kb=total_kb,\n        max_kb=max_kb,\n        consecutive_rejects=consecutive_rejects,\n        freeze=freeze,\n        exempt=exempt,\n        eligible_kb=eligible_kb,\n        within_budget=within_budget,\n        recommended=recommended,\n    )\n\n\ndef parse_input(raw_text: str) -> GateInput:\n    data: object = json.loads(raw_text)\n    if not isinstance(data, dict):\n        raise ValueError(\"Expected top-level JSON object\")\n\n    min_range = data.get(\"min_range\")\n    if not isinstance(min_range, str):\n        raise ValueError(\"Expected string 'min_range'\")\n\n    budget_mb = data.get(\"budget_mb\")\n    if not isinstance(budget_mb, (int, float)) or isinstance(budget_mb, bool):\n        raise ValueError(\"Expected number 'budget_mb'\")\n\n    raw_artifacts = data.get(\"artifacts\")\n    if not isinstance(raw_artifacts, list):\n        raise ValueError(\"Expected list 'artifacts'\")\n\n    artifacts: list[ArtifactInput] = []\n    for item in raw_artifacts:\n        if not isinstance(item, dict):\n            raise ValueError(\"Expected artifact object\")\n        raw_path = item.get(\"raw_path\")\n        channel = item.get(\"channel\")\n        size_kb = item.get(\"size_kb\")\n        if not isinstance(raw_path, str):\n            raise ValueError(\"Expected string 'raw_path'\")\n        if not isinstance(channel, str):\n            raise ValueError(\"Expected string 'channel'\")\n        if not isinstance(size_kb, int) or isinstance(size_kb, bool):\n            raise ValueError(\"Expected int 'size_kb'\")\n        artifacts.append(ArtifactInput(raw_path=raw_path, channel=channel, size_kb=size_kb))\n\n    return GateInput(min_range=min_range, budget_mb=float(budget_mb), artifacts=artifacts)\n\n\ndef main() -> None:\n    gate_input = parse_input(sys.stdin.read())\n    result = evaluate_gate(gate_input)\n    print(json.dumps(result.to_dict()))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "own_language_audit": {}
+}

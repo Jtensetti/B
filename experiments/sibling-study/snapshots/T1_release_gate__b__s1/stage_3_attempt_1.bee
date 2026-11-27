@@ -1,0 +1,84 @@
+use py:urllib.parse as urls
+foreign urls.unquote(Text) -> Text
+use net:System.Text.RegularExpressions.Regex as Rx
+use js:"node:path/posix" as path
+use js:semver as sv
+
+record Artifact {
+    raw_path: Text
+    channel: Text
+    size_kb: Int
+}
+
+record Request {
+    min_range: Text
+    artifacts: List[Artifact]
+}
+
+fn valid_channel(ch: Text) -> Bool pure =
+    ch == "stable" or ch == "beta" or ch == "lts"
+
+fn size_tier(size_kb: Int) -> Text pure = cases size_kb {
+    < 100 => "tiny"
+    <= 1000 => "standard"
+    <= 5000 => "large"
+    else => "oversize"
+}
+
+fn is_base_eligible(valid_path: Bool, channel: Text, semver_ok: Bool, tier: Text) -> Bool pure =
+    valid_path and valid_channel(channel) and semver_ok and tier != "oversize"
+
+fn is_lts_security_exempt(valid_path: Bool, pkg: Text, channel: Text, clean_ver: Text, tier: Text) -> Bool pure =
+    valid_path and channel == "lts" and str_contains(pkg, "security") and clean_ver != "" and str_contains(clean_ver, "-") == false and tier != "oversize"
+
+fn inspect_artifact(a: Artifact, min_range: Text) =
+    let decoded = urls.unquote(a.raw_path) in
+    let norm = path.normalize(decoded) in
+    let ver = path.basename(norm) in
+    let pkg = path.dirname(norm) in
+    let valid_path = Rx.IsMatch(norm, "^[a-z0-9-]+/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$") in
+    let clean_ver = sv.valid(ver) ?? "" in
+    let semver_ok = if clean_ver != "" then sv.satisfies(clean_ver, min_range) else false in
+    let tier = size_tier(a.size_kb) in
+    let base_eligible = is_base_eligible(valid_path, a.channel, semver_ok, tier) in
+    let lts_exempt = is_lts_security_exempt(valid_path, pkg, a.channel, clean_ver, tier) in
+    let exempt = lts_exempt and base_eligible == false in
+    let eligible = base_eligible or lts_exempt in
+    record {
+        norm,
+        pkg,
+        ver,
+        channel: a.channel,
+        size_kb: a.size_kb,
+        tier,
+        exempt,
+        eligible
+    }
+
+let req: Request = from_json(stdin_text())
+let evaluated = [inspect_artifact(a, req.min_range) for a in req.artifacts]
+
+let s = summarize x in evaluated {
+    total: count
+    eligible: count where x.eligible
+    oversize: count where x.tier == "oversize"
+    exempt: count where x.exempt
+    total_kb: sum x.size_kb
+    max_kb: max x.size_kb default 0
+}
+
+let consecutive_rejects = count adjacent prev, curr in evaluated where prev.eligible == false and curr.eligible == false
+let freeze = consecutive_rejects >= 2
+
+let out = record {
+    total: s.total,
+    eligible: s.eligible,
+    oversize: s.oversize,
+    exempt: s.exempt,
+    total_kb: s.total_kb,
+    max_kb: s.max_kb,
+    consecutive_rejects,
+    freeze
+}
+
+print json_encode(out)

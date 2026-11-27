@@ -4,11 +4,11 @@ from __future__ import annotations
 from dataclasses import replace
 
 from .ir import ExprIR
-from .types import BOOL, INT, NONE, TEXT, BError, Type
+from .types import BOOL, INT, NONE, TEXT, BError, Type, is_dim_int, is_struct_record
 
 
 _SCALARS = {BOOL, INT, NONE, TEXT}
-_PREDICATE_OPS = {"literal", "name", "lookup", "coalesce", "conditional", "cmp",
+_PREDICATE_OPS = {"literal", "name", "lookup", "record_field", "coalesce", "conditional", "cmp",
                   "and", "or", "not", "neg", "add", "sub", "mul"}
 _REVERSE = {"<": ">", "<=": ">=", ">": "<", ">=": "<="}
 _COMPLEMENT = {"<": ">=", "<=": ">", ">": "<=", ">=": "<"}
@@ -19,11 +19,20 @@ def _supported_type(typ: Type) -> bool:
         return _supported_type(typ.args[0])
     if typ.name == "Dict":
         return typ.args[0] == TEXT and _supported_type(typ.args[1])
+    if is_dim_int(typ):
+        return True
+    if is_struct_record(typ):
+        return True
+    if typ.name not in ("Float", "Any", "List", "Module", "Function") and not typ.args:
+        # User-defined record type
+        return True
     return typ in _SCALARS
 
 
 def _is_scalar(typ: Type) -> bool:
-    return _is_scalar(typ.args[0]) if typ.name == "Option" else typ in _SCALARS
+    if typ.name == "Option":
+        return _is_scalar(typ.args[0])
+    return typ in _SCALARS or is_dim_int(typ)
 
 
 def _validate(node: ExprIR) -> None:
@@ -33,12 +42,12 @@ def _validate(node: ExprIR) -> None:
         raise BError("E_HISTORY_PREDICATE", f"History predicates cannot use {node.op}")
     if not _supported_type(node.typ):
         raise BError("E_HISTORY_PREDICATE", f"History predicates cannot use {node.typ}")
-    if node.op in {"add", "sub", "mul", "neg"} and node.typ != INT:
+    if node.op in {"add", "sub", "mul", "neg"} and not (node.typ == INT or is_dim_int(node.typ)):
         raise BError("E_HISTORY_PREDICATE", "History arithmetic requires Int operands")
     if node.op == "cmp":
         left, right = (part.typ for part in node.operands)
         if node.data in _REVERSE:
-            if left != right or left not in {INT, BOOL, TEXT}:
+            if left != right or not (left in {INT, BOOL, TEXT} or is_dim_int(left)):
                 raise BError("E_HISTORY_PREDICATE", "History ordering requires matching scalar operands")
         elif NONE not in (left, right) and not (_is_scalar(left) and _is_scalar(right)):
             raise BError("E_HISTORY_PREDICATE", "History equality supports scalars and presence checks")

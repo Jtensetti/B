@@ -1,0 +1,133 @@
+{
+  "run_id": "T2_telemetry_sla__rust__s1",
+  "task_id": "T2_telemetry_sla",
+  "lang": "Rust",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T2_telemetry_sla__rust__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__rust__s1/stage_0_attempt_1.rs",
+          "full_tokens": 614,
+          "added_tokens": 614,
+          "diff_tokens": 614,
+          "bytes": 2225,
+          "lines": 102,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__rust__s1/stage_1_attempt_1.rs",
+          "full_tokens": 792,
+          "added_tokens": 178,
+          "diff_tokens": 363,
+          "bytes": 2914,
+          "lines": 136,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__rust__s1/stage_2_attempt_1.rs",
+          "full_tokens": 922,
+          "added_tokens": 143,
+          "diff_tokens": 328,
+          "bytes": 3388,
+          "lines": 152,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__rust__s1/stage_3_attempt_1.rs",
+          "full_tokens": 1013,
+          "added_tokens": 154,
+          "diff_tokens": 525,
+          "bytes": 3765,
+          "lines": 165,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__rust__s1/stage_4_attempt_1.rs",
+          "full_tokens": 1107,
+          "added_tokens": 189,
+          "diff_tokens": 584,
+          "bytes": 4187,
+          "lines": 182,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__rust__s1/stage_5_attempt_1.rs",
+          "full_tokens": 1362,
+          "added_tokens": 255,
+          "diff_tokens": 514,
+          "bytes": 5197,
+          "lines": 222,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "use serde::{Deserialize, Serialize};\nuse std::error::Error;\nuse std::io::{self, Read};\n\n#[derive(Debug, Deserialize)]\nstruct Input {\n    sla_s: f64,\n    samples: Vec<Sample>,\n}\n\n#[derive(Debug, Deserialize)]\nstruct Sample {\n    service: String,\n    ms: i64,\n    offset: i64,\n}\n\n#[derive(Debug, Serialize)]\nstruct Output {\n    count: usize,\n    breaches: usize,\n    overage_ms: i64,\n    max_ms: i64,\n    mean_ms: i64,\n    bucket_zero: usize,\n    critical: usize,\n    warn_or_worse: usize,\n    consecutive_breaches: usize,\n    spike_steps: usize,\n    invalid_labels: usize,\n    exempt: usize,\n    regressed: usize,\n    status: Status,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]\n#[serde(rename_all = \"lowercase\")]\nenum Status {\n    Green,\n    Yellow,\n    Red,\n}\n\n#[derive(Debug, Clone, Copy, PartialEq, Eq)]\nenum Severity {\n    Ok,\n    Warn,\n    Slow,\n    Critical,\n}\n\nfn classify(ms: i64) -> Severity {\n    if ms < 200 {\n        Severity::Ok\n    } else if ms <= 500 {\n        Severity::Warn\n    } else if ms <= 1000 {\n        Severity::Slow\n    } else {\n        Severity::Critical\n    }\n}\n\nfn round_half_to_even(value: f64) -> i64 {\n    let floor = value.floor();\n    let diff = value - floor;\n    let rounded = if diff > 0.5 {\n        floor + 1.0\n    } else if diff < 0.5 {\n        floor\n    } else if floor % 2.0 == 0.0 {\n        floor\n    } else {\n        floor + 1.0\n    };\n    rounded as i64\n}\n\nfn normalize_service(service: &str) -> String {\n    service.trim().to_lowercase()\n}\n\nfn is_valid_label(service: &str) -> bool {\n    (2..=12).contains(&service.chars().count())\n}\n\nfn is_exempt(service: &str, offset: i64) -> bool {\n    service == \"healthcheck\" && offset.rem_euclid(4) == 0\n}\n\nfn determine_status(\n    consecutive_breaches: usize,\n    critical: usize,\n    breaches: usize,\n    invalid_labels: usize,\n) -> Status {\n    if consecutive_breaches >= 2 || critical > 0 {\n        Status::Red\n    } else if breaches > 0 || invalid_labels > 0 {\n        Status::Yellow\n    } else {\n        Status::Green\n    }\n}\n\nfn audit(input: &Input) -> Output {\n    let sla_ms = input.sla_s * 1000.0;\n    let sla_ms_int = round_half_to_even(sla_ms);\n\n    let count = input.samples.len();\n    let mut breaches = 0usize;\n    let mut overage_ms = 0i64;\n    let mut max_ms: Option<i64> = None;\n    let mut sum_valid_ms = 0i128;\n    let mut valid_count = 0usize;\n    let mut invalid_labels = 0usize;\n    let mut exempt = 0usize;\n    let mut bucket_zero = 0usize;\n    let mut critical = 0usize;\n    let mut warn_or_worse = 0usize;\n    let mut consecutive_breaches = 0usize;\n    let mut prev_breach = false;\n    let mut min_ms_so_far: Option<i64> = None;\n    let mut regressed = 0usize;\n\n    for sample in &input.samples {\n        let service = normalize_service(&sample.service);\n        if is_valid_label(&service) {\n            sum_valid_ms += i128::from(sample.ms);\n            valid_count += 1;\n        } else {\n            invalid_labels += 1;\n        }\n\n        let raw_breach = (sample.ms as f64) > sla_ms;\n        let effective_breach = if raw_breach {\n            if is_exempt(&service, sample.offset) {\n                exempt += 1;\n                false\n            } else {\n                breaches += 1;\n                overage_ms += sample.ms - sla_ms_int;\n                true\n            }\n        } else {\n            false\n        };\n\n        if prev_breach && effective_breach {\n            consecutive_breaches += 1;\n        }\n        prev_breach = effective_breach;\n\n        max_ms = Some(match max_ms {\n            Some(current) => current.max(sample.ms),\n            None => sample.ms,\n        });\n\n        if let Some(min_prev) = min_ms_so_far {\n            if i128::from(min_prev) + 300 < i128::from(sample.ms) {\n                regressed += 1;\n            }\n            min_ms_so_far = Some(min_prev.min(sample.ms));\n        } else {\n            min_ms_so_far = Some(sample.ms);\n        }\n\n        if sample.offset.rem_euclid(4) == 0 {\n            bucket_zero += 1;\n        }\n\n        let severity = classify(sample.ms);\n        if severity == Severity::Critical {\n            critical += 1;\n        }\n        if severity != Severity::Ok {\n            warn_or_worse += 1;\n        }\n    }\n\n    let mean_ms = if valid_count == 0 {\n        0\n    } else {\n        round_half_to_even((sum_valid_ms as f64) / (valid_count as f64))\n    };\n\n    let spike_steps = input\n        .samples\n        .windows(2)\n        .filter(|pair| pair[1].ms > pair[0].ms + 100)\n        .count();\n\n    let status = determine_status(consecutive_breaches, critical, breaches, invalid_labels);\n\n    Output {\n        count,\n        breaches,\n        overage_ms,\n        max_ms: max_ms.unwrap_or(0),\n        mean_ms,\n        bucket_zero,\n        critical,\n        warn_or_worse,\n        consecutive_breaches,\n        spike_steps,\n        invalid_labels,\n        exempt,\n        regressed,\n        status,\n    }\n}\n\nfn main() -> Result<(), Box<dyn Error>> {\n    let mut input_text = String::new();\n    io::stdin().read_to_string(&mut input_text)?;\n\n    let input: Input = serde_json::from_str(&input_text)?;\n    let output = audit(&input);\n    println!(\"{}\", serde_json::to_string(&output)?);\n\n    Ok(())\n}\n",
+  "own_language_audit": {}
+}

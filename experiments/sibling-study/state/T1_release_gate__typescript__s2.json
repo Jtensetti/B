@@ -1,0 +1,133 @@
+{
+  "run_id": "T1_release_gate__typescript__s2",
+  "task_id": "T1_release_gate",
+  "lang": "TypeScript",
+  "solver_id": 2,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__typescript__s2",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s2/stage_0_attempt_1.ts",
+          "full_tokens": 752,
+          "added_tokens": 752,
+          "diff_tokens": 752,
+          "bytes": 2819,
+          "lines": 130,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s2/stage_1_attempt_1.ts",
+          "full_tokens": 928,
+          "added_tokens": 191,
+          "diff_tokens": 595,
+          "bytes": 3390,
+          "lines": 155,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s2/stage_2_attempt_1.ts",
+          "full_tokens": 1012,
+          "added_tokens": 168,
+          "diff_tokens": 436,
+          "bytes": 3729,
+          "lines": 166,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s2/stage_3_attempt_1.ts",
+          "full_tokens": 1206,
+          "added_tokens": 256,
+          "diff_tokens": 717,
+          "bytes": 4466,
+          "lines": 196,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s2/stage_4_attempt_1.ts",
+          "full_tokens": 1284,
+          "added_tokens": 78,
+          "diff_tokens": 339,
+          "bytes": 4749,
+          "lines": 207,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__typescript__s2/stage_5_attempt_1.ts",
+          "full_tokens": 1351,
+          "added_tokens": 67,
+          "diff_tokens": 265,
+          "bytes": 5020,
+          "lines": 214,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "import * as fs from \"fs\";\nimport * as path from \"path\";\nimport * as semver from \"semver\";\n\ntype Channel = \"stable\" | \"beta\" | \"lts\";\ntype SizeTier = \"tiny\" | \"standard\" | \"large\" | \"oversize\";\n\nconst VALID_CHANNELS: ReadonlySet<string> = new Set<Channel>([\n  \"stable\",\n  \"beta\",\n  \"lts\",\n]);\n\nconst ARTIFACT_PATH_PATTERN =\n  /^[a-z0-9-]+\\/[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9.]+)?$/;\n\nconst KB_PER_MB = 1024;\n\ninterface ArtifactInput {\n  raw_path: string;\n  channel: string;\n  size_kb: number;\n}\n\ninterface GateInput {\n  min_range: string;\n  budget_mb: number;\n  artifacts: ArtifactInput[];\n}\n\ninterface GateOutput {\n  total: number;\n  eligible: number;\n  oversize: number;\n  total_kb: number;\n  max_kb: number;\n  consecutive_rejects: number;\n  freeze: boolean;\n  exempt: number;\n  eligible_kb: number;\n  within_budget: boolean;\n  recommended: string | null;\n}\n\ninterface EvaluatedArtifact {\n  input: ArtifactInput;\n  norm: string | null;\n  pkg: string | null;\n  ver: string | null;\n  parsedVer: semver.SemVer | null;\n  sizeTier: SizeTier;\n  validFormat: boolean;\n  eligible: boolean;\n  exempt: boolean;\n}\n\nfunction decodeAndNormalizePath(rawPath: string): string | null {\n  try {\n    const decoded = decodeURIComponent(rawPath);\n    return path.posix.normalize(decoded);\n  } catch {\n    return null;\n  }\n}\n\nfunction isValidChannel(channel: string): channel is Channel {\n  return VALID_CHANNELS.has(channel);\n}\n\nfunction parseNonPrereleaseSemver(ver: string): semver.SemVer | null {\n  if (ver.includes(\"-\")) {\n    return null;\n  }\n  const parsed = semver.parse(ver);\n  if (parsed === null || parsed.prerelease.length > 0) {\n    return null;\n  }\n  return parsed;\n}\n\nfunction classifySizeTier(sizeKb: number): SizeTier {\n  if (sizeKb < 100) {\n    return \"tiny\";\n  }\n  if (sizeKb <= 1000) {\n    return \"standard\";\n  }\n  if (sizeKb <= 5000) {\n    return \"large\";\n  }\n  return \"oversize\";\n}\n\nfunction evaluateArtifact(\n  artifact: ArtifactInput,\n  minRange: string,\n): EvaluatedArtifact {\n  const sizeTier = classifySizeTier(artifact.size_kb);\n  const norm = decodeAndNormalizePath(artifact.raw_path);\n  if (norm === null) {\n    return {\n      input: artifact,\n      norm: null,\n      pkg: null,\n      ver: null,\n      parsedVer: null,\n      sizeTier,\n      validFormat: false,\n      eligible: false,\n      exempt: false,\n    };\n  }\n\n  const ver = path.posix.basename(norm);\n  const pkg = path.posix.dirname(norm);\n  const validFormat =\n    ARTIFACT_PATH_PATTERN.test(norm) && isValidChannel(artifact.channel);\n  const parsedVer = validFormat ? parseNonPrereleaseSemver(ver) : null;\n  const notOversize = sizeTier !== \"oversize\";\n\n  const satisfiesRange =\n    parsedVer !== null &&\n    semver.satisfies(parsedVer, minRange, { includePrerelease: false });\n  const normallyEligible = validFormat && notOversize && satisfiesRange;\n\n  const isLtsSecurityExempt =\n    validFormat &&\n    artifact.channel === \"lts\" &&\n    pkg.includes(\"security\") &&\n    parsedVer !== null &&\n    notOversize;\n\n  const eligible = normallyEligible || isLtsSecurityExempt;\n  const exempt = isLtsSecurityExempt && !normallyEligible;\n\n  return {\n    input: artifact,\n    norm,\n    pkg,\n    ver,\n    parsedVer,\n    sizeTier,\n    validFormat,\n    eligible,\n    exempt,\n  };\n}\n\nfunction evaluateGate(input: GateInput): GateOutput {\n  const evaluatedArtifacts = input.artifacts.map((artifact) =>\n    evaluateArtifact(artifact, input.min_range),\n  );\n\n  let eligibleCount = 0;\n  let oversizeCount = 0;\n  let exemptCount = 0;\n  let totalKb = 0;\n  let eligibleKb = 0;\n  let maxKb = 0;\n  let consecutiveRejects = 0;\n  const eligibleVersions: string[] = [];\n\n  for (let i = 0; i < evaluatedArtifacts.length; i++) {\n    const evaluated = evaluatedArtifacts[i];\n\n    if (evaluated.eligible) {\n      eligibleCount += 1;\n      eligibleKb += evaluated.input.size_kb;\n      if (evaluated.parsedVer !== null) {\n        eligibleVersions.push(evaluated.parsedVer.version);\n      }\n    } else if (i > 0 && !evaluatedArtifacts[i - 1].eligible) {\n      consecutiveRejects += 1;\n    }\n\n    if (evaluated.sizeTier === \"oversize\") {\n      oversizeCount += 1;\n    }\n    if (evaluated.exempt) {\n      exemptCount += 1;\n    }\n\n    totalKb += evaluated.input.size_kb;\n    if (i === 0 || evaluated.input.size_kb > maxKb) {\n      maxKb = evaluated.input.size_kb;\n    }\n  }\n\n  const budgetKb = input.budget_mb * KB_PER_MB;\n  const recommended = semver.maxSatisfying(eligibleVersions, \">=0.0.0\");\n\n  return {\n    total: evaluatedArtifacts.length,\n    eligible: eligibleCount,\n    oversize: oversizeCount,\n    total_kb: totalKb,\n    max_kb: maxKb,\n    consecutive_rejects: consecutiveRejects,\n    freeze: consecutiveRejects >= 2,\n    exempt: exemptCount,\n    eligible_kb: eligibleKb,\n    within_budget: eligibleKb <= budgetKb,\n    recommended,\n  };\n}\n\nfunction main(): void {\n  const rawInput = fs.readFileSync(0, \"utf8\");\n  const parsedInput = JSON.parse(rawInput) as GateInput;\n  const result = evaluateGate(parsedInput);\n  process.stdout.write(`${JSON.stringify(result)}\\n`);\n}\n\nmain();\n",
+  "own_language_audit": {}
+}

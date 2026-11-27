@@ -1,0 +1,121 @@
+use py:statistics as stats
+use go:strings as gstr
+use go:math as gmath
+use rs:std.str as rstr
+use rs:std.i64 as ri
+
+unit ms
+unit s = 1000 ms
+
+record Sample {
+    service: Text
+    ms: Int
+    offset: Int
+}
+
+record Request {
+    sla_s: Float
+    samples: List[Sample]
+}
+
+record EnrichedSample {
+    service: Text
+    ms: Int
+    offset: Int
+    breach: Bool
+    exempted: Bool
+    overage: Int
+    bucket_zero: Bool
+    sev: Text
+    valid_label: Bool
+}
+
+fn sla_to_ms(sla_s: Float) -> Float[ms] pure = (sla_s as s) to ms
+
+fn is_breach(sample_ms: Int, sla_ms: Float[ms]) -> Bool pure =
+    (to_float(sample_ms) as ms) > sla_ms
+
+fn is_exempt(service: Text, bucket_zero: Bool) -> Bool pure =
+    service == "healthcheck" and bucket_zero
+
+fn severity(sample_ms: Int) -> Text pure = cases sample_ms {
+    < 200 => "ok"
+    <= 500 => "warn"
+    <= 1000 => "slow"
+    else => "critical"
+}
+
+fn round_even_int(x: Float) -> Int = to_int(gmath.RoundToEven(x))
+
+fn norm_service(name: Text) -> Text = rstr.to_lowercase(gstr.TrimSpace(name))
+
+fn is_valid_label(name: Text) -> Bool =
+    let n = rstr.len_chars(name) in
+    n >= 2 and n <= 12
+
+fn enrich(sample: Sample, sla_ms: Float[ms], sla_ms_int: Int) -> EnrichedSample =
+    let service = norm_service(sample.service) in
+    let bucket_zero = ri.rem_euclid(sample.offset, 4) == 0 in
+    let raw_breach = is_breach(sample.ms, sla_ms) in
+    let exempted = raw_breach and is_exempt(service, bucket_zero) in
+    let breach = raw_breach and (exempted == false) in
+    EnrichedSample(
+        service: service,
+        ms: sample.ms,
+        offset: sample.offset,
+        breach: breach,
+        exempted: exempted,
+        overage: if breach then sample.ms - sla_ms_int else 0,
+        bucket_zero: bucket_zero,
+        sev: severity(sample.ms),
+        valid_label: is_valid_label(service)
+    )
+
+let req: Request = from_json(stdin_text())
+let sla_ms: Float[ms] = sla_to_ms(req.sla_s)
+let sla_ms_int: Int = round_even_int(scalar(sla_ms))
+let items: List[EnrichedSample] = [enrich(x, sla_ms, sla_ms_int) for x in req.samples]
+
+let summary = summarize x in items {
+    total: count
+    breaches: count where x.breach
+    overage_ms: sum x.overage where x.breach
+    max_ms: max x.ms default 0
+    bucket_zero: count where x.bucket_zero
+    critical: count where x.sev == "critical"
+    warn_or_worse: count where x.sev != "ok"
+    invalid_labels: count where x.valid_label == false
+    exempt: count where x.exempted
+}
+
+fn overall_status(consecutive_breaches: Int, critical: Int, breaches: Int, invalid_labels: Int) -> Text pure = (
+    if consecutive_breaches >= 2 or critical > 0 then "red"
+    else if breaches > 0 or invalid_labels > 0 then "yellow"
+    else "green"
+)
+
+let ms_values: List[Float] = [to_float(x.ms) for x in items where x.valid_label]
+let mean_ms: Int = if len(ms_values) == 0 then 0 else round_even_int(stats.mean(ms_values))
+let consecutive_breaches: Int = count adjacent past, now in items where past.breach and now.breach
+let spike_steps: Int = count adjacent past, now in items where now.ms > past.ms + 100
+let regressed: Int = count earlier past, now in items where past.ms + 300 < now.ms
+let status: Text = overall_status(consecutive_breaches, summary.critical, summary.breaches, summary.invalid_labels)
+
+let out = record {
+    count: summary.total
+    breaches: summary.breaches
+    overage_ms: summary.overage_ms
+    max_ms: summary.max_ms
+    mean_ms
+    bucket_zero: summary.bucket_zero
+    critical: summary.critical
+    warn_or_worse: summary.warn_or_worse
+    consecutive_breaches
+    spike_steps
+    invalid_labels: summary.invalid_labels
+    exempt: summary.exempt
+    regressed
+    status
+}
+
+print json_encode(out)

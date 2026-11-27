@@ -1,0 +1,133 @@
+{
+  "run_id": "T3_freight_quote__python__s1",
+  "task_id": "T3_freight_quote",
+  "lang": "Python",
+  "solver_id": 1,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T3_freight_quote__python__s1",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s1/stage_0_attempt_1.py",
+          "full_tokens": 1029,
+          "added_tokens": 1029,
+          "diff_tokens": 1029,
+          "bytes": 3748,
+          "lines": 148,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s1/stage_1_attempt_1.py",
+          "full_tokens": 1156,
+          "added_tokens": 151,
+          "diff_tokens": 446,
+          "bytes": 4135,
+          "lines": 164,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s1/stage_2_attempt_1.py",
+          "full_tokens": 1290,
+          "added_tokens": 134,
+          "diff_tokens": 377,
+          "bytes": 4563,
+          "lines": 179,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s1/stage_3_attempt_1.py",
+          "full_tokens": 1399,
+          "added_tokens": 109,
+          "diff_tokens": 335,
+          "bytes": 4924,
+          "lines": 191,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s1/stage_4_attempt_1.py",
+          "full_tokens": 1460,
+          "added_tokens": 71,
+          "diff_tokens": 318,
+          "bytes": 5142,
+          "lines": 198,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T3_freight_quote__python__s1/stage_5_attempt_1.py",
+          "full_tokens": 1672,
+          "added_tokens": 263,
+          "diff_tokens": 789,
+          "bytes": 5840,
+          "lines": 218,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "from __future__ import annotations\n\nfrom dataclasses import dataclass\nimport json\nimport math\nimport posixpath\nimport re\nimport sys\n\n\nDEPOT_PATTERN: re.Pattern[str] = re.compile(r\"^[a-z]{3}-[0-9]{2}\\Z\")\nVALID_ZONES: frozenset[str] = frozenset({\"SE\", \"EU\", \"NON-EU\"})\n\n\n@dataclass(frozen=True)\nclass LegInput:\n    route: str\n    dx_km: float\n    dy_km: float\n    weight_g: float\n    zone: str\n\n\n@dataclass(frozen=True)\nclass QuoteInput:\n    eur_to_sek: float\n    max_sek: int\n    legs: tuple[LegInput, ...]\n\n\n@dataclass(frozen=True)\nclass QuoteOutput:\n    legs: int\n    valid_legs: int\n    total_m: int\n    total_eur_cents: int\n    total_sek: int\n    heavy_legs: int\n    customs_legs: int\n    long_haul_pairs: int\n    vip_exempt: int\n    within_cap: bool\n    max_leg_eur_cents: int\n\n    def to_dict(self) -> dict[str, int | bool]:\n        return {\n            \"legs\": self.legs,\n            \"valid_legs\": self.valid_legs,\n            \"total_m\": self.total_m,\n            \"total_eur_cents\": self.total_eur_cents,\n            \"total_sek\": self.total_sek,\n            \"heavy_legs\": self.heavy_legs,\n            \"customs_legs\": self.customs_legs,\n            \"long_haul_pairs\": self.long_haul_pairs,\n            \"vip_exempt\": self.vip_exempt,\n            \"within_cap\": self.within_cap,\n            \"max_leg_eur_cents\": self.max_leg_eur_cents,\n        }\n\n\ndef _as_dict(value: object) -> dict[str, object]:\n    if not isinstance(value, dict):\n        raise ValueError(\"Expected JSON object\")\n    result: dict[str, object] = {}\n    for key, item in value.items():\n        if not isinstance(key, str):\n            raise ValueError(\"Expected string object key\")\n        result[key] = item\n    return result\n\n\ndef _as_list(value: object) -> list[object]:\n    if not isinstance(value, list):\n        raise ValueError(\"Expected JSON array\")\n    result: list[object] = []\n    for item in value:\n        result.append(item)\n    return result\n\n\ndef _as_str(value: object) -> str:\n    if not isinstance(value, str):\n        raise ValueError(\"Expected string\")\n    return value\n\n\ndef _as_float(value: object) -> float:\n    if isinstance(value, bool) or not isinstance(value, (int, float)):\n        raise ValueError(\"Expected number\")\n    return float(value)\n\n\ndef _as_int(value: object) -> int:\n    if isinstance(value, bool) or not isinstance(value, int):\n        raise ValueError(\"Expected integer\")\n    return value\n\n\ndef parse_input(raw: object) -> QuoteInput:\n    data = _as_dict(raw)\n    eur_to_sek = _as_float(data[\"eur_to_sek\"])\n    max_sek = _as_int(data[\"max_sek\"])\n    raw_legs = _as_list(data[\"legs\"])\n    legs: list[LegInput] = []\n    for raw_leg in raw_legs:\n        leg_obj = _as_dict(raw_leg)\n        legs.append(\n            LegInput(\n                route=_as_str(leg_obj[\"route\"]),\n                dx_km=_as_float(leg_obj[\"dx_km\"]),\n                dy_km=_as_float(leg_obj[\"dy_km\"]),\n                weight_g=_as_float(leg_obj[\"weight_g\"]),\n                zone=_as_str(leg_obj[\"zone\"]),\n            )\n        )\n    return QuoteInput(eur_to_sek=eur_to_sek, max_sek=max_sek, legs=tuple(legs))\n\n\ndef normalize_depot(route: str) -> str:\n    norm = posixpath.normpath(route)\n    return posixpath.basename(norm)\n\n\ndef normalize_zone(zone: str) -> str:\n    return zone.strip().upper()\n\n\ndef is_valid_leg(depot: str, zone: str) -> bool:\n    return DEPOT_PATTERN.match(depot) is not None and zone in VALID_ZONES\n\n\ndef distance_multiplier(km: float) -> float:\n    if km <= 50.0:\n        return 1.0\n    if km <= 200.0:\n        return 1.15\n    return 1.35\n\n\ndef apply_zone_adjustment(leg_eur: float, zone: str) -> float:\n    if zone == \"SE\":\n        return leg_eur * 0.9\n    if zone == \"NON-EU\":\n        return leg_eur + 15.0\n    return leg_eur\n\n\ndef compute_quote(quote_input: QuoteInput) -> QuoteOutput:\n    valid_legs = 0\n    heavy_legs = 0\n    customs_legs = 0\n    long_haul_pairs = 0\n    vip_exempt = 0\n    max_leg_eur_cents = 0\n    prev_long_haul = False\n    total_km = 0.0\n    total_eur = 0.0\n\n    for leg in quote_input.legs:\n        depot = normalize_depot(leg.route)\n        zone = normalize_zone(leg.zone)\n        if not is_valid_leg(depot, zone):\n            continue\n\n        valid_legs += 1\n        km = math.sqrt(leg.dx_km * leg.dx_km + leg.dy_km * leg.dy_km)\n        kg = leg.weight_g / 1000.0\n        base_eur = 5.0 + 0.5 * km + 2.0 * kg\n        leg_eur = base_eur * distance_multiplier(km)\n        if kg >= 10.0:\n            heavy_legs += 1\n            if depot == \"sto-01\" and zone == \"SE\":\n                vip_exempt += 1\n            else:\n                leg_eur += 12.0\n        if zone == \"NON-EU\":\n            customs_legs += 1\n        leg_eur = apply_zone_adjustment(leg_eur, zone)\n\n        leg_eur_cents = round(leg_eur * 100.0)\n        if valid_legs == 1 or leg_eur_cents > max_leg_eur_cents:\n            max_leg_eur_cents = leg_eur_cents\n\n        is_long_haul = km > 100.0\n        if prev_long_haul and is_long_haul:\n            long_haul_pairs += 1\n        prev_long_haul = is_long_haul\n\n        total_km += km\n        total_eur += leg_eur\n\n    total_eur += 25.0 * long_haul_pairs\n    total_sek = round(total_eur * quote_input.eur_to_sek)\n\n    return QuoteOutput(\n        legs=len(quote_input.legs),\n        valid_legs=valid_legs,\n        total_m=round(total_km * 1000.0),\n        total_eur_cents=round(total_eur * 100.0),\n        total_sek=total_sek,\n        heavy_legs=heavy_legs,\n        customs_legs=customs_legs,\n        long_haul_pairs=long_haul_pairs,\n        vip_exempt=vip_exempt,\n        within_cap=total_sek <= quote_input.max_sek,\n        max_leg_eur_cents=max_leg_eur_cents,\n    )\n\n\ndef main() -> None:\n    raw: object = json.load(sys.stdin)\n    quote_input = parse_input(raw)\n    quote_output = compute_quote(quote_input)\n    print(json.dumps(quote_output.to_dict()))\n\n\nif __name__ == \"__main__\":\n    main()\n",
+  "own_language_audit": {}
+}

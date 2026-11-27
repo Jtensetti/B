@@ -22,15 +22,32 @@ class ToModel(Transformer):
     def start(self, values): return list(values)
     def names(self, xs): return [str(x) for x in xs]
     def permit_stmt(self, xs): return Stmt("permit", (tuple(xs[0]) if xs and xs[0] is not None else (),))
+    def unit_base_stmt(self, xs): return Stmt("unit_base", (tuple(xs[0]),))
+    def unit_scale_stmt(self, xs):
+        name, factor_expr, base = xs
+        return Stmt("unit_scale", (str(name), float(factor_expr.parts[0]), str(base)))
+    def currency_stmt(self, xs): return Stmt("currency", (tuple(xs[0]),))
+    def record_field(self, xs): return (str(xs[0]), xs[1])
+    def record_stmt(self, xs): return Stmt("record", (str(xs[0]), tuple(xs[1:])))
+    def record_entry_kv(self, xs): return (str(xs[0]), xs[1])
+    def record_entry_shorthand(self, xs): return (str(xs[0]), Expr("name", (str(xs[0]),)))
+    def record_lit(self, xs): return Expr("record_lit", tuple(xs))
+    def record_with(self, xs): return ("record_with", tuple(xs))
+    def probe_stmt(self, xs): return Stmt("probe", (xs[0],))
+    def expect_stmt(self, xs): return Stmt("expect", (xs[0], str(xs[1]), str(xs[2])))
+    def facet(self, xs): return (str(xs[0]), str(xs[1]))
+    def facet_list(self, xs): return tuple(xs)
     def fn_pure(self, xs): return ("pure", True)
     def fn_requires(self, xs): return ("requires", xs[0])
     def fn_ensures(self, xs): return ("ensures", xs[0])
     def path(self, xs): return ".".join(map(str, xs))
     def type_expr(self, xs): return (str(xs[0]), tuple(x for x in xs[1:] if x is not None))
-    def params(self, xs): return list(xs)
+    def params(self, xs): return [x for x in xs if x is not None]
     def type_list(self, xs): return list(xs)
     def param(self, xs): return (str(xs[0]), xs[1])
-    def args(self, xs): return list(xs)
+    def call_args(self, xs): return [x for x in xs if x is not None]
+    def named_arg(self, xs): return ("named", str(xs[0]), xs[1])
+    def pos_arg(self, xs): return xs[0]
     def number(self, xs):
         token = xs[0]
         try:
@@ -50,9 +67,16 @@ class ToModel(Transformer):
     def none(self, _): return Expr("literal", (None,))
     def identifier(self, xs): return Expr("name", (str(xs[0]),))
     def grouped(self, xs): return xs[0]
-    def list_literal(self, xs): return Expr("list", tuple(xs[0]) if xs and xs[0] is not None else ())
+    def list_items(self, xs): return Expr("list", tuple(x for x in xs if x is not None))
+    def list_comp(self, xs):
+        body, binder, source, guard = xs
+        return Expr("list_comp", (body, str(binder), source, guard))
+    def list_bracket(self, xs):
+        if not xs or xs[0] is None:
+            return Expr("list", ())
+        return xs[0]
     def pair(self, xs): return (xs[0], xs[1])
-    def pairs(self, xs): return list(xs)
+    def pairs(self, xs): return [x for x in xs if x is not None]
     def dict_literal(self, xs): return Expr("dict", tuple(xs[0]) if xs and xs[0] is not None else ())
     def attribute(self, xs): return ("attr", str(xs[0]))
     def invoke(self, xs): return ("invoke", tuple(xs[0]) if xs and xs[0] is not None else ())
@@ -62,14 +86,21 @@ class ToModel(Transformer):
         for kind, val in xs[1:]: base = Expr(kind, (base, val))
         return base
     def conditional(self, xs): return Expr("conditional", tuple(xs))
+    def let_expr(self, xs): return Expr("let_expr", (str(xs[0]), xs[1], xs[2], xs[3]))
+    def pipe(self, xs):
+        left, right = xs
+        if right.kind == "invoke":
+            target, args = right.parts
+            return Expr("invoke", (target, (left, *args)))
+        return Expr("invoke", (right, (left,)))
+    def unit_tag(self, xs): return Expr("unit_tag", (xs[0], str(xs[1])))
+    def unit_convert(self, xs): return Expr("unit_convert", (xs[0], str(xs[1])))
     def case_row(self, xs):
         operator, threshold, value = xs
         return str(operator), threshold, value
 
     def case_table(self, xs):
         _, name, *rows, fallback = xs
-        # These spellings start a literal, operator or conditional where the
-        # equivalent ordinary comparison must read a variable.
         if name in {"true", "false", "none", "if", "not"}:
             raise LarkError(f"Decision table pivot '{name}' must be usable as an ordinary variable "
                             f"at line {name.line}, column {name.column}")
@@ -87,17 +118,18 @@ class ToModel(Transformer):
         return "sum", value, guard, None
 
     def summary_extremum(self, xs):
-        reducer, value, default = xs
-        return str(reducer), value, None, default
+        reducer, value, guard, default = xs
+        return str(reducer), value, guard, default
 
-    def default_int(self, xs):
+    def default_num(self, xs):
+        raw = str(xs[0])
         try:
-            return int(xs[0])
+            return float(raw) if "." in raw else int(raw)
         except ValueError as exc:
-            raise LarkError("summarize default exceeds the supported integer literal size") from exc
+            raise LarkError("summarize default exceeds the supported numeric literal size") from exc
 
-    def default_negative_int(self, xs):
-        return -self.default_int(xs)
+    def default_negative_num(self, xs):
+        return -self.default_num(xs)
 
     def summary_field(self, xs):
         label, reduction = xs
@@ -122,7 +154,9 @@ class ToModel(Transformer):
     def and_op(self, xs): return Expr("and", tuple(xs))
     def or_op(self, xs): return Expr("or", tuple(xs))
     def comparison(self, xs): return Expr("cmp", (xs[0], str(xs[1]), xs[2]))
-    def foreign_stmt(self, xs): return Stmt("foreign", (xs[0], xs[1] or [], xs[2]))
+    def foreign_stmt(self, xs):
+        facets = xs[3] if len(xs) > 3 and xs[3] is not None else ()
+        return Stmt("foreign", (xs[0], xs[1] or [], xs[2], facets))
     def use_stmt(self, xs): return Stmt("use", (str(xs[0]), xs[1], str(xs[2])))
     def js_use(self, xs): return Stmt("use", ("js", xs[0], str(xs[1])))
     def js_string_use(self, xs):
@@ -158,10 +192,47 @@ def positioned_parser():
     return Lark(_GRAMMAR, parser="lalr", maybe_placeholders=True, propagate_positions=True)
 
 
+def _strip_enclosed_newlines(source: str) -> str:
+    """Replace newlines inside (...) and [...] (when innermost delimiter is not {) with spaces,
+    preserving exact 1-to-1 character offsets for source rewriters."""
+    if "\n" not in source:
+        return source
+    out: list[str] = []
+    stack: list[str] = []
+    in_str = False
+    esc = False
+    for ch in source:
+        if in_str:
+            out.append(ch)
+            if esc:
+                esc = False
+            elif ch == "\\":
+                esc = True
+            elif ch == '"':
+                in_str = False
+            continue
+        if ch == '"':
+            in_str = True
+            out.append(ch)
+        elif ch in "([{":
+            stack.append(ch)
+            out.append(ch)
+        elif ch in ")]}":
+            if stack:
+                stack.pop()
+            out.append(ch)
+        elif ch == "\n" and stack and stack[-1] in ("(", "["):
+            out.append(" ")
+        else:
+            out.append(ch)
+    return "".join(out)
+
+
 def parser_input(source: str) -> str:
     # Preserve character offsets for source rewriters, including CRLF pairs.
     if "\r" in source:
         source = re.sub(r"\r(?!\n)", "\n", source)
+    source = _strip_enclosed_newlines(source)
     return source + ("\n" if source and not source.endswith("\n") else "")
 
 
@@ -174,8 +245,6 @@ def parse(source: str) -> list[Stmt]:
                             f"column {error.column}). Run 'b migrate-comments FILE' to print migrated source.") from error
         raise
     except UnexpectedToken as error:
-        # At the end of a comparison row the grammar expects a separator.
-        # After the separator it expects the next comparison or the fallback.
         if error.token.type == "RBRACE" and (
             "_ROW_SEMI" in error.accepts or {"COMP", "ELSE"} <= error.accepts
         ):

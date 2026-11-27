@@ -1,0 +1,133 @@
+{
+  "run_id": "T2_telemetry_sla__typescript__s3",
+  "task_id": "T2_telemetry_sla",
+  "lang": "TypeScript",
+  "solver_id": 3,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T2_telemetry_sla__typescript__s3",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__typescript__s3/stage_0_attempt_1.ts",
+          "full_tokens": 714,
+          "added_tokens": 714,
+          "diff_tokens": 714,
+          "bytes": 2476,
+          "lines": 121,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__typescript__s3/stage_1_attempt_1.ts",
+          "full_tokens": 901,
+          "added_tokens": 187,
+          "diff_tokens": 452,
+          "bytes": 3076,
+          "lines": 151,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__typescript__s3/stage_2_attempt_1.ts",
+          "full_tokens": 1046,
+          "added_tokens": 155,
+          "diff_tokens": 388,
+          "bytes": 3616,
+          "lines": 170,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__typescript__s3/stage_3_attempt_1.ts",
+          "full_tokens": 1179,
+          "added_tokens": 162,
+          "diff_tokens": 467,
+          "bytes": 4132,
+          "lines": 189,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__typescript__s3/stage_4_attempt_1.ts",
+          "full_tokens": 1299,
+          "added_tokens": 154,
+          "diff_tokens": 519,
+          "bytes": 4563,
+          "lines": 203,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T2_telemetry_sla__typescript__s3/stage_5_attempt_1.ts",
+          "full_tokens": 1516,
+          "added_tokens": 217,
+          "diff_tokens": 573,
+          "bytes": 5315,
+          "lines": 234,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {}
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "import * as fs from \"fs\";\n\ninterface RawSample {\n  service: string;\n  ms: number;\n  offset: number;\n}\n\ninterface AuditInput {\n  sla_s: number;\n  samples: RawSample[];\n}\n\ninterface NormalizedSample {\n  service: string;\n  ms: number;\n  offset: number;\n}\n\ntype Severity = \"ok\" | \"warn\" | \"slow\" | \"critical\";\ntype AuditStatus = \"green\" | \"yellow\" | \"red\";\n\ninterface AuditOutput {\n  count: number;\n  breaches: number;\n  overage_ms: number;\n  max_ms: number;\n  mean_ms: number;\n  bucket_zero: number;\n  critical: number;\n  warn_or_worse: number;\n  consecutive_breaches: number;\n  spike_steps: number;\n  invalid_labels: number;\n  exempt: number;\n  regressed: number;\n  status: AuditStatus;\n}\n\nfunction roundHalfToEven(value: number): number {\n  const sign = value < 0 ? -1 : 1;\n  const absValue = Math.abs(value);\n  const floor = Math.floor(absValue);\n  const frac = absValue - floor;\n\n  let roundedAbs: number;\n  if (frac < 0.5) {\n    roundedAbs = floor;\n  } else if (frac > 0.5) {\n    roundedAbs = floor + 1;\n  } else {\n    roundedAbs = floor % 2 === 0 ? floor : floor + 1;\n  }\n\n  const result = sign * roundedAbs;\n  return result === 0 ? 0 : result;\n}\n\nfunction remEuclid(value: number, modulus: number): number {\n  const m = Math.abs(modulus);\n  return ((value % m) + m) % m;\n}\n\nfunction normalizeService(service: string): string {\n  return service.trim().toLowerCase();\n}\n\nfunction normalizeSample(raw: RawSample): NormalizedSample {\n  return {\n    service: normalizeService(raw.service),\n    ms: raw.ms,\n    offset: raw.offset,\n  };\n}\n\nfunction classifySeverity(ms: number): Severity {\n  if (ms < 200) {\n    return \"ok\";\n  }\n  if (ms <= 500) {\n    return \"warn\";\n  }\n  if (ms <= 1000) {\n    return \"slow\";\n  }\n  return \"critical\";\n}\n\nfunction codepointCount(text: string): number {\n  return Array.from(text).length;\n}\n\nfunction isValidServiceLabel(service: string): boolean {\n  const length = codepointCount(service);\n  return length >= 2 && length <= 12;\n}\n\nfunction isMaintenanceExempt(sample: NormalizedSample): boolean {\n  return sample.service === \"healthcheck\" && remEuclid(sample.offset, 4) === 0;\n}\n\nfunction computeStatus(\n  consecutiveBreaches: number,\n  critical: number,\n  breaches: number,\n  invalidLabels: number,\n): AuditStatus {\n  if (consecutiveBreaches >= 2 || critical > 0) {\n    return \"red\";\n  }\n  if (breaches > 0 || invalidLabels > 0) {\n    return \"yellow\";\n  }\n  return \"green\";\n}\n\nfunction auditTelemetry(input: AuditInput): AuditOutput {\n  const slaMs = input.sla_s * 1000.0;\n  const slaMsInt = roundHalfToEven(slaMs);\n  const samples = input.samples.map(normalizeSample);\n\n  const count = samples.length;\n  if (count === 0) {\n    return {\n      count: 0,\n      breaches: 0,\n      overage_ms: 0,\n      max_ms: 0,\n      mean_ms: 0,\n      bucket_zero: 0,\n      critical: 0,\n      warn_or_worse: 0,\n      consecutive_breaches: 0,\n      spike_steps: 0,\n      invalid_labels: 0,\n      exempt: 0,\n      regressed: 0,\n      status: \"green\",\n    };\n  }\n\n  let breaches = 0;\n  let overageMs = 0;\n  let maxMs = samples[0].ms;\n  let minMsSoFar = samples[0].ms;\n  let validTotalMs = 0;\n  let validCount = 0;\n  let invalidLabels = 0;\n  let bucketZero = 0;\n  let critical = 0;\n  let warnOrWorse = 0;\n  let consecutiveBreaches = 0;\n  let spikeSteps = 0;\n  let exempt = 0;\n  let regressed = 0;\n  let previous: NormalizedSample | undefined;\n  let previousBreached = false;\n\n  for (const sample of samples) {\n    if (isValidServiceLabel(sample.service)) {\n      validTotalMs += sample.ms;\n      validCount += 1;\n    } else {\n      invalidLabels += 1;\n    }\n    if (sample.ms > maxMs) {\n      maxMs = sample.ms;\n    }\n    const rawBreach = sample.ms > slaMs;\n    const isExempt = isMaintenanceExempt(sample);\n    const isBreach = rawBreach && !isExempt;\n    if (rawBreach && isExempt) {\n      exempt += 1;\n    } else if (isBreach) {\n      breaches += 1;\n      overageMs += sample.ms - slaMsInt;\n    }\n    if (remEuclid(sample.offset, 4) === 0) {\n      bucketZero += 1;\n    }\n    const severity = classifySeverity(sample.ms);\n    if (severity === \"critical\") {\n      critical += 1;\n    }\n    if (severity !== \"ok\") {\n      warnOrWorse += 1;\n    }\n    if (previous !== undefined) {\n      if (previousBreached && isBreach) {\n        consecutiveBreaches += 1;\n      }\n      if (sample.ms > previous.ms + 100) {\n        spikeSteps += 1;\n      }\n      if (minMsSoFar + 300 < sample.ms) {\n        regressed += 1;\n      }\n      if (sample.ms < minMsSoFar) {\n        minMsSoFar = sample.ms;\n      }\n    }\n    previous = sample;\n    previousBreached = isBreach;\n  }\n\n  const meanMs = validCount > 0 ? roundHalfToEven(validTotalMs / validCount) : 0;\n  const status = computeStatus(consecutiveBreaches, critical, breaches, invalidLabels);\n\n  return {\n    count,\n    breaches,\n    overage_ms: overageMs,\n    max_ms: maxMs,\n    mean_ms: meanMs,\n    bucket_zero: bucketZero,\n    critical,\n    warn_or_worse: warnOrWorse,\n    consecutive_breaches: consecutiveBreaches,\n    spike_steps: spikeSteps,\n    invalid_labels: invalidLabels,\n    exempt,\n    regressed,\n    status,\n  };\n}\n\nfunction main(): void {\n  const rawInput = fs.readFileSync(0, \"utf8\");\n  const parsed: AuditInput = JSON.parse(rawInput) as AuditInput;\n  const output = auditTelemetry(parsed);\n  process.stdout.write(JSON.stringify(output) + \"\\n\");\n}\n\nmain();\n",
+  "own_language_audit": {}
+}

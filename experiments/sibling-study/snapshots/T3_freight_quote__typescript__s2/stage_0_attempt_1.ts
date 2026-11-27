@@ -1,0 +1,98 @@
+import * as fs from "fs";
+import * as path from "path";
+
+type Zone = "SE" | "EU" | "NON-EU";
+
+interface LegInput {
+  route: string;
+  dx_km: number;
+  dy_km: number;
+  weight_g: number;
+  zone: string;
+}
+
+interface QuoteInput {
+  eur_to_sek: number;
+  legs: LegInput[];
+}
+
+interface QuoteOutput {
+  legs: number;
+  valid_legs: number;
+  total_m: number;
+  total_eur_cents: number;
+  total_sek: number;
+}
+
+const DEPOT_PATTERN = /^[a-z]{3}-[0-9]{2}$/;
+const VALID_ZONES: ReadonlySet<string> = new Set<Zone>(["SE", "EU", "NON-EU"]);
+
+function isValidZone(zone: string): zone is Zone {
+  return VALID_ZONES.has(zone);
+}
+
+function roundHalfToEven(value: number): number {
+  if (!Number.isFinite(value)) {
+    return value;
+  }
+  const floor = Math.floor(value);
+  const diff = value - floor;
+  let result: number;
+  if (diff < 0.5) {
+    result = floor;
+  } else if (diff > 0.5) {
+    result = floor + 1;
+  } else {
+    result = floor % 2 === 0 ? floor : floor + 1;
+  }
+  return result === 0 ? 0 : result;
+}
+
+function parseDepot(route: string): string {
+  const normalized = path.posix.normalize(route);
+  return path.posix.basename(normalized);
+}
+
+function normalizeZone(zone: string): string {
+  return zone.trim().toUpperCase();
+}
+
+function computeQuote(input: QuoteInput): QuoteOutput {
+  let validLegs = 0;
+  let totalKm = 0;
+  let totalEur = 0;
+
+  for (const leg of input.legs) {
+    const depot = parseDepot(leg.route);
+    const zone = normalizeZone(leg.zone);
+
+    if (!DEPOT_PATTERN.test(depot) || !isValidZone(zone)) {
+      continue;
+    }
+
+    validLegs += 1;
+    const km = Math.sqrt(leg.dx_km * leg.dx_km + leg.dy_km * leg.dy_km);
+    const kg = leg.weight_g / 1000.0;
+    const legEur = 5.0 + 0.5 * km + 2.0 * kg;
+
+    totalKm += km;
+    totalEur += legEur;
+  }
+
+  return {
+    legs: input.legs.length,
+    valid_legs: validLegs,
+    total_m: roundHalfToEven(totalKm * 1000.0),
+    total_eur_cents: roundHalfToEven(totalEur * 100.0),
+    total_sek: roundHalfToEven(totalEur * input.eur_to_sek),
+  };
+}
+
+function main(): void {
+  const rawInput = fs.readFileSync(0, "utf8");
+  const input = JSON.parse(rawInput) as QuoteInput;
+  const output = computeQuote(input);
+  process.stdout.write(`${JSON.stringify(output)}\n`);
+}
+
+main();

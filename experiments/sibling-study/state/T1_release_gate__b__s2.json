@@ -1,0 +1,182 @@
+{
+  "run_id": "T1_release_gate__b__s2",
+  "task_id": "T1_release_gate",
+  "lang": "B",
+  "solver_id": 2,
+  "workspace": "/home/antigravity/Jtensetti/B/experiments/sibling-study/workspaces/T1_release_gate__b__s2",
+  "current_stage": 5,
+  "completed": true,
+  "stages": {
+    "0": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s2/stage_0_attempt_1.bee",
+          "full_tokens": 521,
+          "added_tokens": 521,
+          "diff_tokens": 521,
+          "bytes": 1795,
+          "lines": 71,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "1": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s2/stage_1_attempt_1.bee",
+          "full_tokens": 615,
+          "added_tokens": 104,
+          "diff_tokens": 287,
+          "bytes": 2080,
+          "lines": 80,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "2": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s2/stage_2_attempt_1.bee",
+          "full_tokens": 718,
+          "added_tokens": 150,
+          "diff_tokens": 327,
+          "bytes": 2485,
+          "lines": 97,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "3": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s2/stage_3_attempt_1.bee",
+          "full_tokens": 867,
+          "added_tokens": 209,
+          "diff_tokens": 591,
+          "bytes": 3012,
+          "lines": 109,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "4": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s2/stage_4_attempt_1.bee",
+          "full_tokens": 974,
+          "added_tokens": 115,
+          "diff_tokens": 295,
+          "bytes": 3364,
+          "lines": 121,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 7
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    },
+    "5": {
+      "attempts": [
+        {
+          "attempt": 1,
+          "snapshot": "snapshots/T1_release_gate__b__s2/stage_5_attempt_1.bee",
+          "full_tokens": 1013,
+          "added_tokens": 43,
+          "diff_tokens": 136,
+          "bytes": 3515,
+          "lines": 125,
+          "compile_ok": true,
+          "public_passed": true,
+          "audit": {
+            "used_backends": [
+              "js",
+              "net",
+              "py"
+            ],
+            "foreign_count": 8
+          }
+        }
+      ],
+      "public_passed": true,
+      "hidden_passed": 10,
+      "hidden_total": 10,
+      "hidden_failures": []
+    }
+  },
+  "last_submitted_source": "use py:urllib.parse as urls\nforeign urls.unquote(Text) -> Text\nuse net:System.Text.RegularExpressions.Regex as Rx\nuse js:\"node:path/posix\" as path\nuse js:semver as sv\n\nunit kb\nunit mb = 1024 kb\n\nrecord Artifact {\n    raw_path: Text\n    channel: Text\n    size_kb: Int\n}\n\nrecord Request {\n    min_range: Text\n    budget_mb: Float\n    artifacts: List[Artifact]\n}\n\nrecord ParsedArtifact {\n    pkg: Text\n    ver: Text\n    norm: Text\n    channel: Text\n    size_kb: Int\n    format_ok: Bool\n    ver_valid: Bool\n    semver_ok: Bool\n}\n\nlet path_regex = \"^[a-z0-9-]+/[0-9]+\\\\.[0-9]+\\\\.[0-9]+(-[a-z0-9.]+)?$\"\n\nfn valid_channel(ch: Text) -> Bool pure =\n    ch == \"stable\" or ch == \"beta\" or ch == \"lts\"\n\nfn size_tier(size_kb: Int) -> Text pure = cases size_kb {\n    < 100 => \"tiny\"\n    <= 1000 => \"standard\"\n    <= 5000 => \"large\"\n    else => \"oversize\"\n}\n\nfn is_lts_exempt(a: ParsedArtifact) -> Bool pure =\n    a.format_ok and a.channel == \"lts\" and str_contains(a.pkg, \"security\") and a.ver_valid and str_contains(a.ver, \"-\") == false and size_tier(a.size_kb) != \"oversize\"\n\nfn is_eligible(a: ParsedArtifact) -> Bool pure =\n    (a.format_ok and a.semver_ok and size_tier(a.size_kb) != \"oversize\") or is_lts_exempt(a)\n\nfn became_exempt(a: ParsedArtifact) -> Bool pure =\n    is_lts_exempt(a) and a.semver_ok == false\n\nfn parse_artifact(a: Artifact, min_range: Text) -> ParsedArtifact =\n    let decoded = urls.unquote(a.raw_path) in\n    let norm = path.normalize(decoded) in\n    let ver = path.basename(norm) in\n    let pkg = path.dirname(norm) in\n    let format_ok = Rx.IsMatch(norm, path_regex) and valid_channel(a.channel) in\n    let valid_ver = sv.valid(ver) ?? \"\" in\n    let ver_valid = valid_ver != \"\" in\n    let semver_ok = if ver_valid == false then false else sv.satisfies(valid_ver, min_range) in\n    ParsedArtifact(\n        pkg: pkg,\n        ver: ver,\n        norm: norm,\n        channel: a.channel,\n        size_kb: a.size_kb,\n        format_ok: format_ok,\n        ver_valid: ver_valid,\n        semver_ok: semver_ok\n    )\n\nlet req: Request = from_json(stdin_text())\nlet parsed = [parse_artifact(a, req.min_range) for a in req.artifacts]\n\nlet evaluated = [\n    record {\n        pkg: x.pkg,\n        ver: x.ver,\n        channel: x.channel,\n        size_kb: x.size_kb,\n        tier: size_tier(x.size_kb),\n        eligible: is_eligible(x),\n        exempt: became_exempt(x)\n    }\n    for x in parsed\n]\n\nlet summary = summarize x in evaluated {\n    total: count\n    eligible: count where x.eligible\n    exempt: count where x.exempt\n    oversize: count where x.tier == \"oversize\"\n    total_kb: sum x.size_kb\n    max_kb: max x.size_kb default 0\n    eligible_kb: sum x.size_kb where x.eligible\n}\n\nlet budget: Float[mb] = req.budget_mb as mb\nlet budget_kb: Float[kb] = budget to kb\nlet eligible_size: Float[kb] = to_float(summary.eligible_kb) as kb\nlet within_budget = eligible_size <= budget_kb\n\nlet consecutive_rejects = count adjacent past, now in evaluated where past.eligible == false and now.eligible == false\nlet freeze = consecutive_rejects >= 2\n\nlet eligible_versions = [x.ver for x in evaluated where x.eligible]\nlet recommended = sv.maxSatisfying(eligible_versions, \">=0.0.0\")\n\nlet output = record {\n    total: summary.total,\n    eligible: summary.eligible,\n    oversize: summary.oversize,\n    total_kb: summary.total_kb,\n    max_kb: summary.max_kb,\n    consecutive_rejects,\n    freeze,\n    exempt: summary.exempt,\n    eligible_kb: summary.eligible_kb,\n    within_budget,\n    recommended\n}\n\nprint json_encode(output)\n",
+  "own_language_audit": {
+    "used_backends": [
+      "js",
+      "net",
+      "py"
+    ],
+    "foreign_count": 8
+  }
+}
